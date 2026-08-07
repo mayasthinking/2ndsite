@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurora Synth</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="synthesizer.css">
+</head>
+<body class="synth-body">
+    <main class="synth-app">
+        <header class="synth-header">
+            <div class="brand">
+                <span class="badge">Web Audio</span>
+                <h1>Aurora Synth</h1>
+                <p>Layer oscillators, sculpt the filter, and play with motion.</p>
+            </div>
+            <div class="transport">
+                <div class="status">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-text">Audio off</span>
+                </div>
+                <button class="btn btn-primary" id="power-button" type="button">Power</button>
+                <button class="btn btn-secondary" id="panic-button" type="button">Panic</button>
+            </div>
+        </header>
+
+        <section class="synth-grid">
+            <div class="column controls">
+                <div class="module">
+                    <h3>Preset</h3>
+                    <div class="control">
+                        <label for="preset-select">Select</label>
+                        <select id="preset-select" data-setting="preset">
+                            <option value="init">Init</option>
+                            <option value="glassy">Glassy Keys</option>
+                            <option value="warm-pad">Warm Pad</option>
+                            <option value="bass-pulse">Bass Pulse</option>
+                            <option value="pluck">Pluck</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="module">
+                    <h3>Oscillators</h3>
+                    <div class="control">
+                        <label for="osc1-wave">Osc A Wave</label>
+                        <select id="osc1-wave" data-setting="osc1Type">
+                            <option value="sine">Sine</option>
+                            <option value="triangle" selected>Triangle</option>
+                            <option value="sawtooth">Saw</option>
+                            <option value="square">Square</option>
+                        </select>
+                    </div>
+                    <div class="control">
+                        <label for="osc2-wave">Osc B Wave</label>
+                        <select id="osc2-wave" data-setting="osc2Type">
+                            <option value="sine">Sine</option>
+                            <option value="triangle">Triangle</option>
+                            <option value="sawtooth" selected>Saw</option>
+                            <option value="square">Square</option>
+                        </select>
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="osc-mix">Osc Mix</label>
+                            <span class="control-value" id="osc-mix-value"></span>
+                        </div>
+                        <input id="osc-mix" type="range" min="0" max="1" step="0.01" value="0.45" data-setting="oscMix" data-display="osc-mix-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="detune">Detune</label>
+                            <span class="control-value" id="detune-value"></span>
+                        </div>
+                        <input id="detune" type="range" min="-15" max="15" step="0.1" value="6" data-setting="detune" data-display="detune-value">
+                    </div>
+                    <div class="control toggle-row">
+                        <button class="toggle" id="sub-toggle" type="button" data-setting="subEnabled" aria-pressed="false">Sub Osc</button>
+                        <div class="toggle-hint">Adds an octave below</div>
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="sub-level">Sub Level</label>
+                            <span class="control-value" id="sub-level-value"></span>
+                        </div>
+                        <input id="sub-level" type="range" min="0" max="1" step="0.01" value="0.3" data-setting="subLevel" data-display="sub-level-value">
+                    </div>
+                </div>
+
+                <div class="module">
+                    <h3>Filter</h3>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="filter-cutoff">Cutoff</label>
+                            <span class="control-value" id="filter-cutoff-value"></span>
+                        </div>
+                        <input id="filter-cutoff" type="range" min="80" max="12000" step="1" value="4200" data-setting="filterCutoff" data-display="filter-cutoff-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="filter-resonance">Resonance</label>
+                            <span class="control-value" id="filter-resonance-value"></span>
+                        </div>
+                        <input id="filter-resonance" type="range" min="0.1" max="18" step="0.1" value="6" data-setting="filterResonance" data-display="filter-resonance-value">
+                    </div>
+                </div>
+
+                <div class="module">
+                    <h3>Envelope</h3>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="attack">Attack</label>
+                            <span class="control-value" id="attack-value"></span>
+                        </div>
+                        <input id="attack" type="range" min="0.01" max="2" step="0.01" value="0.08" data-setting="envAttack" data-display="attack-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="decay">Decay</label>
+                            <span class="control-value" id="decay-value"></span>
+                        </div>
+                        <input id="decay" type="range" min="0.01" max="2" step="0.01" value="0.3" data-setting="envDecay" data-display="decay-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="sustain">Sustain</label>
+                            <span class="control-value" id="sustain-value"></span>
+                        </div>
+                        <input id="sustain" type="range" min="0" max="1" step="0.01" value="0.7" data-setting="envSustain" data-display="sustain-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="release">Release</label>
+                            <span class="control-value" id="release-value"></span>
+                        </div>
+                        <input id="release" type="range" min="0.05" max="3" step="0.01" value="0.6" data-setting="envRelease" data-display="release-value">
+                    </div>
+                </div>
+
+                <div class="module">
+                    <h3>LFO</h3>
+                    <div class="control">
+                        <label for="lfo-target">Target</label>
+                        <select id="lfo-target" data-setting="lfoTarget">
+                            <option value="filter" selected>Filter</option>
+                            <option value="pitch">Pitch</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="lfo-rate">Rate</label>
+                            <span class="control-value" id="lfo-rate-value"></span>
+                        </div>
+                        <input id="lfo-rate" type="range" min="0.1" max="12" step="0.1" value="3.2" data-setting="lfoRate" data-display="lfo-rate-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="lfo-depth">Depth</label>
+                            <span class="control-value" id="lfo-depth-value"></span>
+                        </div>
+                        <input id="lfo-depth" type="range" min="0" max="1" step="0.01" value="0.35" data-setting="lfoDepth" data-display="lfo-depth-value">
+                    </div>
+                </div>
+
+                <div class="module">
+                    <h3>FX</h3>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="delay-time">Delay Time</label>
+                            <span class="control-value" id="delay-time-value"></span>
+                        </div>
+                        <input id="delay-time" type="range" min="0.05" max="0.6" step="0.01" value="0.22" data-setting="delayTime" data-display="delay-time-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="delay-feedback">Delay Feedback</label>
+                            <span class="control-value" id="delay-feedback-value"></span>
+                        </div>
+                        <input id="delay-feedback" type="range" min="0" max="0.85" step="0.01" value="0.35" data-setting="delayFeedback" data-display="delay-feedback-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="delay-mix">Delay Mix</label>
+                            <span class="control-value" id="delay-mix-value"></span>
+                        </div>
+                        <input id="delay-mix" type="range" min="0" max="0.8" step="0.01" value="0.25" data-setting="delayMix" data-display="delay-mix-value">
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="reverb-mix">Reverb Mix</label>
+                            <span class="control-value" id="reverb-mix-value"></span>
+                        </div>
+                        <input id="reverb-mix" type="range" min="0" max="0.8" step="0.01" value="0.25" data-setting="reverbMix" data-display="reverb-mix-value">
+                    </div>
+                </div>
+
+                <div class="module">
+                    <h3>Arp</h3>
+                    <div class="control toggle-row">
+                        <button class="toggle" id="arp-toggle" type="button" data-setting="arpEnabled" aria-pressed="false">Arp On</button>
+                        <div class="toggle-hint">Play held notes as a pattern</div>
+                    </div>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="arp-rate">Rate</label>
+                            <span class="control-value" id="arp-rate-value"></span>
+                        </div>
+                        <input id="arp-rate" type="range" min="1" max="12" step="0.1" value="5" data-setting="arpRate" data-display="arp-rate-value">
+                    </div>
+                    <div class="control">
+                        <label for="arp-mode">Mode</label>
+                        <select id="arp-mode" data-setting="arpMode">
+                            <option value="up" selected>Up</option>
+                            <option value="down">Down</option>
+                            <option value="updown">Up/Down</option>
+                            <option value="random">Random</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="module">
+                    <h3>Master</h3>
+                    <div class="control">
+                        <div class="control-row">
+                            <label for="master-volume">Volume</label>
+                            <span class="control-value" id="master-volume-value"></span>
+                        </div>
+                        <input id="master-volume" type="range" min="0" max="1" step="0.01" value="0.7" data-setting="masterVolume" data-display="master-volume-value">
+                    </div>
+                </div>
+            </div>
+
+            <div class="column performance">
+                <div class="module display-module">
+                    <div class="module-header">
+                        <h3>Signal</h3>
+                        <div class="stats">
+                            <span>Voices: <strong id="voice-count">0</strong></span>
+                            <span>Arp: <strong id="arp-status">Off</strong></span>
+                        </div>
+                    </div>
+                    <canvas id="visualizer" width="640" height="180" aria-label="Oscilloscope"></canvas>
+                </div>
+
+                <div class="module motion-module">
+                    <h3>Motion Pad</h3>
+                    <div class="xypad" id="xy-pad" aria-label="Motion pad">
+                        <div class="xypad-handle" id="xy-handle"></div>
+                    </div>
+                    <div class="xypad-values">
+                        <span>Brightness <strong id="xy-x-value">0.50</strong></span>
+                        <span>Space <strong id="xy-y-value">0.25</strong></span>
+                    </div>
+                </div>
+
+                <div class="module pad-module">
+                    <h3>Chord Pads</h3>
+                    <div class="pad-grid">
+                        <button class="pad" type="button" data-chord="nebula">Nebula</button>
+                        <button class="pad" type="button" data-chord="nocturne">Nocturne</button>
+                        <button class="pad" type="button" data-chord="horizon">Horizon</button>
+                        <button class="pad" type="button" data-chord="ember">Ember</button>
+                        <button class="pad" type="button" data-chord="calm">Calm</button>
+                        <button class="pad" type="button" data-chord="rift">Rift</button>
+                        <button class="pad" type="button" data-chord="swell">Swell</button>
+                        <button class="pad" type="button" data-chord="bloom">Bloom</button>
+                    </div>
+                </div>
+
+                <div class="module keyboard-module">
+                    <div class="keyboard-controls">
+                        <div class="octave-control">
+                            <button class="btn btn-tertiary" id="octave-down" type="button">-</button>
+                            <span id="octave-label">Octave 4</span>
+                            <button class="btn btn-tertiary" id="octave-up" type="button">+</button>
+                        </div>
+                        <div class="glide-control">
+                            <div class="control-row">
+                                <label for="glide-time">Glide</label>
+                                <span class="control-value" id="glide-value"></span>
+                            </div>
+                            <input id="glide-time" type="range" min="0" max="0.4" step="0.01" value="0.04" data-setting="glideTime" data-display="glide-value">
+                        </div>
+                    </div>
+                    <div id="keyboard" class="keyboard" aria-label="Synth keyboard"></div>
+                    <p class="keyboard-help">Keyboard: A W S E D F T G Y H U J K O L P ; '</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="synth-footer">
+            <a class="back-link" href="desktop.html">Back to desktop</a>
+            <span class="footer-note">Tip: press Power to unlock audio, then play the keys.</span>
+        </footer>
+    </main>
+
+    <script src="synthesizer.js"></script>
+</body>
+</html>
