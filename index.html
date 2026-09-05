@@ -410,6 +410,23 @@
             display: none;
         }
 
+        .snaps-more {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.28rem;
+            padding: 0 0 8px;
+        }
+
+        .snaps-more .snaps-preview-toggle {
+            padding: 0;
+        }
+
+        .snaps-more .snaps-footsteps-toggle {
+            margin-left: 0.85em;
+            font-size: 0.83rem;
+        }
+
         .photo-grid.is-preview .photo-item.is-extra {
             display: none;
         }
@@ -542,12 +559,6 @@
 
         .snaps-footer {
             padding: 10px 0 2px;
-        }
-
-        .snaps-footsteps-row {
-            display: flex;
-            align-items: center;
-            gap: 0.9rem;
         }
 
         .snaps-footsteps-toggle {
@@ -1199,19 +1210,6 @@
             <h4 id="photos" class="phrase">photos</h4>
             <div id="snaps-albums"></div>
             <div class="snaps-footer">
-                <div class="snaps-footsteps-row">
-                    <button
-                        type="button"
-                        class="snaps-footsteps-toggle"
-                        id="snaps-footsteps-toggle"
-                        aria-expanded="false"
-                        aria-controls="places-map"
-                        aria-label="Show footsteps map"
-                    >
-                        <span class="snaps-footsteps-label">footsteps</span>
-                        <span class="snaps-footsteps-mark toggle-mark--tone-d" aria-hidden="true">+</span>
-                    </button>
-                </div>
                 <div class="places-map" id="places-map" role="img" aria-label="Map of favorite places and walking traces" hidden>
                     <svg id="places-svg" viewBox="0 0 960 384" preserveAspectRatio="xMidYMid meet" overflow="visible" aria-hidden="true">
                         <g class="places-traces" id="places-traces"></g>
@@ -2090,8 +2088,30 @@
             mark.textContent = '+';
             toggle.append(label, mark);
 
+            const more = document.createElement('div');
+            more.className = 'snaps-more';
+
+            const footsteps = document.createElement('button');
+            footsteps.type = 'button';
+            footsteps.className = 'snaps-footsteps-toggle';
+            footsteps.id = 'snaps-footsteps-toggle';
+            footsteps.setAttribute('aria-expanded', 'false');
+            footsteps.setAttribute('aria-controls', 'places-map');
+            footsteps.setAttribute('aria-label', 'Show footsteps map');
+
+            const footstepsLabel = document.createElement('span');
+            footstepsLabel.className = 'snaps-footsteps-label';
+            footstepsLabel.textContent = 'footsteps';
+
+            const footstepsMark = document.createElement('span');
+            footstepsMark.className = 'snaps-footsteps-mark toggle-mark--tone-d';
+            footstepsMark.setAttribute('aria-hidden', 'true');
+            footstepsMark.textContent = '+';
+            footsteps.append(footstepsLabel, footstepsMark);
+
+            more.append(toggle, footsteps);
             albumGroups.append(grid);
-            entry.append(albumGroups, toggle);
+            entry.append(albumGroups, more);
             root.append(entry);
 
             photoVisibleCount = PHOTO_PAGE_SIZE;
