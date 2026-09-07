@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Maya's filing cabinet: photos and personal notes.">
-    <script src="paper-time.js?v=7"></script>
+    <script src="paper-time.js?v=9"></script>
     <title>maya bakir</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -866,6 +866,7 @@
         }
 
         .photo-caption {
+            display: block;
             margin: 0;
             max-height: 0;
             overflow: hidden;
@@ -874,6 +875,7 @@
             line-height: 1.35;
             text-align: right;
             color: color-mix(in srgb, var(--ink) 62%, transparent);
+            text-decoration: none;
             overflow-wrap: anywhere;
             word-break: break-word;
             transition: max-height 220ms ease, opacity 220ms ease, margin-top 220ms ease;
@@ -894,14 +896,6 @@
         .photo-caption.is-linked:focus-visible {
             color: var(--hover);
             outline: none;
-        }
-
-        .place-pin.is-highlighted .place-pin-dot {
-            opacity: 1;
-        }
-
-        .place-pin.is-highlighted .place-pin-label {
-            fill: var(--hover);
         }
 
         .photo-overlay {
@@ -1833,6 +1827,12 @@
         });
 
         overlayStage.addEventListener('click', (event) => {
+            if (pointerDidSwipe) {
+                pointerDidSwipe = false;
+                event.preventDefault();
+                return;
+            }
+
             if (event.target.closest('.photo-overlay-controls') || event.target.closest('.photo-overlay-image')) {
                 return;
             }
@@ -1842,9 +1842,7 @@
 
         initCabinetToggles();
 
-        const footstepsMap = document.getElementById('places-map');
         let placeByPhotoSrc = new Map();
-        let highlightedPlacePin = null;
 
         function carouselAtEnd(scroller) {
             if (!scroller) {
@@ -1897,56 +1895,6 @@
             sync();
         }
 
-        function revealAllPhotos() {
-            const carousel = document.querySelector('#snaps-albums .photo-carousel');
-            if (carousel) {
-                carousel.scrollTo({ left: carousel.scrollWidth, behavior: 'smooth' });
-            }
-
-            syncPhotoCarousel(carousel);
-        }
-
-        function openFootstepsMap() {
-            const footstepsToggle = document.getElementById('snaps-footsteps-toggle');
-            if (!footstepsToggle || !footstepsMap) {
-                return;
-            }
-
-            revealAllPhotos();
-
-            if (footstepsToggle.getAttribute('aria-expanded') !== 'true') {
-                setToggleState(footstepsToggle, true, {
-                    openLabel: 'Show footsteps map',
-                    closeLabel: 'Hide footsteps map'
-                });
-                footstepsMap.hidden = false;
-            }
-        }
-
-        function focusPlaceOnMap(place) {
-            if (!place?.name) {
-                return;
-            }
-
-            openFootstepsMap();
-
-            const pin = document.querySelector(
-                `.place-pin[data-place-name="${CSS.escape(place.name)}"]`
-            );
-
-            if (!pin) {
-                return;
-            }
-
-            if (highlightedPlacePin) {
-                highlightedPlacePin.classList.remove('is-highlighted');
-            }
-
-            pin.classList.add('is-highlighted');
-            highlightedPlacePin = pin;
-            footstepsMap?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
         backdrop.addEventListener('click', closePreview);
 
         let touchStartX = 0;
@@ -1977,6 +1925,106 @@
 
             navigatePhoto(deltaX < 0 ? 1 : -1);
         }, { passive: true });
+
+        let pointerStartX = 0;
+        let pointerStartY = 0;
+        let pointerTracking = false;
+        let pointerDidSwipe = false;
+
+        overlayStage.addEventListener('pointerdown', (event) => {
+            if (!overlay.classList.contains('is-open') || event.pointerType === 'touch') {
+                return;
+            }
+
+            if (event.target.closest('.photo-overlay-controls')) {
+                return;
+            }
+
+            pointerTracking = true;
+            pointerDidSwipe = false;
+            pointerStartX = event.clientX;
+            pointerStartY = event.clientY;
+        });
+
+        overlayStage.addEventListener('pointerup', (event) => {
+            if (!pointerTracking) {
+                return;
+            }
+
+            pointerTracking = false;
+
+            if (!overlay.classList.contains('is-open') || currentAlbumThumbs.length <= 1) {
+                return;
+            }
+
+            const deltaX = event.clientX - pointerStartX;
+            const deltaY = event.clientY - pointerStartY;
+            const minSwipeDistance = 48;
+
+            if (Math.abs(deltaX) < minSwipeDistance || Math.abs(deltaX) < Math.abs(deltaY)) {
+                return;
+            }
+
+            pointerDidSwipe = true;
+            navigatePhoto(deltaX < 0 ? 1 : -1);
+        });
+
+        overlayStage.addEventListener('pointercancel', () => {
+            pointerTracking = false;
+        });
+
+        let wheelNavigating = false;
+        let wheelAccum = 0;
+        let wheelResetTimer = 0;
+
+        function overlayIsOpen() {
+            return !overlay.hidden || overlay.classList.contains('is-open');
+        }
+
+        function photoSwipeDelta(event) {
+            const deltaX = Number(event.deltaX) || 0;
+            const deltaY = Number(event.deltaY) || 0;
+
+            if (event.shiftKey && Math.abs(deltaX) < Math.abs(deltaY)) {
+                return deltaY;
+            }
+
+            return Math.abs(deltaX) >= Math.abs(deltaY) ? deltaX : deltaY;
+        }
+
+        window.addEventListener('wheel', (event) => {
+            if (!overlayIsOpen() || currentAlbumThumbs.length <= 1) {
+                return;
+            }
+
+            const delta = photoSwipeDelta(event);
+            if (!delta) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (wheelNavigating) {
+                return;
+            }
+
+            wheelAccum += delta;
+            window.clearTimeout(wheelResetTimer);
+            wheelResetTimer = window.setTimeout(() => {
+                wheelAccum = 0;
+            }, 160);
+
+            if (Math.abs(wheelAccum) < 24) {
+                return;
+            }
+
+            navigatePhoto(wheelAccum > 0 ? 1 : -1);
+            wheelAccum = 0;
+            wheelNavigating = true;
+            window.setTimeout(() => {
+                wheelNavigating = false;
+            }, 360);
+        }, { passive: false, capture: true });
 
         document.addEventListener('keydown', (event) => {
             if (!overlay.classList.contains('is-open')) {
@@ -2066,8 +2114,23 @@
             return year * 12 + month;
         }
 
+        function footstepsHref(place, photoSrc) {
+            const params = new URLSearchParams();
+
+            if (place?.name) {
+                params.set('place', place.name);
+            }
+
+            if (photoSrc) {
+                params.set('photo', photoSrc);
+            }
+
+            const query = params.toString();
+            return query ? `footsteps.html?${query}` : 'footsteps.html';
+        }
+
         function buildPhotoCaptionElement(photo) {
-            const caption = document.createElement('p');
+            const caption = document.createElement('a');
             caption.className = 'photo-caption';
             caption.dataset.photoSrc = photo.src;
             caption.textContent = photo.caption || '';
@@ -2094,15 +2157,10 @@
                 caption.classList.toggle('is-linked', isLinked);
 
                 if (isLinked) {
-                    caption.setAttribute('role', 'button');
-                    caption.setAttribute('tabindex', '0');
-                    caption.setAttribute(
-                        'aria-label',
-                        `Show ${caption.textContent} on footsteps map`
-                    );
-            } else {
-                    caption.removeAttribute('role');
-                    caption.removeAttribute('tabindex');
+                    caption.href = footstepsHref(place, caption.dataset.photoSrc);
+                    caption.setAttribute('aria-label', `Open ${place.name} in footsteps`);
+                } else {
+                    caption.removeAttribute('href');
                     caption.removeAttribute('aria-label');
                 }
             });
@@ -2253,30 +2311,6 @@
                 thumb.addEventListener('click', () => {
                     openPreview(thumb);
                     thumb.blur();
-                });
-            });
-
-            root.querySelectorAll('.photo-caption[data-photo-src]').forEach((caption) => {
-                const openLinkedPlace = (event) => {
-                    if (!caption.classList.contains('is-linked')) {
-                        return;
-                    }
-
-                    event.stopPropagation();
-                    const place = placeByPhotoSrc.get(caption.dataset.photoSrc);
-
-                    if (place) {
-                        focusPlaceOnMap(place);
-                        caption.blur();
-                    }
-                };
-
-                caption.addEventListener('click', openLinkedPlace);
-                caption.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        openLinkedPlace(event);
-                    }
                 });
             });
         }

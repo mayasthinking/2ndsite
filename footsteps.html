@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Maya's footsteps: a map of places in New York City.">
-    <script src="paper-time.js?v=7"></script>
+    <script src="paper-time.js?v=9"></script>
     <title>footsteps</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -609,7 +609,11 @@
             shiftIntoFrame();
         }
 
-        function selectPin(pin, openPhoto = true) {
+        function queryParam(name) {
+            return new URLSearchParams(window.location.search).get(name) || "";
+        }
+
+        function selectPin(pin, openPhoto = true, photoSrc = "") {
             activePin = pin;
             draw();
 
@@ -617,11 +621,27 @@
                 return;
             }
 
-            const photo = pin.photos[0];
+            const photo = pin.photos.find((item) => item.src === photoSrc) || pin.photos[0];
             const src = photo.src || "";
             lightboxImage.src = `${src}${src.includes("?") ? "&" : "?"}view=full`;
             lightboxImage.alt = photo.alt || "";
             lightboxEl.hidden = false;
+        }
+
+        function focusRequestedPin() {
+            const placeName = lowercaseName(queryParam("place"));
+            const photoSrc = String(queryParam("photo") || "").trim();
+
+            if (!placeName && !photoSrc) {
+                return;
+            }
+
+            const pin = pins.find((item) => lowercaseName(item.name) === placeName)
+                || pins.find((item) => item.photos?.some((photo) => photo.src === photoSrc));
+
+            if (pin) {
+                selectPin(pin, false);
+            }
         }
 
         function draw() {
@@ -769,10 +789,18 @@
                 });
             });
 
-            knownPlaces = (placesData.places || [])
-                .filter((place) => place.city === "nyc" && place.lat != null && place.lon != null)
+            const allPlaces = (placesData.places || [])
+                .filter((place) => place.lat != null && place.lon != null)
                 .slice()
                 .sort(comparePlacesByVisit);
+
+            const requestedName = lowercaseName(queryParam("place"));
+            const requestedPhoto = String(queryParam("photo") || "").trim();
+            const requestedPlace = allPlaces.find((place) => lowercaseName(place.name) === requestedName)
+                || allPlaces.find((place) => getPlacePhotos(place).includes(requestedPhoto));
+            const city = requestedPlace?.city || "nyc";
+
+            knownPlaces = allPlaces.filter((place) => place.city === city);
 
             pins = knownPlaces.map((place) => {
                 const photos = photosForPlace(place);
@@ -780,7 +808,7 @@
                     id: `place-${place.name}`,
                     source: "place",
                     name: place.name,
-                    address: "new york city",
+                    address: place.city === "paris" ? "paris" : "new york city",
                     lat: place.lat,
                     lon: place.lon,
                     mapOffset: place.mapOffset,
@@ -789,17 +817,19 @@
                 };
             });
 
-            readJson(STORAGE_PINS, []).forEach((pin) => {
-                if (!isInNyc(pin) || findNearbyPin(pin.lat, pin.lon)) {
-                    return;
-                }
+            if (city === "nyc") {
+                readJson(STORAGE_PINS, []).forEach((pin) => {
+                    if (!isInNyc(pin) || findNearbyPin(pin.lat, pin.lon)) {
+                        return;
+                    }
 
-                pins.push({
-                    ...pin,
-                    source: "drop",
-                    photos: photosNear(pin.lat, pin.lon)
+                    pins.push({
+                        ...pin,
+                        source: "drop",
+                        photos: photosNear(pin.lat, pin.lon)
+                    });
                 });
-            });
+            }
         }
 
         svg.addEventListener("click", (event) => {
@@ -844,7 +874,10 @@
 
         window.addEventListener("resize", draw);
 
-        Promise.all([loadCollections(), document.fonts.ready]).then(draw);
+        Promise.all([loadCollections(), document.fonts.ready]).then(() => {
+            draw();
+            focusRequestedPin();
+        });
     </script>
 </body>
 </html>
