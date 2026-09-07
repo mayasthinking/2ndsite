@@ -89,6 +89,12 @@ test("romantic wash genre queries stay source-aware", () => {
   assert.equal(met, "romantic wash");
 });
 
+test("an empty romantic wash view keeps the curated tray from mixing in other seeds", async () => {
+  const library = await readFile(new URL("../compositions/library.js", import.meta.url), "utf8");
+  assert.match(library, /includeRankedSeeds/);
+  assert.match(library, /genreFilter !== CURATED_GENRE/);
+});
+
 test("the library opens on a romantic wash tray and stays unlinked from the studio", async () => {
   const [library, studio] = await Promise.all([
     readFile(new URL("../compositions/library.html", import.meta.url), "utf8"),

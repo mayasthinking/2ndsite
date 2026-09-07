@@ -310,7 +310,10 @@ function interleaveSources(items) {
 function currentVisibleResults(query, queryEmbedding = null) {
   const curated = curatedShelfItems();
   const known = new Set(curated.map((item) => item.id));
-  const seed = rankedSeed(query, queryEmbedding).filter((item) => !known.has(item.id));
+  const includeRankedSeeds = Boolean(currentQuery) || genreFilter !== CURATED_GENRE;
+  const seed = includeRankedSeeds
+    ? rankedSeed(query, queryEmbedding).filter((item) => !known.has(item.id))
+    : [];
   seed.forEach((item) => known.add(item.id));
   const remote = interleaveSources(remoteResults.filter((item) => !known.has(item.id)));
   return [...curated, ...seed, ...remote]
