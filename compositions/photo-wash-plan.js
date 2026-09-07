@@ -245,24 +245,41 @@ function planMarks(data, cells, size, rand, wet, brushType, tint = null, tintAmt
 
   const scale = size / cells;
   const marks = [];
+  const chalky = brushType === "charcoal" || brushType === "crayon";
+  const fine = brushType === "2H" || brushType === "cpencil";
+  const bold = brushType === "marker" || brushType === "2B";
   for (const dab of dabs) {
     const pigment = pigmentize(dab.color, wet, tint, tintAmt);
     const wash = Boolean(dab.wash);
     const tight = !wash && (dab.range > 22 || dab.area < 20);
+    let opacity = wash
+      ? clamp(72 + (1 - dab.luma) * 46, 58, 128)
+      : clamp((tight ? 150 : 124) + (1 - dab.luma) * 52, 108, 214);
+    if (chalky) opacity = clamp(opacity * 1.18, 90, 235);
+    else if (fine) opacity = clamp(opacity * 0.78, 48, 170);
+    else if (bold) opacity = clamp(opacity * 1.12, 80, 230);
+    else if (brushType === "spray") opacity = clamp(opacity * 0.62, 40, 150);
     marks.push({
       kind: "poly",
-      pts: cellPoly(dab, scale, rand, tight),
+      pts: cellPoly(dab, scale, rand, tight || fine),
       hex: toHex(pigment),
-      opacity: wash
-        ? clamp(72 + (1 - dab.luma) * 46, 58, 128)
-        : clamp((tight ? 150 : 124) + (1 - dab.luma) * 52, 108, 214),
-      bleed: wet ? (wash ? 0.3 : tight ? 0.12 : 0.2) : 0.08,
-      texture: wet ? (tight ? 0.38 : 0.3) : 0.34,
-      border: wet ? (tight ? 0.32 : 0.22) : 0.26,
+      opacity,
+      bleed: wet ? (wash ? 0.3 : tight ? 0.12 : 0.2) : chalky ? 0.04 : 0.08,
+      texture: wet ? (tight ? 0.38 : 0.3) : chalky ? 0.55 : 0.34,
+      border: wet ? (tight ? 0.32 : 0.22) : chalky ? 0.4 : 0.26,
     });
   }
 
-  const lineBudget = brushType === "2H" || brushType === "cpencil" ? 48 : brushType === "marker" ? 28 : 36;
+  const lineBudget =
+    brushType === "2H" || brushType === "cpencil"
+      ? 56
+      : brushType === "charcoal"
+        ? 44
+        : brushType === "marker"
+          ? 24
+          : brushType === "spray"
+            ? 18
+            : 36;
   const edges = [];
   for (let y = 1; y < cells - 1; y++) {
     for (let x = 1; x < cells - 1; x++) {
@@ -303,7 +320,19 @@ function planMarks(data, cells, size, rand, wet, brushType, tint = null, tintAmt
         g: pigment.g * 0.78,
         b: pigment.b * 0.78,
       }),
-      weight: wet ? (brushType === "marker" ? 0.7 : 0.38) : brushType === "charcoal" ? 0.72 : 0.5,
+      weight: wet
+        ? brushType === "marker"
+          ? 0.85
+          : brushType === "2B"
+            ? 0.55
+            : fine
+              ? 0.22
+              : 0.38
+        : chalky
+          ? 0.92
+          : brushType === "spray"
+            ? 1.35
+            : 0.5,
     });
     drawn += 1;
   }
@@ -316,7 +345,8 @@ export function planFromPixels(data, cells, size, seed, effects) {
   const wet = !["charcoal", "cpencil", "crayon", "spray"].includes(e.brushType);
   const tintHex = e.color ? oklchToHex(e.color) : null;
   const tint = tintHex ? hexToRgb(tintHex) : null;
-  const tintAmt = tint ? 0.18 + (Number(e.pigment) || 0.5) * 0.54 : 0;
+  // Keep pigment mixes strong enough that mobile color taps read clearly in the fast preview.
+  const tintAmt = tint ? 0.28 + (Number(e.pigment) || 0.5) * 0.55 : 0;
   return planMarks(
     data,
     cells,

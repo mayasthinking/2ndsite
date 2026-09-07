@@ -1,8 +1,8 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { imageWork } from "./image-work.js?v=5";
-import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=5";
+import { imageWork } from "./image-work.js?v=6";
+import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=6";
 const sceneEl = document.querySelector("#scene");
 const sceneRow = document.querySelector(".scene-row");
 const sceneCaption = document.querySelector("#sceneCaption");
@@ -1620,12 +1620,9 @@ function queuePaint(id, { replace = false } = {}) {
     veil.textContent = "pigment settling…";
   }
   if (isPhone() && rec.item.photo && !rec.fastPreviewFailed) {
-    // Fast path shows brush/color immediately; effect edits also queue the full brush renderer.
+    // Phone photo washes stay on the fast canvas preview so brush/color taps
+    // update immediately. The full p5 renderer is too heavy and can wipe the sheet blank.
     queuePhotoPreview(id);
-    if (replace) {
-      if (!paintQueue.includes(id)) paintQueue.push(id);
-      drainQueue();
-    }
     return;
   }
   if (!paintQueue.includes(id)) paintQueue.push(id);

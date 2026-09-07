@@ -1,4 +1,4 @@
-import { CELLS, averageHex, blobToDataUrl, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=5";
+import { CELLS, averageHex, blobToDataUrl, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=6";
 
 async function sourceFrom(payload) {
   if (payload.bitmap) return payload.bitmap;
@@ -57,31 +57,42 @@ function fillPolygon(ctx, points) {
 async function renderWash(payload) {
   const size = payload.size || 720;
   const pixels = await previewSource(payload.photo);
-  const marks = planFromPixels(pixels, CELLS, size, payload.seed, payload.effects);
+  const effects = payload.effects || {};
+  const brushType = effects.brushType || "HB";
+  const wet = !["charcoal", "cpencil", "crayon", "spray"].includes(brushType);
+  const chalky = brushType === "charcoal" || brushType === "crayon";
+  const fine = brushType === "2H" || brushType === "cpencil";
+  const marks = planFromPixels(pixels, CELLS, size, payload.seed, effects);
   const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = "#f3eee4";
   ctx.fillRect(0, 0, size, size);
   ctx.globalCompositeOperation = "multiply";
 
+  const baseBlur = wet ? Math.max(0.9, size / 640) : chalky ? Math.max(0.25, size / 1600) : Math.max(0.45, size / 1100);
+  const fillAlpha = wet ? 0.58 : chalky ? 0.78 : fine ? 0.42 : brushType === "spray" ? 0.34 : 0.64;
+  const secondPass = wet ? 0.42 : chalky ? 0.55 : fine ? 0.28 : 0.38;
+
   for (const mark of marks) {
     if (mark.kind !== "poly") continue;
     ctx.fillStyle = mark.hex;
-    ctx.globalAlpha = Math.min(0.72, (mark.opacity / 255) * 0.58);
-    ctx.filter = `blur(${Math.max(0.7, size / 720)}px)`;
+    ctx.globalAlpha = Math.min(0.82, (mark.opacity / 255) * fillAlpha);
+    ctx.filter = `blur(${baseBlur}px)`;
     fillPolygon(ctx, mark.pts);
-    ctx.filter = "none";
-    ctx.globalAlpha *= 0.42;
+    ctx.filter = chalky ? `blur(${Math.max(0.15, baseBlur * 0.35)}px)` : "none";
+    ctx.globalAlpha *= secondPass;
     fillPolygon(ctx, mark.pts);
   }
 
   ctx.filter = "none";
-  ctx.lineCap = "round";
+  ctx.lineCap = chalky ? "square" : "round";
+  const lineAlpha = wet ? 0.48 : chalky ? 0.72 : fine ? 0.58 : 0.52;
+  const lineScale = wet ? 1.6 : chalky ? 2.4 : fine ? 1.05 : brushType === "spray" ? 3.2 : 1.9;
   for (const mark of marks) {
     if (mark.kind !== "line") continue;
     ctx.strokeStyle = mark.hex;
-    ctx.globalAlpha = 0.48;
-    ctx.lineWidth = Math.max(0.7, mark.weight * 1.6);
+    ctx.globalAlpha = lineAlpha;
+    ctx.lineWidth = Math.max(0.55, mark.weight * lineScale);
     ctx.beginPath();
     ctx.moveTo(mark.x1, mark.y1);
     ctx.lineTo(mark.x2, mark.y2);
