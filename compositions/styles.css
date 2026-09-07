@@ -3665,8 +3665,9 @@ body.is-sheet-open {
     position: absolute;
     left: calc(var(--value) * 1%);
     top: 50%;
-    width: 7px;
-    height: 7px;
+    width: 9px;
+    height: 9px;
+    box-sizing: border-box;
     border: 1px solid var(--hover);
     border-radius: 50%;
     background: var(--paper);
