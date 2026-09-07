@@ -3211,7 +3211,7 @@ body.is-sheet-open {
 
   .wall {
     display: grid;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-height: 0;
     padding: 8px 0 0;
   }
@@ -3244,13 +3244,48 @@ body.is-sheet-open {
     grid-template-rows: minmax(0, 1fr);
   }
 
-  .wall:has(.sheet:only-child) .sheet,
-  .wall:has(.sheet:only-child) .frame {
-    height: 100%;
+  /* One variation at a time — stacked sheets were overlapping expand/save chrome. */
+  .wall .sheet:not(.active) {
+    display: none;
   }
 
-  .wall:has(.sheet:only-child) .frame {
+  .wall .sheet.active {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .wall .sheet.active .frame {
+    height: 100%;
+    min-height: 0;
     aspect-ratio: auto;
+  }
+
+  .variation-pager {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 2px 0 0;
+  }
+
+  .wall:has(.sheet.active):has(.sheet:nth-child(2)) .variation-pager {
+    display: flex;
+  }
+
+  .variation-dot {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--ink) 18%, transparent);
+    cursor: pointer;
+  }
+
+  .variation-dot.is-active {
+    background: var(--hover);
   }
 
   .mobile-sheet {
@@ -3665,8 +3700,9 @@ body.is-sheet-open {
     position: absolute;
     left: calc(var(--value) * 1%);
     top: 50%;
-    width: 7px;
-    height: 7px;
+    width: 9px;
+    height: 9px;
+    box-sizing: border-box;
     border: 1px solid var(--hover);
     border-radius: 50%;
     background: var(--paper);
@@ -3781,6 +3817,10 @@ body.is-sheet-open {
 }
 
 @media (max-width: 720px) and (min-width: 560px) {
+  .wall .grid {
+    grid-template-columns: 1fr;
+  }
+
   .grid {
     grid-template-columns: 1fr 1fr;
   }

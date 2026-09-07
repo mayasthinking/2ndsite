@@ -1820,6 +1820,7 @@ function renderGrid(items) {
 
   const first = items.find((item) => item.code || item.photo);
   if (first) selectPainting(first.id);
+  else syncMobileVariationPager();
   drainPhotoPreviews();
   drainQueue();
 }
@@ -1911,12 +1912,90 @@ function selectPainting(id) {
   for (const sheet of wallEl.querySelectorAll(".sheet")) {
     sheet.classList.toggle("active", sheet.dataset.id === id);
   }
+  syncMobileVariationPager();
   const rec = cards.get(id);
   if (!rec?.item) return;
   rec.item.effects = sheetEffects(rec);
   applyEffectsToControls(rec.item.effects);
   syncSheetEditor(rec);
   syncMobileEditor(rec);
+}
+
+function syncMobileVariationPager() {
+  if (!wallEl) return;
+  const sheets = [...wallEl.querySelectorAll(".sheet")];
+  let pager = wallEl.querySelector(".variation-pager");
+  if (!isPhone() || sheets.length < 2) {
+    pager?.remove();
+    return;
+  }
+  if (!pager) {
+    pager = document.createElement("div");
+    pager.className = "variation-pager";
+    pager.setAttribute("role", "tablist");
+    pager.setAttribute("aria-label", "variations");
+    wallEl.append(pager);
+  }
+  pager.innerHTML = "";
+  for (const [index, sheet] of sheets.entries()) {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "variation-dot";
+    if (sheet.classList.contains("active")) dot.classList.add("is-active");
+    dot.setAttribute("role", "tab");
+    dot.setAttribute("aria-label", `variation ${index + 1}`);
+    dot.setAttribute("aria-selected", sheet.classList.contains("active") ? "true" : "false");
+    dot.addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectPainting(sheet.dataset.id);
+    });
+    pager.append(dot);
+  }
+}
+
+function stepMobileVariation(delta) {
+  if (!isPhone() || !wallEl) return;
+  const sheets = [...wallEl.querySelectorAll(".sheet")];
+  if (sheets.length < 2) return;
+  const ids = sheets.map((sheet) => sheet.dataset.id);
+  const index = Math.max(0, ids.indexOf(selectedId));
+  const next = ids[(index + delta + ids.length) % ids.length];
+  if (next) selectPainting(next);
+}
+
+function mountMobileVariationSwipe() {
+  if (!wallEl) return;
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  wallEl.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (!isPhone()) return;
+      if (event.target.closest("button, a, input, select, .variation-pager, .mobile-sheet")) return;
+      if (wallEl.querySelectorAll(".sheet").length < 2) return;
+      startX = event.clientX;
+      startY = event.clientY;
+      tracking = true;
+    },
+    { passive: true }
+  );
+
+  wallEl.addEventListener("pointerup", (event) => {
+    if (!tracking) return;
+    tracking = false;
+    if (!isPhone()) return;
+    if (wallEl.querySelector(".frame.is-carrying, .frame.is-nudging")) return;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+    stepMobileVariation(dx < 0 ? 1 : -1);
+  });
+
+  wallEl.addEventListener("pointercancel", () => {
+    tracking = false;
+  });
 }
 
 async function renderBuiltInSample(sampleId, prompt) {
@@ -2239,6 +2318,7 @@ mountMobileEditor();
 mountModeSwitch();
 fitPaintKit();
 mountMobileSheet();
+mountMobileVariationSwipe();
 sizeScene();
 mountDeskScroll();
 mountDeskResize();
