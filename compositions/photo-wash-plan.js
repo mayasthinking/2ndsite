@@ -1,4 +1,5 @@
 import { clampEffects } from "./effect-model.js?v=15";
+import { oklchToHex, hexToRgb } from "./color.js";
 
 export const PAPER = { r: 243, g: 238, b: 228 };
 export const CELLS = 96;
@@ -64,8 +65,16 @@ function toHex(c) {
   return `#${hex(c.r)}${hex(c.g)}${hex(c.b)}`;
 }
 
-function pigmentize(c, wet) {
-  const hsl = rgbToHsl(c);
+function pigmentize(c, wet, tint = null, tintAmt = 0) {
+  let base = c;
+  if (tint && tintAmt > 0) {
+    base = {
+      r: c.r + (tint.r - c.r) * tintAmt,
+      g: c.g + (tint.g - c.g) * tintAmt,
+      b: c.b + (tint.b - c.b) * tintAmt,
+    };
+  }
+  const hsl = rgbToHsl(base);
   const sat = Math.min(1, hsl.s * (wet ? 1.16 : 1.06) + (hsl.s > 0.04 ? 0.03 : 0));
   const light = clamp(hsl.l * (wet ? 0.96 : 0.92), 0.06, 0.9);
   return hslToRgb(hsl.h, sat, light);
@@ -230,14 +239,14 @@ function colorDelta(a, b) {
   return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b) / 255;
 }
 
-function planMarks(data, cells, size, rand, wet, brushType) {
+function planMarks(data, cells, size, rand, wet, brushType, tint = null, tintAmt = 0) {
   const dabs = collectDabs(data, cells);
   dabs.sort((a, b) => Number(b.wash) - Number(a.wash) || b.area - a.area || a.luma - b.luma);
 
   const scale = size / cells;
   const marks = [];
   for (const dab of dabs) {
-    const pigment = pigmentize(dab.color, wet);
+    const pigment = pigmentize(dab.color, wet, tint, tintAmt);
     const wash = Boolean(dab.wash);
     const tight = !wash && (dab.range > 22 || dab.area < 20);
     marks.push({
@@ -253,7 +262,7 @@ function planMarks(data, cells, size, rand, wet, brushType) {
     });
   }
 
-  const lineBudget = brushType === "2H" || brushType === "cpencil" ? 48 : 36;
+  const lineBudget = brushType === "2H" || brushType === "cpencil" ? 48 : brushType === "marker" ? 28 : 36;
   const edges = [];
   for (let y = 1; y < cells - 1; y++) {
     for (let x = 1; x < cells - 1; x++) {
@@ -282,7 +291,7 @@ function planMarks(data, cells, size, rand, wet, brushType) {
     const edge = edges[i];
     const nlen = Math.hypot(-edge.gy, edge.gx) || 1;
     const len = scale * (0.45 + edge.mag * 0.9);
-    const pigment = pigmentize(edge.color, wet);
+    const pigment = pigmentize(edge.color, wet, tint, tintAmt);
     marks.push({
       kind: "line",
       x1: (edge.x + 0.5) * scale - (-edge.gy / nlen) * len,
@@ -294,7 +303,7 @@ function planMarks(data, cells, size, rand, wet, brushType) {
         g: pigment.g * 0.78,
         b: pigment.b * 0.78,
       }),
-      weight: wet ? 0.38 : 0.5,
+      weight: wet ? (brushType === "marker" ? 0.7 : 0.38) : brushType === "charcoal" ? 0.72 : 0.5,
     });
     drawn += 1;
   }
@@ -305,7 +314,19 @@ function planMarks(data, cells, size, rand, wet, brushType) {
 export function planFromPixels(data, cells, size, seed, effects) {
   const e = clampEffects(effects || {});
   const wet = !["charcoal", "cpencil", "crayon", "spray"].includes(e.brushType);
-  return planMarks(data, cells, size, mulberry32(Number(seed) || 1), wet, e.brushType || "HB");
+  const tintHex = e.color ? oklchToHex(e.color) : null;
+  const tint = tintHex ? hexToRgb(tintHex) : null;
+  const tintAmt = tint ? 0.18 + (Number(e.pigment) || 0.5) * 0.54 : 0;
+  return planMarks(
+    data,
+    cells,
+    size,
+    mulberry32(Number(seed) || 1),
+    wet,
+    e.brushType || "HB",
+    tint,
+    tintAmt
+  );
 }
 
 export function averageHex(source) {

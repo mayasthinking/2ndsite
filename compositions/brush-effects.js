@@ -178,9 +178,10 @@ function endMass(used) {
 function styleColor(color, e) {
   let ok = parseColor(color) || parseColor("#8b2f32");
   if (window.__photoPaint) {
-    ok = saturate(ok, amp(e.density, 1.05, 1.28));
+    ok = saturate(ok, amp(e.density, 1.05, 1.28) * amp(e.pigment, 0.88, 1.32));
     const pigment = parseColor(e.color);
-    if (pigment) ok = mixOklch(ok, pigment, amp(e.intimacy, 0.04, 0.18));
+    // Mix the chosen pigment into photo-derived marks so mobile color picks are visible.
+    if (pigment) ok = mixOklch(ok, pigment, amp(e.pigment, 0.18, 0.72));
     return oklchToHex(ok);
   }
   const pigment = parseColor(e.color);

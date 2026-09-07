@@ -1,4 +1,4 @@
-import { CELLS, averageHex, blobToDataUrl, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
+import { CELLS, averageHex, blobToDataUrl, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=5";
 
 async function sourceFrom(payload) {
   if (payload.bitmap) return payload.bitmap;

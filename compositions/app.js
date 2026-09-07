@@ -1,8 +1,8 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { imageWork } from "./image-work.js?v=4";
-import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
+import { imageWork } from "./image-work.js?v=5";
+import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=5";
 const sceneEl = document.querySelector("#scene");
 const sceneRow = document.querySelector(".scene-row");
 const sceneCaption = document.querySelector("#sceneCaption");
@@ -1497,7 +1497,10 @@ function scheduleSheetRender(id) {
 
 function flushEffects() {
   if (!dirtyIds.size) return;
-  if (paintingNow) return;
+  if (paintingNow) {
+    effectTimer = setTimeout(flushEffects, 280);
+    return;
+  }
   const ids = [...dirtyIds];
   dirtyIds.clear();
   for (const id of ids) {
@@ -1579,7 +1582,13 @@ async function drainPhotoPreviews() {
       size: PAINT_SIZE,
       effects: sheetEffects(rec),
     });
-    if (dataUrl && cards.get(id) === rec) applyPaintedData(rec, dataUrl, 1);
+    if (dataUrl && cards.get(id) === rec) {
+      applyPaintedData(rec, dataUrl, 1);
+      // Keep the adjusting state if a full-quality paint is still pending.
+      if (paintQueue.includes(id) || waitingId === id || paintingNow) {
+        rec.sheet.classList.add("is-adjusting");
+      }
+    }
   } catch (err) {
     rec.fastPreviewFailed = true;
     if (cards.get(id) === rec && !paintQueue.includes(id)) {
@@ -1611,7 +1620,12 @@ function queuePaint(id, { replace = false } = {}) {
     veil.textContent = "pigment settling…";
   }
   if (isPhone() && rec.item.photo && !rec.fastPreviewFailed) {
+    // Fast path shows brush/color immediately; effect edits also queue the full brush renderer.
     queuePhotoPreview(id);
+    if (replace) {
+      if (!paintQueue.includes(id)) paintQueue.push(id);
+      drainQueue();
+    }
     return;
   }
   if (!paintQueue.includes(id)) paintQueue.push(id);
