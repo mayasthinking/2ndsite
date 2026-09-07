@@ -3429,7 +3429,8 @@ body.is-sheet-open {
     0 12px 34px rgba(36, 33, 31, 0.055);
 }
 
-.library-card.is-semantic {
+.library-card.is-semantic,
+.library-card.is-curated {
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--hover) 24%, transparent),
     0 12px 34px rgba(36, 33, 31, 0.055);

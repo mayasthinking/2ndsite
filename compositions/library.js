@@ -22,11 +22,14 @@ import {
 
 const STORAGE_KEY = "compositions.library.kept.v2";
 const MODEL_MODULE = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/+esm";
+const CURATED_GENRE = "romantic-wash";
 const searchForm = document.querySelector("#librarySearch");
 const queryInput = document.querySelector("#libraryQuery");
 const statusEl = document.querySelector("#libraryStatus");
 const gridEl = document.querySelector("#libraryGrid");
 const resultCountEl = document.querySelector("#resultCount");
+const resultsEyebrow = document.querySelector("#resultsEyebrow");
+const resultsTitle = document.querySelector("#resultsTitle");
 const moreButton = document.querySelector("#libraryMore");
 const keptListEl = document.querySelector("#keptList");
 const keptEmptyEl = document.querySelector("#keptEmpty");
@@ -35,12 +38,13 @@ const exportButton = document.querySelector("#exportKept");
 
 let licenseFilter = "public-domain";
 let sourceFilter = "both";
-let genreFilter = "";
+let genreFilter = CURATED_GENRE;
 let exportFormat = "json";
 let continuations = { commons: null, met: null };
 let currentQuery = "";
 let remoteResults = [];
 let seedRecords = [];
+let curatedRecords = [];
 let semanticIndex = {};
 let semanticPipelinePromise = null;
 let requestController = null;
@@ -82,18 +86,37 @@ function parseJsonl(content) {
     .map((line) => JSON.parse(line));
 }
 
+function recordSourceKind(record) {
+  const source = String(record.source || "").toLowerCase();
+  if (source === "met" || source === "met open access") return "met";
+  return "commons";
+}
+
+function displaySource(record) {
+  return recordSourceKind(record) === "met" ? "met open access" : "wikimedia commons";
+}
+
+function isCuratedRecord(record) {
+  return record.is_curated === true || record.category === "romantic wash";
+}
+
+function seedMatchesSource(record) {
+  return sourceFilter === "both" || recordSourceKind(record) === sourceFilter;
+}
+
 function seedToItem(record) {
   return {
     id: record.id,
-    source: "wikimedia commons",
+    source: displaySource(record),
     sourceUrl: record.source_url,
     imageUrl: record.image_url,
     thumbnailUrl: record.thumbnail_url || record.image_url,
     title: record.title,
-    artist: record.credit,
-    credit: record.credit,
+    artist: record.artist || record.credit,
+    credit: record.credit || record.artist,
     license: record.license,
     licenseUrl: record.license_url,
+    licenseNote: record.license_note || null,
     retrievedAt: record.retrieved_at,
     ocrText: record.ocr_text,
     ocrStatus: record.ocr_status,
@@ -103,22 +126,42 @@ function seedToItem(record) {
     width: record.width,
     height: record.height,
     category: record.category,
+    provenance: record.provenance || null,
     semanticScore: record.semanticScore,
     isSeed: true,
+    isCurated: isCuratedRecord(record),
   };
 }
 
 async function loadSeed() {
+  const [recordsResponse, curatedResponse, indexResponse] = await Promise.allSettled([
+    fetch("data/seed/commons-seed.jsonl"),
+    fetch("data/seed/romantic-wash-seed.jsonl"),
+    fetch("data/seed/semantic-index.json"),
+  ]);
   try {
-    const [recordsResponse, indexResponse] = await Promise.all([
-      fetch("data/seed/commons-seed.jsonl"),
-      fetch("data/seed/semantic-index.json"),
-    ]);
-    if (!recordsResponse.ok || !indexResponse.ok) throw new Error("seed unavailable");
-    seedRecords = parseJsonl(await recordsResponse.text());
-    semanticIndex = (await indexResponse.json()).vectors || {};
+    curatedRecords =
+      curatedResponse.status === "fulfilled" && curatedResponse.value.ok
+        ? parseJsonl(await curatedResponse.value.text())
+        : [];
   } catch {
-    seedRecords = [];
+    curatedRecords = [];
+  }
+  try {
+    const commonsRecords =
+      recordsResponse.status === "fulfilled" && recordsResponse.value.ok
+        ? parseJsonl(await recordsResponse.value.text())
+        : [];
+    seedRecords = [...commonsRecords, ...curatedRecords];
+  } catch {
+    seedRecords = curatedRecords;
+  }
+  try {
+    semanticIndex =
+      indexResponse.status === "fulfilled" && indexResponse.value.ok
+        ? (await indexResponse.value.json()).vectors || {}
+        : {};
+  } catch {
     semanticIndex = {};
   }
 }
@@ -231,17 +274,24 @@ function selectedSources() {
   return sourceFilter === "both" ? ["commons", "met"] : [sourceFilter];
 }
 
+function licenseOk(record) {
+  return licenseFilter !== "cc0" || record.license === "cc0";
+}
+
+function curatedShelfItems() {
+  if (genreFilter !== CURATED_GENRE) return [];
+  return curatedRecords
+    .filter(seedMatchesSource)
+    .filter(licenseOk)
+    .map((record) => seedToItem({ ...record, semanticScore: 1 }));
+}
+
 function rankedSeed(query, queryEmbedding = null) {
-  if (sourceFilter === "met") return [];
-  return rankSeedRecords(
-    query,
-    seedRecords.filter((record) => licenseFilter !== "cc0" || record.license === "cc0"),
-    semanticIndex,
-    queryEmbedding,
-    genreFilter,
-  )
-    .filter((record) => record.semanticScore > 0.08)
-    .slice(0, 12)
+  const pool = seedRecords.filter(seedMatchesSource).filter(licenseOk);
+  const limit = genreFilter === CURATED_GENRE ? 20 : 12;
+  return rankSeedRecords(query, pool, semanticIndex, queryEmbedding, genreFilter)
+    .filter((record) => record.semanticScore > 0.08 || isCuratedRecord(record))
+    .slice(0, limit)
     .map(seedToItem);
 }
 
@@ -258,10 +308,12 @@ function interleaveSources(items) {
 }
 
 function currentVisibleResults(query, queryEmbedding = null) {
-  const seed = rankedSeed(query, queryEmbedding);
-  const known = new Set(seed.map((item) => item.id));
+  const curated = curatedShelfItems();
+  const known = new Set(curated.map((item) => item.id));
+  const seed = rankedSeed(query, queryEmbedding).filter((item) => !known.has(item.id));
+  seed.forEach((item) => known.add(item.id));
   const remote = interleaveSources(remoteResults.filter((item) => !known.has(item.id)));
-  return [...seed, ...remote]
+  return [...curated, ...seed, ...remote]
     .filter((item) => licenseFilter !== "cc0" || item.license === "cc0")
     .filter((item) => !skipped.has(item.id));
 }
@@ -299,6 +351,16 @@ async function rerankWithModel(query, sequence) {
   }
 }
 
+function updateWallCopy() {
+  if (genreFilter === CURATED_GENRE) {
+    if (resultsEyebrow) resultsEyebrow.textContent = "curated tray · met open access + commons";
+    if (resultsTitle) resultsTitle.textContent = "romantic wash";
+    return;
+  }
+  if (resultsEyebrow) resultsEyebrow.textContent = "caption index + commons + met open access";
+  if (resultsTitle) resultsTitle.textContent = "meaning shelves";
+}
+
 async function searchLibrary({ append = false } = {}) {
   const search = queryInput.value.trim();
   if (!search && !genreFilter) {
@@ -307,6 +369,25 @@ async function searchLibrary({ append = false } = {}) {
     return;
   }
   const rankQuery = genreSearchQuery(search, genreFilter, "semantic");
+  if (!search && genreFilter === CURATED_GENRE && !append) {
+    requestController?.abort();
+    requestController = null;
+    searchSequence += 1;
+    currentQuery = "";
+    remoteResults = [];
+    continuations = { commons: null, met: null };
+    skipped.clear();
+    updateWallCopy();
+    renderResults(rankQuery);
+    const curatedCount = curatedShelfItems().filter((item) => !skipped.has(item.id)).length;
+    setStatus(
+      curatedCount
+        ? `${curatedCount} curated romantic washes ready to browse or keep.`
+        : "the romantic wash tray is quiet right now.",
+    );
+    moreButton.hidden = true;
+    return;
+  }
 
   requestController?.abort();
   requestController = new AbortController();
@@ -380,18 +461,25 @@ function renderResults(
   queryEmbedding = null,
   modelRanked = false,
 ) {
+  updateWallCopy();
   gridEl.replaceChildren();
   const visible = currentVisibleResults(query, queryEmbedding);
   for (const item of visible) gridEl.append(createCandidateCard(item, modelRanked));
-  const seedCount = visible.filter((item) => item.isSeed).length;
+  const curatedCount = visible.filter((item) => item.isCurated).length;
+  const seedCount = visible.filter((item) => item.isSeed && !item.isCurated).length;
   resultCountEl.textContent = visible.length
-    ? `${seedCount} meaning ${seedCount === 1 ? "match" : "matches"} · ${visible.length} showing`
+    ? curatedCount && genreFilter === CURATED_GENRE
+      ? `${curatedCount} curated · ${visible.length} showing`
+      : `${seedCount + curatedCount} meaning ${seedCount + curatedCount === 1 ? "match" : "matches"} · ${visible.length} showing`
     : "";
   moreButton.hidden = !selectedSources().some((source) => continuations[source] !== null);
 }
 
 function createCandidateCard(item, modelRanked = false) {
-  const card = element("article", `library-card${item.isSeed ? " is-semantic" : ""}`);
+  const card = element(
+    "article",
+    `library-card${item.isCurated ? " is-curated" : item.isSeed ? " is-semantic" : ""}`,
+  );
   card.dataset.id = item.id;
 
   const frame = element("div", "frame library-frame");
@@ -412,11 +500,13 @@ function createCandidateCard(item, modelRanked = false) {
   const sourceLine = element(
     "span",
     "library-match",
-    item.isSeed
-      ? `${modelRanked ? "semantic" : "caption"} match · ${Math.round(item.semanticScore * 100)}%`
-      : item.semanticScore
-        ? `${item.source} rerank · ${Math.round(item.semanticScore * 100)}%`
-        : item.source,
+    item.isCurated
+      ? `curated romantic wash · ${item.source}`
+      : item.isSeed
+        ? `${modelRanked ? "semantic" : "caption"} match · ${Math.round(item.semanticScore * 100)}%`
+        : item.semanticScore
+          ? `${item.source} rerank · ${Math.round(item.semanticScore * 100)}%`
+          : item.source,
   );
   const title = element("a", "library-card-title", item.title);
   title.href = item.sourceUrl;

@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=180" />
+    <link rel="stylesheet" href="styles.css?v=181" />
   </head>
   <body class="library-body">
     <main class="library-studio">
@@ -29,7 +29,8 @@
               id="libraryQuery"
               name="q"
               type="search"
-              value="lonely kitchen at dusk"
+              value=""
+              placeholder="soft garden after rain"
               autocomplete="off"
               spellcheck="false"
             />
@@ -52,7 +53,8 @@
         <div class="library-filters" aria-labelledby="genreLabel">
           <span id="genreLabel">genre</span>
           <div class="chips" role="group" aria-label="artistic genre">
-            <button class="chip active" type="button" data-genre="">all</button>
+            <button class="chip" type="button" data-genre="">all</button>
+            <button class="chip active" type="button" data-genre="romantic-wash">romantic wash</button>
             <button class="chip" type="button" data-genre="impressionism">impressionism</button>
             <button class="chip" type="button" data-genre="still-life">still life</button>
             <button class="chip" type="button" data-genre="landscape">landscape</button>
@@ -106,8 +108,8 @@
       <section class="library-wall" aria-labelledby="resultsTitle">
         <header class="library-wall-head">
           <div>
-            <span class="library-eyebrow">caption index + commons + met open access</span>
-            <h2 id="resultsTitle">meaning shelves</h2>
+            <span class="library-eyebrow" id="resultsEyebrow">curated tray · met open access + commons</span>
+            <h2 id="resultsTitle">romantic wash</h2>
           </div>
           <span class="library-result-count" id="resultCount"></span>
         </header>
@@ -117,6 +119,6 @@
         </button>
       </section>
     </main>
-    <script type="module" src="library.js?v=7"></script>
+    <script type="module" src="library.js?v=8"></script>
   </body>
 </html>

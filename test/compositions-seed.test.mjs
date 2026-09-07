@@ -162,3 +162,9 @@ test("the public compositions studio does not expose the library route", async (
   assert.doesNotMatch(studio, /href=["'][^"']*library\.html/);
   assert.doesNotMatch(studio, /class=["'][^"']*library-entry/);
 });
+
+test("romantic wash is a first-class genre with wash vocabulary", () => {
+  const commons = genreSearchQuery("garden", "romantic-wash", "commons");
+  assert.match(commons, /^garden romantic wash /);
+  assert.match(commons, /watercolor|mist|airy/);
+});

@@ -5,6 +5,12 @@ Wikimedia Commons references across botanical plates, still life, landscape, int
 portrait studies, text-bearing images, patterns, and historical photography. Full-resolution
 images remain on Commons; no source binaries are committed here.
 
+`romantic-wash-seed.jsonl` is a smaller ready-to-browse tray of soft romantic public-domain
+watercolors and washes (Turner, Sargent, Fragonard, Homer, Morisot, Whistler). The library
+opens on the `romantic wash` genre chip so these works appear without a search. Records use
+`source` of `met` or `commons`, keep prompt-style captions, and leave museum provenance in
+metadata fields. Only Met Open Access / Commons public-domain files are included.
+
 ## Record format
 
 Each JSONL line has:
