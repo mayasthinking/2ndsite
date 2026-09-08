@@ -1,7 +1,7 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
-const STEP = 360 / BRUSH_TYPES.length;
-const DEG_PER_PX = 0.42;
+const STEP = 20;
+const DEG_PER_PX = 0.55;
 
 const TEXTURE = {
   HB: "dot",
@@ -57,10 +57,6 @@ export function mountBrushDial({ host, value, onChange }) {
   face.setAttribute("aria-valuemin", "0");
   face.setAttribute("aria-valuemax", String(BRUSH_TYPES.length - 1));
 
-  const band = document.createElement("div");
-  band.className = "brush-arc-band";
-  band.setAttribute("aria-hidden", "true");
-
   const track = document.createElement("div");
   track.className = "brush-arc-track";
   track.setAttribute("role", "listbox");
@@ -102,7 +98,7 @@ export function mountBrushDial({ host, value, onChange }) {
     track.append(tick);
   }
 
-  face.append(band, track, pointer, readout);
+  face.append(track, pointer, readout);
   host.append(face);
 
   function applyTurn(nextTurn, emit) {
@@ -123,7 +119,7 @@ export function mountBrushDial({ host, value, onChange }) {
       if (ang < 0) ang += 360;
       const fromApex = Math.min(ang, 360 - ang);
       tick.style.setProperty("--from", String(fromApex));
-      tick.classList.toggle("is-far", fromApex > 100);
+      tick.classList.toggle("is-far", fromApex > 58);
     }
     if (emit && name !== current) {
       current = name;

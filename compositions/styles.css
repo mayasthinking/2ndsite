@@ -1954,17 +1954,12 @@ select.choice-native {
   place-items: center;
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
 }
 
-.sheet-edit-brush-mark {
-  display: grid;
-  place-items: center;
-  width: 11px;
-  height: 11px;
+.sheet-edit-brush-face .lucide-icon {
+  display: block;
+  width: 12px;
+  height: 12px;
 }
 
 .sheet-edit-brush:hover,
@@ -1976,10 +1971,7 @@ select.choice-native {
 .sheet-edit-brush:hover .sheet-edit-brush-face,
 .sheet-edit-brush:focus-visible .sheet-edit-brush-face,
 .sheet-edit-brush[aria-expanded="true"] .sheet-edit-brush-face {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
-    0 0 0 1px var(--hover),
-    0 0 0 3px color-mix(in srgb, var(--hover) 16%, transparent);
+  color: inherit;
 }
 
 .brush-dot {
@@ -2048,10 +2040,6 @@ select.choice-native {
   border-radius: 1px 1px 2px 2px;
 }
 
-.sheet-edit-brush-mark .brush-dot {
-  transform: scale(0.86);
-}
-
 .sheet-color-menu {
   position: fixed;
   padding: 10px;
@@ -2066,10 +2054,11 @@ select.choice-native {
   border: 0;
   background: transparent;
   overflow: clip;
+  contain: layout paint;
   clip-path: inset(0);
-  --apex: 16px;
-  --radius: 170px;
-  --cy: 186px;
+  --apex: 8px;
+  --radius: 120px;
+  --cy: 80px;
   --turn: 0deg;
 }
 
@@ -2089,6 +2078,13 @@ select.choice-native {
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
+  border-radius: 999px 999px 18px 18px;
+  background: color-mix(in srgb, var(--paper) 54%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .brush-arc-face:focus-visible {
@@ -2098,43 +2094,6 @@ select.choice-native {
 
 .brush-arc-face.is-dragging {
   cursor: grabbing;
-}
-
-.brush-arc-band {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.brush-arc-band::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: var(--cy);
-  width: calc(var(--radius) * 2 + 52px);
-  height: calc(var(--radius) * 2 + 52px);
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 42%, transparent);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
-    0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  -webkit-mask: radial-gradient(
-    circle at center,
-    transparent calc(var(--radius) - 27px),
-    #000 calc(var(--radius) - 26px),
-    #000 calc(var(--radius) + 21px),
-    transparent calc(var(--radius) + 22px)
-  );
-  mask: radial-gradient(
-    circle at center,
-    transparent calc(var(--radius) - 27px),
-    #000 calc(var(--radius) - 26px),
-    #000 calc(var(--radius) + 21px),
-    transparent calc(var(--radius) + 22px)
-  );
 }
 
 .brush-arc-track {
@@ -2162,7 +2121,7 @@ select.choice-native {
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   transform: rotate(calc(var(--turn) + var(--tick) - 90deg));
-  opacity: clamp(0, calc(1.12 - var(--from) / 78), 1);
+  opacity: clamp(0, calc(1.15 - var(--from) / 48), 1);
 }
 
 .brush-arc-tick::after {
@@ -2602,7 +2561,7 @@ body:has(.frame.is-carrying) {
   height: 18px;
 }
 
-.sheet-stage .sheet-edit-brush-mark {
+.sheet-stage .sheet-edit-brush-face .lucide-icon {
   width: 14px;
   height: 14px;
 }
@@ -3176,7 +3135,7 @@ body.is-sheet-open {
     height: 22px;
   }
 
-  .sheet-edit-brush-mark {
+  .sheet-edit-brush-face .lucide-icon {
     width: 16px;
     height: 16px;
   }
@@ -3313,7 +3272,7 @@ body.is-sheet-open {
     height: 18px;
   }
 
-  .sheet-stage .sheet-edit-brush-mark {
+  .sheet-stage .sheet-edit-brush-face .lucide-icon {
     width: 13px;
     height: 13px;
   }

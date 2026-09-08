@@ -1,7 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial, paintBrushMark } from "./brush-dial.js?v=6";
+import { mountBrushDial } from "./brush-dial.js?v=7";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -756,7 +756,6 @@ function syncSheetEditor(rec) {
   if (brushBtn) {
     brushBtn.dataset.brush = brushName;
     brushBtn.setAttribute("aria-label", `brush, ${brushName.toLowerCase()}`);
-    paintBrushMark(brushBtn.querySelector(".sheet-edit-brush-mark"), brushName);
   }
   edit._colorPicker?.setValue(fx.color || DEFAULT_COLOR);
   edit._brushDial?.setValue(brushName);
@@ -939,17 +938,17 @@ function mountSheetEditor(sheet, item) {
     const view = viewSize();
     const staged = sheet.classList.contains("is-expanded");
     brushMenu.classList.toggle("is-stage", staged);
-    const width = Math.round(Math.max(220, Math.min(painting.width - 12, view.width - 16, staged ? 460 : 400)));
-    const height = Math.round(Math.max(96, Math.min(staged ? 138 : 122, painting.height * 0.38, view.height * 0.3)));
-    const apex = 16;
-    const radius = Math.round(Math.min(width * 0.52, height * 1.65));
+    const width = Math.round(Math.max(200, Math.min(painting.width - 20, view.width - 24, staged ? 320 : 280)));
+    const height = Math.round(Math.max(58, Math.min(staged ? 78 : 68, painting.height * 0.2, view.height * 0.18)));
+    const apex = 8;
+    const radius = Math.round(Math.min(width * 0.7, height * 2.15));
     brushMenu.style.width = `${width}px`;
     brushMenu.style.height = `${height}px`;
     brushMenu.style.setProperty("--apex", `${apex}px`);
     brushMenu.style.setProperty("--radius", `${radius}px`);
-    brushMenu.style.setProperty("--cy", `${apex + radius}px`);
+    brushMenu.style.setProperty("--cy", `${height + Math.round(radius * 0.12)}px`);
     let left = painting.left + (painting.width - width) / 2;
-    let top = painting.bottom - height - (staged ? 8 : 4);
+    let top = painting.bottom - height + 4;
     left = Math.max(8, Math.min(left, view.width - width - 8));
     const minTop = Math.max(8, painting.top + 8);
     const maxTop = Math.min(view.height - height - 8, painting.bottom - 6);
@@ -1867,7 +1866,9 @@ function renderGrid(items) {
           </label>
           <button type="button" class="sheet-edit-brush" title="brush" aria-label="brush" aria-haspopup="dialog" aria-expanded="false">
             <span class="sheet-edit-brush-face" aria-hidden="true">
-              <span class="sheet-edit-brush-mark"></span>
+              <svg class="lucide-icon" viewBox="0 0 24 24">
+                <use href="#icon-paintbrush"></use>
+              </svg>
             </span>
           </button>
         </div>
