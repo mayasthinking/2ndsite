@@ -2043,11 +2043,12 @@ select.choice-native {
   user-select: none;
   -webkit-user-select: none;
   border-radius: 50% 50% 0 0;
-  background: rgba(250, 249, 246, 0.86);
-  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  background: rgb(244, 241, 234);
+  background: color-mix(in srgb, var(--paper) 82%, var(--ink) 10%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 10px 28px color-mix(in srgb, var(--ink) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
