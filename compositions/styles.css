@@ -72,7 +72,10 @@ summary,
 .chip,
 .upload,
 .choice-trigger,
-.about-label {
+.about-label,
+.sheet-edit-brush,
+.brush-dial-face,
+.brush-dial-tick {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -1925,57 +1928,87 @@ select.choice-native {
   box-shadow: none;
 }
 
-.sheet-edit .choice {
-  flex: 0 1 auto;
-  width: fit-content;
-  min-width: 4.5rem;
-  max-width: 6.75rem;
-  margin-inline-start: 0;
-  position: relative;
-  z-index: 1;
-}
 
-.sheet-edit .choice-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  height: 18px;
-  padding: 0 14px 0 8px;
+.sheet-edit-brush {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
   border: 0;
   background: transparent;
-  overflow: hidden;
-  font-size: 10px;
-  line-height: 18px;
+  flex: 0 0 auto;
   color: var(--ink);
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 
-.sheet-edit .choice-trigger > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.sheet-edit-brush:focus-visible {
+  outline: none;
 }
 
-.sheet-edit .choice-trigger svg {
+.sheet-edit-brush-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
+  --angle: 0deg;
+}
+
+.sheet-edit-brush-mark {
+  display: grid;
+  place-items: center;
   width: 11px;
   height: 11px;
-  flex: 0 0 auto;
+  transform: rotate(calc(-1 * var(--angle)));
 }
 
-.sheet-edit .choice-trigger::after {
-  right: 2px;
-  width: 5px;
-  height: 5px;
+.sheet-edit-brush-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.sheet-edit .choice-trigger:hover,
-.sheet-edit .choice-trigger:focus-visible,
-.sheet-edit .choice.is-open .choice-trigger {
+.sheet-edit-brush-notch {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--angle));
+  pointer-events: none;
+}
+
+.sheet-edit-brush-notch::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.sheet-edit-brush:hover,
+.sheet-edit-brush:focus-visible,
+.sheet-edit-brush[aria-expanded="true"] {
   color: var(--hover);
-  outline: none;
+}
+
+.sheet-edit-brush:hover .sheet-edit-brush-face,
+.sheet-edit-brush:focus-visible .sheet-edit-brush-face,
+.sheet-edit-brush[aria-expanded="true"] .sheet-edit-brush-face {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 0 0 1px var(--hover),
+    0 0 0 3px color-mix(in srgb, var(--hover) 16%, transparent);
 }
 
 .sheet-color-menu {
@@ -1983,6 +2016,186 @@ select.choice-native {
   padding: 10px;
   min-width: 0;
   overflow: visible;
+}
+
+.brush-dial-menu {
+  position: fixed;
+  z-index: 80;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.brush-dial-menu[hidden] {
+  display: none;
+}
+
+.brush-dial {
+  --dial-size: 196px;
+  width: var(--dial-size);
+  height: var(--dial-size);
+}
+
+.brush-dial-face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--paper) 68%, transparent);
+  box-shadow:
+    0 0 0 1px rgba(36, 33, 31, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.38),
+    0 16px 40px rgba(36, 33, 31, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  touch-action: none;
+  cursor: grab;
+  --angle: 0deg;
+}
+
+.brush-dial-face:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--hover) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.brush-dial-face:active {
+  cursor: grabbing;
+}
+
+.brush-dial-ring {
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--ink) 6%, transparent);
+  pointer-events: none;
+}
+
+.brush-dial-needle {
+  position: absolute;
+  inset: 10%;
+  pointer-events: none;
+  transform: rotate(var(--angle));
+}
+
+.brush-dial-needle::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 16%;
+  background: color-mix(in srgb, var(--hover) 70%, var(--ink));
+  transform: translateX(-50%);
+}
+
+.brush-dial-needle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 15%;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--hover);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--paper) 80%, #fff);
+  transform: translate(-50%, -50%);
+}
+
+.brush-dial-ticks {
+  position: absolute;
+  inset: 0;
+}
+
+.brush-dial-tick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(var(--tick)) translateY(calc(var(--dial-size) * -0.37)) rotate(calc(-1 * var(--tick)));
+}
+
+.brush-dial-tick-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+}
+
+.brush-dial-tick-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brush-dial-tick-name {
+  max-width: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brush-dial-tick:hover,
+.brush-dial-tick:focus-visible,
+.brush-dial-tick.is-active {
+  color: var(--hover);
+}
+
+.brush-dial-tick:focus-visible {
+  outline: none;
+}
+
+.brush-dial-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--paper) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.brush-dial-hub-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.brush-dial-hub-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brush-dial-hub-name {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--hover);
 }
 
 .frame {
@@ -2249,10 +2462,6 @@ body:has(.frame.is-carrying) {
   padding: 8px 4px 7px;
 }
 
-.sheet-stage .sheet-edit.is-left .choice,
-.sheet-stage .sheet-edit.is-right .choice {
-  min-width: 4.75rem;
-}
 
 .sheet-stage .sheet-edit-grip {
   width: 12px;
@@ -2306,23 +2515,23 @@ body:has(.frame.is-carrying) {
   height: 10px;
 }
 
-.sheet-stage .sheet-edit .choice {
-  flex: 0 1 auto;
-  width: fit-content;
-  min-width: 4.75rem;
-  max-width: 7rem;
+.sheet-stage .sheet-edit-brush {
+  width: 20px;
+  height: 20px;
 }
 
-.sheet-stage .sheet-edit .choice-trigger {
-  height: 22px;
-  padding: 0 16px 0 10px;
-  font-size: 12px;
-  line-height: 22px;
+.sheet-stage .sheet-edit-brush-face {
+  width: 18px;
+  height: 18px;
 }
 
-.sheet-stage .sheet-edit .choice-trigger svg {
-  width: 13px;
-  height: 13px;
+.sheet-stage .sheet-edit-brush-mark {
+  width: 14px;
+  height: 14px;
+}
+
+.brush-dial-menu.is-stage {
+  --dial-size: 220px;
 }
 
 .sheet-stage .expand {
@@ -2880,30 +3089,19 @@ body.is-sheet-open {
     direction: ltr;
   }
 
-  .sheet-edit .choice,
-  .sheet-edit .choice-trigger {
-    min-height: 0;
-    height: auto;
+  .sheet-edit-brush {
+    width: 34px;
+    height: 34px;
   }
 
-  .sheet-edit .choice {
-    flex: 0 1 auto;
-    width: fit-content;
-    min-width: 4.5rem;
-    max-width: 6.75rem;
+  .sheet-edit-brush-face {
+    width: 22px;
+    height: 22px;
   }
 
-  .sheet-edit .choice-trigger {
-    height: 44px;
-    min-height: 44px;
-    padding: 0 22px 0 6px;
-    font-size: 13px;
-    line-height: 44px;
-  }
-
-  .sheet-edit .choice-trigger svg {
-    width: 14px;
-    height: 14px;
+  .sheet-edit-brush-mark {
+    width: 16px;
+    height: 16px;
   }
 
   .sheet-color-menu {
@@ -3019,17 +3217,19 @@ body.is-sheet-open {
     height: 7px;
   }
 
-  .sheet-stage .sheet-edit .choice-trigger {
+  .sheet-stage .sheet-edit-brush {
+    width: 32px;
     height: 32px;
-    min-height: 32px;
-    padding: 0 16px 0 6px;
-    font-size: 12px;
-    line-height: 32px;
   }
 
-  .sheet-stage .sheet-edit .choice-trigger svg {
-    width: 11px;
-    height: 11px;
+  .sheet-stage .sheet-edit-brush-face {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sheet-stage .sheet-edit-brush-mark {
+    width: 13px;
+    height: 13px;
   }
 
   .wall {
@@ -3520,59 +3720,35 @@ body.is-sheet-open {
     display: flex;
   }
 
-  .mobile-brush-options {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: flex-start;
-    gap: 10px;
-    width: 100%;
-    padding: 4px 5px;
-    overflow-x: auto;
-    scrollbar-width: none;
+  .mobile-tool-panel:has([data-tool-panel="brush"].is-active) {
+    max-height: 220px;
+    min-height: 176px;
   }
 
-  .mobile-brush-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    flex: 0 0 58px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-    font-size: 10px;
-    cursor: pointer;
+  #mobileBrushDial.brush-dial {
+    --dial-size: min(64vw, 176px);
+    margin: 0 auto;
   }
 
-  .mobile-brush-mark {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1.25px solid color-mix(in srgb, var(--ink) 16%, transparent);
-    border-radius: 50%;
-    background: transparent;
+  #mobileBrushDial .brush-dial-face {
+    box-shadow:
+      0 0 0 1px rgba(36, 33, 31, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.3);
   }
 
-  .mobile-brush-mark::before {
-    content: "";
-    width: 22px;
-    height: 3px;
-    border-radius: 999px;
-    background: currentColor;
-    transform: rotate(-32deg);
+  #mobileBrushDial .brush-dial-tick {
+    width: 40px;
+    font-size: 8px;
   }
 
-  .mobile-brush-option.is-active {
-    color: var(--hover);
+  #mobileBrushDial .brush-dial-tick-mark {
+    width: 20px;
+    height: 20px;
   }
 
-  .mobile-brush-option.is-active .mobile-brush-mark {
-    border-color: var(--hover);
-    background: transparent;
-    box-shadow: none;
+  #mobileBrushDial .brush-dial-hub {
+    width: 62px;
+    height: 62px;
   }
 
   .mobile-color-panel {
