@@ -2323,6 +2323,8 @@ function mountDeskResize() {
 
 function mountDeskScroll() {
   const desk = document.querySelector(".desk");
+  const pane = document.querySelector(".mobile-sheet");
+  const frame = document.querySelector(".desk-frame");
   const rail = document.querySelector(".desk-rail");
   const thumb = document.querySelector(".desk-scroll");
   if (!desk || !rail || !thumb) return;
@@ -2332,20 +2334,36 @@ function mountDeskScroll() {
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
+  const scroller = () => {
+    if (pane && getComputedStyle(pane).display !== "contents") return pane;
+    return desk;
+  };
+
+  const placeRail = () => {
+    const host = frame || desk;
+    const box = scroller().getBoundingClientRect();
+    const origin = host.getBoundingClientRect();
+    const inset = 10;
+    rail.style.top = `${Math.max(0, box.top - origin.top + inset)}px`;
+    rail.style.bottom = `${Math.max(0, origin.bottom - box.bottom + inset)}px`;
+  };
+
   const metrics = () => {
-    const max = Math.max(0, desk.scrollHeight - desk.clientHeight);
+    const el = scroller();
+    const max = Math.max(0, el.scrollHeight - el.clientHeight);
     const travel = Math.max(1, rail.clientHeight - thumbH);
-    return { max, travel };
+    return { el, max, travel };
   };
 
   const sync = () => {
-    const { max, travel } = metrics();
+    placeRail();
+    const { el, max, travel } = metrics();
     if (max <= 4) {
       rail.hidden = true;
       return;
     }
     rail.hidden = false;
-    const ratio = clamp(desk.scrollTop / max, 0, 1);
+    const ratio = clamp(el.scrollTop / max, 0, 1);
     thumb.style.top = `${ratio * travel}px`;
     rail.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
     rail.setAttribute("aria-valuemin", "0");
@@ -2353,10 +2371,10 @@ function mountDeskScroll() {
   };
 
   const scrollToClientY = (clientY) => {
-    const { max, travel } = metrics();
+    const { el, max, travel } = metrics();
     if (max <= 4) return;
     const y = clamp(clientY - rail.getBoundingClientRect().top - thumbH / 2, 0, travel);
-    desk.scrollTop = (y / travel) * max;
+    el.scrollTop = (y / travel) * max;
     thumb.style.top = `${y}px`;
   };
 
@@ -2387,7 +2405,9 @@ function mountDeskScroll() {
   rail.addEventListener("pointercancel", endDrag);
 
   desk.addEventListener("scroll", sync, { passive: true });
+  pane?.addEventListener("scroll", sync, { passive: true });
   new ResizeObserver(sync).observe(desk);
+  if (pane) new ResizeObserver(sync).observe(pane);
   new ResizeObserver(sync).observe(rail);
   desk.addEventListener("toggle", () => requestAnimationFrame(sync), true);
   sync();
