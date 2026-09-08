@@ -1,6 +1,6 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
-const STEP = 24;
+const STEP = 360 / BRUSH_TYPES.length;
 const DEG_PER_PX = 0.55;
 
 const ICONS = {
@@ -133,7 +133,7 @@ export function mountBrushDial({ host, value, onChange }) {
       if (ang < 0) ang += 360;
       const fromApex = Math.min(ang, 360 - ang);
       tick.style.setProperty("--from", String(fromApex));
-      tick.classList.toggle("is-far", fromApex > 86);
+      tick.classList.toggle("is-far", fromApex > 88);
     }
     if (emit && name !== current) {
       current = name;
