@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="How mayabakir.com is built.">
+    <script src="paper-time.js?v=7"></script>
+    <title>how this is built</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <style>
+        :root {
+            color-scheme: light;
+            --paper: #faf9f6;
+            --ink: #24211f;
+            --hover: #8b2f32;
+            --line: rgba(139, 47, 50, 0.2);
+            --muted: rgba(36, 33, 31, 0.58);
+            --paper-highlight: white;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body { min-height: 100%; }
+
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Libre Baskerville", serif;
+            font-size: 15px;
+            line-height: 1.62;
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        main {
+            width: min(calc(100% - 40px), 1080px);
+            margin: 0 auto;
+            padding: 48px 0 80px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 1.65rem;
+            font-weight: 400;
+        }
+
+        .lead {
+            margin: 0 0 36px;
+            max-width: 34em;
+            color: var(--muted);
+        }
+
+        .phrase {
+            width: fit-content;
+            transition: color 180ms ease;
+        }
+
+        .phrase:hover,
+        .phrase:focus-visible {
+            color: var(--hover);
+        }
+
+        .atlas-wrap {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 28px;
+        }
+
+        @media (min-width: 860px) {
+            .atlas-wrap {
+                grid-template-columns: minmax(0, 1fr) minmax(280px, 34%);
+                align-items: start;
+            }
+        }
+
+        .atlas {
+            position: relative;
+            min-height: 640px;
+        }
+
+        .edges {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .edge {
+            fill: none;
+            stroke: color-mix(in srgb, var(--ink) 16%, transparent);
+            stroke-width: 1;
+            transition: stroke 180ms ease, stroke-width 180ms ease;
+        }
+
+        .edge.is-lit {
+            stroke: var(--hover);
+            stroke-width: 1.35;
+        }
+
+        .lane {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px 14px;
+            padding: 18px 0;
+        }
+
+        .lane-label {
+            flex: 1 0 100%;
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+            text-align: center;
+        }
+
+        .node {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--paper) 88%, var(--paper-highlight));
+            color: var(--ink);
+            font: inherit;
+            font-size: 0.92rem;
+            line-height: 1.3;
+            padding: 9px 16px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+        }
+
+        .node:hover,
+        .node:focus-visible {
+            color: var(--hover);
+            border-color: color-mix(in srgb, var(--hover) 42%, transparent);
+        }
+
+        .node.is-open,
+        .node.is-related {
+            color: var(--hover);
+            border-color: color-mix(in srgb, var(--hover) 55%, transparent);
+            background: color-mix(in srgb, var(--hover) 8%, var(--paper));
+        }
+
+        .dossier {
+            min-height: 12rem;
+            padding: 4px 2px 0;
+        }
+
+        .dossier[hidden] {
+            display: none;
+        }
+
+        .dossier-kicker {
+            margin: 0 0 6px;
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        .dossier h2 {
+            margin: 0 0 10px;
+            font-size: 1.15rem;
+            font-weight: 400;
+        }
+
+        .dossier p {
+            margin: 0 0 0.85em;
+        }
+
+        .dossier p:last-child { margin-bottom: 0; }
+
+        .files {
+            margin: 0 0 14px;
+            padding: 0;
+            list-style: none;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .files li { margin: 0.15em 0; }
+
+        .related {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .related button {
+            appearance: none;
+            border: 0;
+            background: none;
+            padding: 0;
+            font: inherit;
+            font-size: 0.88rem;
+            color: var(--muted);
+            cursor: pointer;
+            transition: color 180ms ease;
+        }
+
+        .related button:hover,
+        .related button:focus-visible {
+            color: var(--hover);
+        }
+
+        .home {
+            display: inline-block;
+            margin-bottom: 28px;
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 720px) {
+            main { width: min(calc(100% - 28px), 720px); padding-top: 32px; }
+            .atlas { min-height: 0; }
+            .lane { padding: 12px 0; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <a class="home phrase" href="index.html">filing cabinet</a>
+        <h1 class="phrase">how this is built</h1>
+        <p class="lead">mayabakir.com is mostly paper: static html, json, and photos on vercel. click a node to open its dossier.</p>
+
+        <div class="atlas-wrap">
+            <div class="atlas" id="atlas">
+                <svg class="edges" id="edges" aria-hidden="true"></svg>
+            </div>
+            <aside class="dossier" id="dossier" hidden>
+                <p class="dossier-kicker">dossier</p>
+                <h2 id="dossierTitle"></h2>
+                <div id="dossierBody"></div>
+            </aside>
+        </div>
+    </main>
+    <script>
+        const lanes = [
+            { id: "visitor", label: "arriving", nodes: ["you"] },
+            { id: "host", label: "host", nodes: ["vercel"] },
+            { id: "rooms", label: "rooms", nodes: ["cabinet", "compositions", "rooms"] },
+            { id: "cabinet-data", label: "cabinet contents", nodes: ["photos", "bookmarks", "footsteps"] },
+            { id: "studio", label: "studio pipeline", nodes: ["generate", "renderer", "worker"] },
+            { id: "making", label: "how new things arrive", nodes: ["shortcuts", "tokens"] }
+        ];
+
+        const edges = [
+            ["you", "vercel"],
+            ["vercel", "cabinet"],
+            ["vercel", "compositions"],
+            ["vercel", "rooms"],
+            ["cabinet", "photos"],
+            ["cabinet", "bookmarks"],
+            ["cabinet", "footsteps"],
+            ["photos", "shortcuts"],
+            ["bookmarks", "shortcuts"],
+            ["compositions", "generate"],
+            ["compositions", "renderer"],
+            ["compositions", "worker"],
+            ["generate", "renderer"],
+            ["shortcuts", "vercel"],
+            ["tokens", "cabinet"],
+            ["tokens", "compositions"]
+        ];
+
+        const dossiers = {
+            you: {
+                title: "you",
+                body: `
+                    <p>a browser asks vercel for a page. there is no app framework, no login, and almost no backend on the cabinet itself. html, css, and a little javascript run in place.</p>
+                    <p>local preview is just <code>python3 -m http.server</code> from the repo root.</p>
+                `,
+                files: ["index.html", "AGENTS.md"],
+                related: ["vercel", "cabinet"]
+            },
+            vercel: {
+                title: "vercel",
+                body: `
+                    <p>the live site is a static deploy. html pages and json are files. the only real server work is under <code>/api</code>: generate paintings, list sample scenes, and a health check.</p>
+                    <p><code>vercel.json</code> sends <code>/compositions</code> to the trailing slash and gives generate sixty seconds to talk to a model.</p>
+                `,
+                files: ["vercel.json", "api/generate.mjs", "api/samples.mjs", "api/health.mjs"],
+                related: ["you", "generate", "cabinet", "compositions"]
+            },
+            cabinet: {
+                title: "filing cabinet",
+                body: `
+                    <p>the homepage is one long html page with a paper sky. <code>paper-time.js</code> tints the page from your local hour. sections are lowercase headers: photos, bookmarks, a small footsteps map, then links out.</p>
+                    <p>javascript fetches json after load and builds the lists. nothing is compiled. the photo lightbox, slider, and trackpad turns all live in this file.</p>
+                `,
+                files: ["index.html", "paper-time.js", "snaps.json", "bookmarks.json", "readings.json", "places.json"],
+                related: ["photos", "bookmarks", "footsteps", "tokens"]
+            },
+            compositions: {
+                title: "compositions",
+                body: `
+                    <p>the studio is a separate mini-app at <code>/compositions/</code>. the desk holds the prompt, preset chips, upload, and customize sliders. the wall shows the paintings.</p>
+                    <p>on a phone the desk becomes a bottom sheet: prompt and chips first, then a tool dock after something is painted. desktop keeps a side menu.</p>
+                `,
+                files: ["compositions/index.html", "compositions/app.js", "compositions/styles.css", "lib/compositions/templates.js"],
+                related: ["generate", "renderer", "worker", "tokens"]
+            },
+            rooms: {
+                title: "other rooms",
+                body: `
+                    <p>older or quieter pages sit beside the cabinet: a sketchbook, footsteps as its own map, the little prince, stoccato notes, a text editor, and a desktop toy. they are sibling html files, not a routed app.</p>
+                `,
+                files: ["sketchbook.html", "footsteps.html", "little-prince.html", "stoccato.html", "text-editor.html", "desktop.html"],
+                related: ["cabinet", "vercel"]
+            },
+            photos: {
+                title: "photos",
+                body: `
+                    <p>albums are json, not html. <code>snaps.json</code> lists months, cities, and photo files. the homepage flattens them into a two-by-two carousel. opening one starts a lightbox: a thin red slider, arrows, and a trackpad swipe that turns one picture at a time with a crossfade.</p>
+                    <p>captions can point at a place on the footsteps map.</p>
+                `,
+                files: ["snaps.json", "photos/", "docs/add-photos.md", "index.html"],
+                related: ["cabinet", "footsteps", "shortcuts"]
+            },
+            bookmarks: {
+                title: "bookmarks",
+                body: `
+                    <p>two lists become one. <code>bookmarks.json</code> is the share-sheet collection. <code>readings.json</code> is the notion reading log. the page shows bookmarks first, then ten readings at a time, with more +.</p>
+                `,
+                files: ["bookmarks.json", "readings.json", "docs/add-bookmarks.md", "index.html"],
+                related: ["cabinet", "shortcuts"]
+            },
+            footsteps: {
+                title: "footsteps",
+                body: `
+                    <p><code>places.json</code> has names, coordinates, and photo links. the cabinet draws a small svg map. <code>footsteps.html</code> is the fuller map. a caption click can land you on a pin.</p>
+                `,
+                files: ["places.json", "footsteps.html", "index.html"],
+                related: ["photos", "cabinet"]
+            },
+            generate: {
+                title: "generate",
+                body: `
+                    <p>tap paint and the browser posts to <code>/api/generate</code>. if you picked a preset chip, the server returns a stored <code>paint()</code> from <code>templates.js</code> with different seeds. if you typed a new scene, an llm (grok, anthropic, or openai) writes a new <code>paint()</code>.</p>
+                    <p>the server keeps only the balanced function, blocks dangerous apis, and requires p5.brush fills before anything is sent back.</p>
+                `,
+                files: ["api/generate.mjs", "lib/compositions/generate.js", "lib/compositions/prompt.js", "lib/compositions/templates.js"],
+                related: ["compositions", "renderer", "vercel"]
+            },
+            renderer: {
+                title: "renderer",
+                body: `
+                    <p>an iframe runs p5 and p5.brush. <code>app.js</code> sends the <code>paint()</code> code and effect settings. the iframe draws a 720 canvas and posts the image back to the wall. the studio never evals model code on the main page.</p>
+                `,
+                files: ["compositions/renderer.html", "compositions/renderer.js", "compositions/vendor/p5.min.js", "compositions/vendor/p5.brush.js"],
+                related: ["generate", "compositions", "worker"]
+            },
+            worker: {
+                title: "image worker",
+                body: `
+                    <p>uploads and photo washes run in a web worker so the ui stays light. it rasterizes a file, can split a subject from a background, and encodes png or jpeg for the wash and the wall.</p>
+                `,
+                files: ["compositions/image-work.js", "compositions/image-worker.js", "compositions/photo-wash.js", "compositions/photo-wash-plan.js"],
+                related: ["compositions", "renderer"]
+            },
+            shortcuts: {
+                title: "shortcuts",
+                body: `
+                    <p>new photos and bookmarks do not go through a cms. a mac share sheet or small python script resizes the file, edits json, and commits with <code>gh</code>. vercel rebuilds from github, so the cabinet updates in about a minute.</p>
+                    <p>iphone uses a separate github-api shortcut because the mac script needs a local machine.</p>
+                `,
+                files: ["docs/add-photos.md", "docs/add-bookmarks.md", "shortcuts/ios-merge-photo.js", "shortcuts/ios-merge-bookmark.js"],
+                related: ["photos", "bookmarks", "vercel"]
+            },
+            tokens: {
+                title: "design tokens",
+                body: `
+                    <p>paper <code>#faf9f6</code>, ink <code>#24211f</code>, hover <code>#8b2f32</code>. libre baskerville, lowercase labels, and + / − marks. the sky paper shifts with the hour. compositions uses the same ink and hover, with inter on the controls.</p>
+                `,
+                files: ["index.html", "paper-time.js", "compositions/styles.css", ".cursor/skills/filing-cabinet-sections/SKILL.md"],
+                related: ["cabinet", "compositions"]
+            }
+        };
+
+        const atlas = document.getElementById("atlas");
+        const edgesSvg = document.getElementById("edges");
+        const dossier = document.getElementById("dossier");
+        const dossierTitle = document.getElementById("dossierTitle");
+        const dossierBody = document.getElementById("dossierBody");
+        const buttons = {};
+
+        lanes.forEach((lane) => {
+            const row = document.createElement("div");
+            row.className = "lane";
+            row.dataset.lane = lane.id;
+            const label = document.createElement("p");
+            label.className = "lane-label";
+            label.textContent = lane.label;
+            row.append(label);
+            lane.nodes.forEach((id) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "node";
+                button.id = `node-${id}`;
+                button.dataset.id = id;
+                button.textContent = dossiers[id].title;
+                button.addEventListener("click", () => openNode(id));
+                buttons[id] = button;
+                row.append(button);
+            });
+            atlas.append(row);
+        });
+
+        function neighborsOf(id) {
+            const next = new Set();
+            edges.forEach(([a, b]) => {
+                if (a === id) next.add(b);
+                if (b === id) next.add(a);
+            });
+            return next;
+        }
+
+        function openNode(id) {
+            const entry = dossiers[id];
+            if (!entry) return;
+
+            const already = buttons[id].classList.contains("is-open");
+            Object.values(buttons).forEach((button) => button.classList.remove("is-open", "is-related"));
+            edgesSvg.querySelectorAll(".edge").forEach((edge) => edge.classList.remove("is-lit"));
+
+            if (already) {
+                dossier.hidden = true;
+                history.replaceState(null, "", "architecture.html");
+                return;
+            }
+
+            const related = neighborsOf(id);
+            buttons[id].classList.add("is-open");
+            related.forEach((other) => buttons[other]?.classList.add("is-related"));
+            edgesSvg.querySelectorAll(".edge").forEach((edge) => {
+                if (edge.dataset.a === id || edge.dataset.b === id) edge.classList.add("is-lit");
+            });
+
+            dossierTitle.textContent = entry.title;
+            const files = `<ul class="files">${entry.files.map((file) => `<li>${file}</li>`).join("")}</ul>`;
+            const links = `<div class="related">${entry.related.map((other) =>
+                `<button type="button" data-jump="${other}">${dossiers[other].title}</button>`
+            ).join("")}</div>`;
+            dossierBody.innerHTML = `${entry.body}${files}${links}`;
+            dossierBody.querySelectorAll("[data-jump]").forEach((button) => {
+                button.addEventListener("click", () => openNode(button.dataset.jump));
+            });
+            dossier.hidden = false;
+            history.replaceState(null, "", `#${id}`);
+        }
+
+        function nodeCenter(id) {
+            const button = buttons[id];
+            const atlasBox = atlas.getBoundingClientRect();
+            const box = button.getBoundingClientRect();
+            return {
+                x: box.left + box.width / 2 - atlasBox.left,
+                y: box.top + box.height / 2 - atlasBox.top
+            };
+        }
+
+        function drawEdges() {
+            const box = atlas.getBoundingClientRect();
+            edgesSvg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
+            edgesSvg.replaceChildren();
+            edges.forEach(([a, b]) => {
+                const from = nodeCenter(a);
+                const to = nodeCenter(b);
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const midY = (from.y + to.y) / 2;
+                path.setAttribute("d", `M ${from.x} ${from.y} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${to.y}`);
+                path.setAttribute("class", "edge");
+                path.dataset.a = a;
+                path.dataset.b = b;
+                edgesSvg.append(path);
+            });
+            const open = document.querySelector(".node.is-open");
+            if (open) {
+                edgesSvg.querySelectorAll(".edge").forEach((edge) => {
+                    if (edge.dataset.a === open.dataset.id || edge.dataset.b === open.dataset.id) {
+                        edge.classList.add("is-lit");
+                    }
+                });
+            }
+        }
+
+        window.addEventListener("resize", drawEdges);
+        requestAnimationFrame(drawEdges);
+
+        const start = location.hash.slice(1);
+        if (dossiers[start]) openNode(start);
+        else openNode("cabinet");
+    </script>
+</body>
+</html>
