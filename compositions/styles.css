@@ -2016,14 +2016,11 @@ select.choice-native {
   padding: 0;
   border: 0;
   background: transparent;
-  overflow: clip;
-  contain: layout paint;
-  clip-path: inset(0);
-  --apex: 10px;
-  --radius: 132px;
-  --icon-r: 98px;
-  --cy: 132px;
-  --turn: 0deg;
+  overflow: visible;
+  --apex: 14px;
+  --radius: 176px;
+  --icon-r: 128px;
+  --cy: 176px;
 }
 
 .brush-dial-menu[hidden] {
@@ -2038,30 +2035,56 @@ select.choice-native {
 
 .brush-arc-face {
   position: relative;
+  overflow: hidden;
   touch-action: none;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   border-radius: var(--radius) var(--radius) 0 0;
-  background: transparent;
+  background: rgba(250, 249, 246, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 1px rgba(36, 33, 31, 0.16);
+  backdrop-filter: blur(22px) saturate(1.12);
+  -webkit-backdrop-filter: blur(22px) saturate(1.12);
 }
 
 .brush-arc-ring {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: calc(var(--icon-r) * 2 + 44px);
-  height: calc(var(--icon-r) + 22px);
-  border: 36px solid color-mix(in srgb, var(--paper) 62%, transparent);
+  width: calc(var(--icon-r) * 2);
+  height: var(--icon-r);
+  border: 1.5px solid rgba(36, 33, 31, 0.22);
   border-bottom: none;
-  border-radius: calc(var(--icon-r) + 22px) calc(var(--icon-r) + 22px) 0 0;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: var(--icon-r) var(--icon-r) 0 0;
   transform: translateX(-50%);
   pointer-events: none;
 }
 
-.brush-arc-stem {
-  opacity: 0.55;
+.brush-arc-hashes {
+  position: absolute;
+  left: 50%;
+  top: var(--cy);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.brush-arc-hash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 7px;
+  border-radius: 1px;
+  background: rgba(36, 33, 31, 0.28);
+  transform: rotate(var(--ang)) translate(-50%, calc(-1 * var(--icon-r) + 18px));
+}
+
+.brush-arc-hash.is-major {
+  height: 11px;
+  background: rgba(36, 33, 31, 0.42);
 }
 
 .brush-arc-face:focus-visible {
@@ -2079,7 +2102,6 @@ select.choice-native {
   top: var(--cy);
   width: 0;
   height: 0;
-  --turn: 0deg;
 }
 
 .brush-arc-tick {
@@ -2092,13 +2114,12 @@ select.choice-native {
   padding: 0;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--ink) 58%, transparent);
+  color: rgba(36, 33, 31, 0.58);
   font: inherit;
   line-height: 1;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
-  transform: rotate(calc(var(--turn) + var(--tick)));
-  opacity: clamp(0, calc(1.15 - var(--from) / 70), 1);
+  transform: rotate(var(--ang));
 }
 
 .brush-arc-tick::after {
@@ -2106,14 +2127,9 @@ select.choice-native {
   position: absolute;
   left: 0;
   top: 0;
-  width: 40px;
-  height: 46px;
-  transform: translate(-50%, calc(-1 * var(--icon-r) - 10px));
-}
-
-.brush-arc-tick.is-far {
-  visibility: hidden;
-  pointer-events: none;
+  width: 44px;
+  height: 52px;
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 14px));
 }
 
 .brush-arc-stem {
@@ -2121,10 +2137,10 @@ select.choice-native {
   left: 0;
   top: 0;
   width: 1.5px;
-  height: 10px;
+  height: 9px;
   border-radius: 1px;
   background: currentColor;
-  transform: translate(-50%, calc(-1 * var(--icon-r) + 14px));
+  transform: translate(-50%, calc(-1 * var(--icon-r) + 16px));
   pointer-events: none;
 }
 
@@ -2135,21 +2151,24 @@ select.choice-native {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  width: 42px;
-  transform: translate(-50%, calc(-1 * var(--icon-r) - 4px)) rotate(calc(-1 * (var(--turn) + var(--tick))));
+  gap: 3px;
+  width: 46px;
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 8px)) rotate(calc(-1 * var(--ang)));
   pointer-events: none;
 }
 
 .brush-arc-mark {
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .brush-arc-label {
-  display: none;
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
 }
 
 .brush-arc-tick.is-active,
@@ -2157,8 +2176,18 @@ select.choice-native {
   color: var(--hover);
 }
 
+.brush-arc-tick.is-active .brush-arc-mark {
+  width: 22px;
+  height: 22px;
+}
+
+.brush-arc-tick.is-active .brush-ico {
+  width: 18px;
+  height: 18px;
+}
+
 .brush-arc-tick.is-active .brush-arc-stem {
-  height: 13px;
+  height: 12px;
   background: var(--hover);
 }
 
@@ -2169,10 +2198,10 @@ select.choice-native {
 .brush-arc-pointer {
   position: absolute;
   left: 50%;
-  top: calc(var(--apex) - 1px);
+  top: calc(var(--apex) - 2px);
   z-index: 3;
-  width: 8px;
-  height: 6px;
+  width: 9px;
+  height: 7px;
   background: var(--hover);
   clip-path: polygon(50% 100%, 0 0, 100% 0);
   transform: translateX(-50%);
@@ -2182,27 +2211,18 @@ select.choice-native {
 .brush-arc-readout {
   position: absolute;
   left: 50%;
-  top: calc(var(--apex) + 12px);
-  bottom: auto;
+  top: calc(var(--apex) + 36px);
   z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
   color: var(--hover);
   transform: translateX(-50%);
   pointer-events: none;
 }
 
-.brush-arc-readout-dot {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-}
-
 .brush-arc-readout-name {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.03em;
 }
 
