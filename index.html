@@ -459,10 +459,28 @@
             font-size: var(--toggle-mark-size);
         }
 
+        @property --photo-reveal {
+            syntax: "<length>";
+            inherits: true;
+            initial-value: 0px;
+        }
+
         .photo-carousel-wrap {
             position: relative;
             --photo-grid-col-gap: 8px;
             --photo-peek: 10px;
+            --photo-reveal: 0px;
+            transition: --photo-reveal var(--photo-reveal-duration) var(--photo-reveal-ease);
+        }
+
+        .photo-carousel-wrap.is-peeking {
+            --photo-reveal: var(--photo-peek);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .photo-carousel-wrap {
+                transition: none;
+            }
         }
 
         .photo-carousel {
@@ -490,7 +508,7 @@
         }
 
         .photo-page {
-            flex: 0 0 calc(100% - var(--photo-peek) - var(--photo-grid-col-gap));
+            flex: 0 0 calc(100% - var(--photo-reveal) - var(--photo-grid-col-gap) * var(--photo-reveal) / var(--photo-peek));
             min-width: 0;
             padding: 0;
             scroll-snap-align: start;
@@ -2218,6 +2236,27 @@
             }
         }
 
+        const PHOTO_PEEK_DELAY_MS = 2500;
+
+        function schedulePhotoPeek(carousel) {
+            const wrap = carousel.closest('.photo-carousel-wrap');
+            if (!wrap || carousel.querySelectorAll('.photo-page').length < 2) {
+                return;
+            }
+
+            const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 0
+                : PHOTO_PEEK_DELAY_MS;
+
+            window.setTimeout(() => {
+                if (carousel.scrollLeft > 12) {
+                    return;
+                }
+
+                wrap.classList.add('is-peeking');
+            }, delay);
+        }
+
         function bindPhotoCarousel(carousel) {
             if (!carousel) {
                 return;
@@ -2237,6 +2276,7 @@
                 });
             });
             sync();
+            schedulePhotoPeek(carousel);
         }
 
         function revealAllPhotos() {
