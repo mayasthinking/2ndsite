@@ -2177,7 +2177,7 @@ function mountDeskResize() {
   };
 
   const stored = Number(localStorage.getItem("wash.deskWidth"));
-  apply(Number.isFinite(stored) ? stored : 400);
+  apply(stored >= minW ? stored : 400);
 
   let dragging = false;
   let startX = 0;
@@ -2220,74 +2220,149 @@ function mountDeskResize() {
 
 function mountDeskScroll() {
   const desk = document.querySelector(".desk");
+  const sheet = document.querySelector(".mobile-sheet");
+  const sheetBody = document.querySelector(".mobile-sheet-body");
   const rail = document.querySelector(".desk-rail");
   const thumb = document.querySelector(".desk-scroll");
   if (!desk || !rail || !thumb) return;
 
-  const thumbH = 64;
   let dragging = false;
+  let dragOffset = 0;
+  let dragBox = null;
+  let dragMax = 0;
+  let dragTravel = 1;
+  let thumbH = 32;
+  let frame = 0;
+  let pendingY = null;
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const scroller = () =>
+    sheetBody && window.matchMedia("(min-width: 721px)").matches ? sheetBody : desk;
 
   const metrics = () => {
-    const max = Math.max(0, desk.scrollHeight - desk.clientHeight);
-    const travel = Math.max(1, rail.clientHeight - thumbH);
-    return { max, travel };
+    const box = scroller();
+    const max = Math.max(0, box.scrollHeight - box.clientHeight);
+    const railH = rail.clientHeight;
+    const proportional = railH * (box.clientHeight / Math.max(box.scrollHeight, 1));
+    thumbH = max <= 4 ? railH : Math.max(28, Math.round(Math.min(railH * 0.5, proportional * 0.5)));
+    const travel = Math.max(1, railH - thumbH);
+    return { box, max, travel };
   };
 
   const sync = () => {
-    const { max, travel } = metrics();
+    if (dragging) return;
+    const { box, max, travel } = metrics();
     if (max <= 4) {
       rail.hidden = true;
       return;
     }
     rail.hidden = false;
-    const ratio = clamp(desk.scrollTop / max, 0, 1);
-    thumb.style.top = `${ratio * travel}px`;
+    thumb.style.height = `${thumbH}px`;
+    const ratio = clamp(box.scrollTop / max, 0, 1);
+    thumb.style.transform = `translateY(${ratio * travel}px)`;
     rail.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
     rail.setAttribute("aria-valuemin", "0");
     rail.setAttribute("aria-valuemax", "100");
   };
 
-  const scrollToClientY = (clientY) => {
-    const { max, travel } = metrics();
-    if (max <= 4) return;
-    const y = clamp(clientY - rail.getBoundingClientRect().top - thumbH / 2, 0, travel);
-    desk.scrollTop = (y / travel) * max;
-    thumb.style.top = `${y}px`;
+  const applyY = (y) => {
+    if (!dragBox) return;
+    const next = clamp(y, 0, dragTravel);
+    dragBox.scrollTop = (next / dragTravel) * dragMax;
+    thumb.style.transform = `translateY(${next}px)`;
+  };
+
+  const queueY = (clientY) => {
+    pendingY = clientY - rail.getBoundingClientRect().top - dragOffset;
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (pendingY == null) return;
+      applyY(pendingY);
+      pendingY = null;
+    });
   };
 
   rail.addEventListener("pointerdown", (event) => {
     if (event.button != null && event.button !== 0) return;
+    const { box, max, travel } = metrics();
+    if (max <= 4) return;
     event.preventDefault();
+    const railTop = rail.getBoundingClientRect().top;
+    const thumbBox = thumb.getBoundingClientRect();
+    const slop = window.matchMedia("(pointer: coarse)").matches ? 20 : 12;
+    const onThumb = event.clientY >= thumbBox.top - slop && event.clientY <= thumbBox.bottom + slop;
     dragging = true;
+    dragBox = box;
+    dragMax = max;
+    dragTravel = travel;
+    dragOffset = onThumb ? event.clientY - thumbBox.top : thumbH / 2;
     rail.classList.add("is-dragging");
     try {
       rail.setPointerCapture(event.pointerId);
     } catch {
       /* ignore */
     }
-    scrollToClientY(event.clientY);
+    applyY(event.clientY - railTop - dragOffset);
   });
 
   rail.addEventListener("pointermove", (event) => {
     if (!dragging) return;
     event.preventDefault();
-    scrollToClientY(event.clientY);
+    queueY(event.clientY);
   });
 
   const endDrag = () => {
     dragging = false;
+    dragBox = null;
+    pendingY = null;
+    if (frame) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    }
     rail.classList.remove("is-dragging");
+    sync();
   };
   rail.addEventListener("pointerup", endDrag);
   rail.addEventListener("pointercancel", endDrag);
 
+  rail.addEventListener(
+    "wheel",
+    (event) => {
+      const box = scroller();
+      if (box.scrollHeight <= box.clientHeight + 1) return;
+      event.preventDefault();
+      box.scrollTop += event.deltaY;
+    },
+    { passive: false }
+  );
+
   desk.addEventListener("scroll", sync, { passive: true });
+  sheet?.addEventListener("scroll", sync, { passive: true });
+  sheetBody?.addEventListener("scroll", sync, { passive: true });
   new ResizeObserver(sync).observe(desk);
+  if (sheet) new ResizeObserver(sync).observe(sheet);
+  if (sheetBody) new ResizeObserver(sync).observe(sheetBody);
   new ResizeObserver(sync).observe(rail);
   desk.addEventListener("toggle", () => requestAnimationFrame(sync), true);
+  window.matchMedia("(min-width: 721px)").addEventListener("change", sync);
   sync();
+}
+
+function mountMenuScrollEase() {
+  const menuBox = (el) => el?.closest?.(".mobile-sheet-body, .mobile-sheet, .desk");
+
+  document.addEventListener(
+    "wheel",
+    (event) => {
+      const range = event.target.closest?.("input[type=range]");
+      const box = menuBox(range);
+      if (!range || !box || box.scrollHeight <= box.clientHeight + 1) return;
+      event.preventDefault();
+      box.scrollTop += event.deltaY;
+    },
+    { capture: true, passive: false }
+  );
 }
 
 sheetStageEl?.addEventListener("click", (event) => {
@@ -2321,4 +2396,5 @@ mountMobileSheet();
 mountMobileVariationSwipe();
 sizeScene();
 mountDeskScroll();
+mountMenuScrollEase();
 mountDeskResize();

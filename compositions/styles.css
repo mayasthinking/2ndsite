@@ -57,6 +57,8 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: clip;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--ui);
@@ -104,9 +106,13 @@ body {
   grid-template-columns: var(--desk-w, 400px) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 100vh;
   padding: 18px 22px 18px 18px;
   background: var(--paper);
+  overflow-x: clip;
 }
 
 .renderer {
@@ -128,6 +134,8 @@ body {
   align-items: flex-start;
   gap: 10px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 h1 {
@@ -194,8 +202,9 @@ h1 {
 
 .about {
   position: relative;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
 }
 
 .about-label {
@@ -225,7 +234,8 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(22rem, calc(100vw - 48px));
+  width: min(22rem, 100%);
+  max-width: 100%;
   padding: 10px 12px 12px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--paper) 92%, #fff);
@@ -313,6 +323,8 @@ h1 {
   flex-direction: column;
   gap: 20px;
   max-height: inherit;
+  min-width: 0;
+  max-width: 100%;
   padding: 22px 22px 24px;
   border: 0;
   border-radius: 24px;
@@ -320,7 +332,9 @@ h1 {
   box-shadow:
     0 0 0 1px rgba(36, 33, 31, 0.045),
     0 18px 48px rgba(36, 33, 31, 0.07);
-  overflow: auto;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior-x: none;
   scrollbar-width: none;
 }
 
@@ -375,9 +389,12 @@ h1 {
     padding: 28px 8px 8px;
     background: transparent;
     box-shadow: none;
+    overflow-x: clip;
+    overflow-y: hidden;
   }
 
   .masthead {
+    flex: 0 0 auto;
     gap: 12px;
     padding: 0 12px 4px;
   }
@@ -392,14 +409,44 @@ h1 {
   }
 
   .mobile-sheet {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px 16px 16px;
+    flex: 0 1 auto;
+    gap: 0;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    padding: 0;
     border: 1px solid rgba(36, 33, 31, 0.1);
     border-radius: 22px;
     background: color-mix(in srgb, var(--paper) 88%, #fff);
     box-shadow: 0 4px 11px rgba(36, 33, 31, 0.04);
+    overflow: hidden;
+  }
+
+  .mobile-sheet-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    padding: 12px var(--rail-gap, 28px) 16px 16px;
+    overflow-x: clip;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    scrollbar-width: none;
+  }
+
+  .mobile-sheet-body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   .mobile-sheet-handle {
@@ -534,13 +581,13 @@ h1 {
 
 .desk-rail {
   position: absolute;
-  top: 22px;
-  right: 5px;
-  bottom: 22px;
+  top: 12px;
+  right: 4px;
+  bottom: 12px;
   z-index: 4;
-  width: 18px;
+  width: 22px;
   overflow: hidden;
-  cursor: ns-resize;
+  cursor: grab;
   touch-action: none;
 }
 
@@ -552,17 +599,38 @@ h1 {
   position: absolute;
   top: 0;
   left: 50%;
-  width: 3px;
-  height: 64px;
-  margin-left: -1.5px;
+  width: 4px;
+  height: 32px;
+  margin-left: -2px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--hover) 40%, transparent);
   pointer-events: none;
+  will-change: transform;
 }
 
 .desk-rail:hover .desk-scroll,
 .desk-rail.is-dragging .desk-scroll {
   background: color-mix(in srgb, var(--hover) 65%, transparent);
+}
+
+.desk-rail.is-dragging {
+  cursor: grabbing;
+}
+
+@media (pointer: coarse) {
+  .mobile-sheet {
+    --rail-gap: 44px;
+  }
+
+  .desk-rail {
+    right: 0;
+    width: 44px;
+  }
+
+  .desk-scroll {
+    width: 5px;
+    margin-left: -2.5px;
+  }
 }
 
 .desk-resize {
@@ -1107,6 +1175,8 @@ select.choice-native {
   margin: 0;
   padding-top: 0;
   border-top: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .paint-kit > summary,
@@ -1172,6 +1242,8 @@ select.choice-native {
   display: none;
   flex-direction: column;
   margin-top: 8px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .paint-kit[open] > .paint-kit-body {
@@ -1183,6 +1255,8 @@ select.choice-native {
   margin: 0;
   padding: 4px 0;
   border-top: 1px solid var(--line);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pane > summary,
@@ -1501,7 +1575,10 @@ select.choice-native {
   justify-content: flex-start;
   gap: var(--label-gap);
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   min-height: 28px;
+  touch-action: pan-y;
 }
 
 .effect-groups details .slide + .slide {
@@ -1530,6 +1607,7 @@ select.choice-native {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
+  touch-action: pan-y;
 }
 
 .slide select,
@@ -1626,7 +1704,10 @@ select.choice-native {
 
 .wall {
   padding: 14px 12px 12px 10px;
-  overflow: auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+  overflow-y: auto;
   min-height: calc(100vh - 36px);
   max-height: calc(100vh - 36px);
 }
@@ -2412,14 +2493,19 @@ body.is-sheet-open {
     padding: 12px 14px 10px;
     gap: 10px;
     border-radius: 16px;
-    overflow-x: hidden;
+    overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior: contain;
+    overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
   }
 
   .desk:has(.paint-kit[open]) {
     height: 100%;
+  }
+
+  .mobile-sheet-body {
+    display: contents;
   }
 
   .desk-rail,
@@ -3084,6 +3170,10 @@ body.is-sheet-open {
     font-weight: 400;
   }
 
+  .mobile-sheet-body {
+    display: contents;
+  }
+
   .mobile-sheet {
     grid-row: 3;
     display: flex;
@@ -3096,8 +3186,12 @@ body.is-sheet-open {
     border-radius: 16px;
     background: color-mix(in srgb, var(--paper) 88%, #fff);
     box-shadow: none;
-    overflow-x: hidden;
+    overflow-x: clip;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     scrollbar-width: none;
   }
 
@@ -3108,8 +3202,11 @@ body.is-sheet-open {
   .mobile-sheet.is-expanded {
     height: min(68dvh, 580px);
     max-height: min(68dvh, 580px);
-    overflow-x: hidden;
+    overflow-x: clip;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
   }
 
   .mode-switch {
@@ -3729,6 +3826,7 @@ body.is-sheet-open {
     margin: 0;
     opacity: 0;
     cursor: ew-resize;
+    touch-action: pan-y;
   }
 
   .mobile-tool-dock {
