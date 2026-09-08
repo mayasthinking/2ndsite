@@ -2068,14 +2068,14 @@ select.choice-native {
   height: 7px;
   margin-left: -0.5px;
   border-radius: 1px;
-  background: color-mix(in srgb, var(--ink) 26%, transparent);
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
   transform-origin: 50% 0;
   transform: rotate(calc(var(--turn) + var(--ang))) translateY(calc(-1 * var(--hash-r)));
 }
 
 .brush-arc-hash.is-major {
   height: 11px;
-  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  background: color-mix(in srgb, var(--ink) 62%, transparent);
 }
 
 .brush-arc-face:focus-visible {
