@@ -2019,10 +2019,10 @@ select.choice-native {
   overflow: clip;
   contain: layout paint;
   clip-path: inset(0);
-  --apex: 4px;
-  --radius: 110px;
-  --icon-r: 28px;
-  --cy: 40px;
+  --apex: 10px;
+  --radius: 132px;
+  --icon-r: 98px;
+  --cy: 132px;
   --turn: 0deg;
 }
 
@@ -2046,11 +2046,21 @@ select.choice-native {
   background: transparent;
 }
 
-.brush-arc-ring,
-.brush-arc-stem,
-.brush-arc-pointer,
-.brush-arc-tick {
-  display: none;
+.brush-arc-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--icon-r) * 2);
+  height: var(--icon-r);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  border-bottom: none;
+  border-radius: var(--icon-r) var(--icon-r) 0 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.brush-arc-stem {
+  opacity: 0.55;
 }
 
 .brush-arc-face:focus-visible {
@@ -2171,8 +2181,8 @@ select.choice-native {
 .brush-arc-readout {
   position: absolute;
   left: 50%;
-  top: auto;
-  bottom: 8px;
+  top: calc(var(--apex) + 12px);
+  bottom: auto;
   z-index: 4;
   display: flex;
   flex-direction: column;
