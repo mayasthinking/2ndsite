@@ -2214,7 +2214,17 @@ select.choice-native {
 }
 
 .brush-arc-mark {
-  display: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  background: transparent;
+}
+
+.brush-arc-mark .brush-ico {
+  width: 13px;
+  height: 13px;
+  stroke-width: 1.7;
 }
 
 .brush-arc-label {

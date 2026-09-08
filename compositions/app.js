@@ -1,7 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial } from "./brush-dial.js?v=32";
+import { mountBrushDial } from "./brush-dial.js?v=33";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -944,7 +944,7 @@ function mountSheetEditor(sheet, item) {
     const height = phone ? 56 : staged ? 56 : 52;
     const fit = (height * height + (width / 2) ** 2) / (2 * height);
     const radius = Math.round(Math.max(width * 1.08, fit * 1.85));
-    const iconR = Math.round(radius - 16);
+    const iconR = Math.round(radius - 20);
     const hashR = Math.max(iconR + 12, radius - 4);
     const bar = staged ? 48 : 8;
     brushMenu.style.width = `${width}px`;
