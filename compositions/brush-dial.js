@@ -76,7 +76,7 @@ export function mountBrushDial({ host, value, onChange }) {
   const hashes = document.createElement("div");
   hashes.className = "brush-arc-hashes";
   hashes.setAttribute("aria-hidden", "true");
-  for (let deg = -90; deg <= 90; deg += 3) {
+  for (let deg = -90; deg <= 90; deg += 5) {
     const hash = document.createElement("span");
     hash.className = `brush-arc-hash${deg % 15 === 0 ? " is-major" : ""}`;
     hash.style.setProperty("--ang", `${deg}deg`);

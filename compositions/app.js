@@ -1,7 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial } from "./brush-dial.js?v=21";
+import { mountBrushDial } from "./brush-dial.js?v=22";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -942,7 +942,7 @@ function mountSheetEditor(sheet, item) {
     const width = radius * 2;
     const height = radius;
     const apex = 18;
-    const iconR = Math.round(radius * 0.68);
+    const iconR = Math.round(radius * 0.76);
     brushMenu.style.width = `${width}px`;
     brushMenu.style.height = `${height}px`;
     brushMenu.style.setProperty("--apex", `${apex}px`);
