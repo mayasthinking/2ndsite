@@ -2050,11 +2050,12 @@ select.choice-native {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: calc(var(--icon-r) * 2);
-  height: var(--icon-r);
-  border: 1.5px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  width: calc(var(--icon-r) * 2 + 44px);
+  height: calc(var(--icon-r) + 22px);
+  border: 36px solid color-mix(in srgb, var(--paper) 62%, transparent);
   border-bottom: none;
-  border-radius: var(--icon-r) var(--icon-r) 0 0;
+  border-radius: calc(var(--icon-r) + 22px) calc(var(--icon-r) + 22px) 0 0;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
   transform: translateX(-50%);
   pointer-events: none;
 }
