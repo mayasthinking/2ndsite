@@ -74,7 +74,8 @@ summary,
 .chip,
 .upload,
 .choice-trigger,
-.about-label {
+.about-label,
+.sheet-edit-brush {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -385,6 +386,7 @@ h1 {
   }
 
   .desk {
+    min-height: 0;
     gap: 20px;
     padding: 28px 8px 8px;
     background: transparent;
@@ -2006,57 +2008,68 @@ select.choice-native {
   box-shadow: none;
 }
 
-.sheet-edit .choice {
-  flex: 0 1 auto;
-  width: fit-content;
-  min-width: 4.5rem;
-  max-width: 6.75rem;
-  margin-inline-start: 0;
-  position: relative;
-  z-index: 1;
-}
 
-.sheet-edit .choice-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  height: 18px;
-  padding: 0 14px 0 8px;
+.sheet-edit-brush {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
   border: 0;
   background: transparent;
-  overflow: hidden;
-  font-size: 10px;
-  line-height: 18px;
-  color: var(--ink);
-}
-
-.sheet-edit .choice-trigger > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sheet-edit .choice-trigger svg {
-  width: 11px;
-  height: 11px;
   flex: 0 0 auto;
+  color: var(--ink);
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 
-.sheet-edit .choice-trigger::after {
-  right: 2px;
-  width: 5px;
-  height: 5px;
-}
-
-.sheet-edit .choice-trigger:hover,
-.sheet-edit .choice-trigger:focus-visible,
-.sheet-edit .choice.is-open .choice-trigger {
-  color: var(--hover);
+.sheet-edit-brush:focus-visible {
   outline: none;
+}
+
+.sheet-edit-brush-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+
+.sheet-edit-brush-face .lucide-icon {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+.sheet-edit-brush:hover,
+.sheet-edit-brush:focus-visible,
+.sheet-edit-brush[aria-expanded="true"] {
+  color: var(--hover);
+}
+
+.sheet-edit-brush:hover .sheet-edit-brush-face,
+.sheet-edit-brush:focus-visible .sheet-edit-brush-face,
+.sheet-edit-brush[aria-expanded="true"] .sheet-edit-brush-face {
+  color: inherit;
+}
+
+.brush-ico {
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.55;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.brush-arc-readout-dot .brush-ico {
+  width: 17px;
+  height: 17px;
 }
 
 .sheet-color-menu {
@@ -2064,6 +2077,195 @@ select.choice-native {
   padding: 10px;
   min-width: 0;
   overflow: visible;
+}
+
+.brush-dial-menu {
+  position: absolute;
+  z-index: 4;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+  pointer-events: none;
+  --apex: 5px;
+  --radius: 140px;
+  --icon-r: 120px;
+  --hash-r: 138px;
+  --cy: 140px;
+}
+
+.brush-dial-menu[hidden] {
+  display: none;
+}
+
+.brush-arc,
+.brush-arc-face {
+  width: 100%;
+  height: 100%;
+}
+
+.brush-arc-face {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.brush-arc-ring {
+  display: none;
+}
+
+.brush-arc-hashes {
+  position: absolute;
+  left: 50%;
+  top: var(--cy);
+  width: 0;
+  height: 0;
+  --turn: 0deg;
+  pointer-events: none;
+}
+
+.brush-arc-hash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 7px;
+  margin-left: -0.5px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+  transform-origin: 50% 0;
+  transform: rotate(calc(var(--turn) + var(--ang))) translateY(calc(-1 * var(--hash-r)));
+}
+
+.brush-arc-hash.is-major {
+  height: 11px;
+  background: color-mix(in srgb, var(--ink) 62%, transparent);
+}
+
+.brush-arc-face:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--hover) 45%, transparent);
+  outline-offset: -3px;
+}
+
+.brush-arc-face.is-dragging {
+  cursor: grabbing;
+}
+
+.brush-arc-track {
+  position: absolute;
+  left: 50%;
+  top: var(--cy);
+  width: 0;
+  height: 0;
+}
+
+.brush-arc-tick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(36, 33, 31, 0.5);
+  font: inherit;
+  line-height: 1;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transform: rotate(var(--ang));
+}
+
+.brush-arc-tick::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 40px;
+  height: 44px;
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 6px));
+}
+
+.brush-arc-tick.is-far {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.brush-arc-spoke {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 42px;
+  transform: translate(-50%, calc(-1 * var(--icon-r))) rotate(calc(-1 * var(--ang)));
+  pointer-events: none;
+}
+
+.brush-arc-mark {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.brush-arc-label {
+  display: block;
+  font-family: var(--ui);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: -0.011em;
+  line-height: 1;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.brush-arc-tick.is-active,
+.brush-arc-tick:hover {
+  color: var(--hover);
+}
+
+.brush-arc-tick.is-active .brush-arc-mark {
+  width: 18px;
+  height: 18px;
+  background: transparent;
+}
+
+.brush-arc-tick.is-active .brush-ico {
+  width: 15px;
+  height: 15px;
+}
+
+.brush-arc-tick.is-active .brush-arc-label {
+  font-size: 12px;
+}
+
+.brush-arc-pointer {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  z-index: 3;
+  width: 1.5px;
+  height: 10px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.brush-arc-readout {
+  display: none;
 }
 
 .frame {
@@ -2330,10 +2532,6 @@ body:has(.frame.is-carrying) {
   padding: 8px 4px 7px;
 }
 
-.sheet-stage .sheet-edit.is-left .choice,
-.sheet-stage .sheet-edit.is-right .choice {
-  min-width: 4.75rem;
-}
 
 .sheet-stage .sheet-edit-grip {
   width: 12px;
@@ -2387,23 +2585,23 @@ body:has(.frame.is-carrying) {
   height: 10px;
 }
 
-.sheet-stage .sheet-edit .choice {
-  flex: 0 1 auto;
-  width: fit-content;
-  min-width: 4.75rem;
-  max-width: 7rem;
+.sheet-stage .sheet-edit-brush {
+  width: 20px;
+  height: 20px;
 }
 
-.sheet-stage .sheet-edit .choice-trigger {
-  height: 22px;
-  padding: 0 16px 0 10px;
-  font-size: 12px;
-  line-height: 22px;
+.sheet-stage .sheet-edit-brush-face {
+  width: 18px;
+  height: 18px;
 }
 
-.sheet-stage .sheet-edit .choice-trigger svg {
-  width: 13px;
-  height: 13px;
+.sheet-stage .sheet-edit-brush-face .lucide-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.brush-dial-menu.is-stage .brush-arc-label {
+  font-size: 11px;
 }
 
 .sheet-stage .expand {
@@ -2966,30 +3164,28 @@ body.is-sheet-open {
     direction: ltr;
   }
 
-  .sheet-edit .choice,
-  .sheet-edit .choice-trigger {
-    min-height: 0;
-    height: auto;
+  .sheet-edit-brush {
+    width: 34px;
+    height: 34px;
   }
 
-  .sheet-edit .choice {
-    flex: 0 1 auto;
-    width: fit-content;
-    min-width: 4.5rem;
-    max-width: 6.75rem;
+  .sheet-edit-brush-face {
+    width: 22px;
+    height: 22px;
   }
 
-  .sheet-edit .choice-trigger {
+  .sheet-edit-brush-face .lucide-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .brush-arc-readout-name {
+    font-size: 11px;
+  }
+
+  .brush-arc-tick::after {
+    width: 40px;
     height: 44px;
-    min-height: 44px;
-    padding: 0 22px 0 6px;
-    font-size: 13px;
-    line-height: 44px;
-  }
-
-  .sheet-edit .choice-trigger svg {
-    width: 14px;
-    height: 14px;
   }
 
   .sheet-color-menu {
@@ -3105,17 +3301,19 @@ body.is-sheet-open {
     height: 7px;
   }
 
-  .sheet-stage .sheet-edit .choice-trigger {
+  .sheet-stage .sheet-edit-brush {
+    width: 32px;
     height: 32px;
-    min-height: 32px;
-    padding: 0 16px 0 6px;
-    font-size: 12px;
-    line-height: 32px;
   }
 
-  .sheet-stage .sheet-edit .choice-trigger svg {
-    width: 11px;
-    height: 11px;
+  .sheet-stage .sheet-edit-brush-face {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sheet-stage .sheet-edit-brush-face .lucide-icon {
+    width: 13px;
+    height: 13px;
   }
 
   .wall {
@@ -3615,61 +3813,6 @@ body.is-sheet-open {
 
   [data-tool-panel].is-active {
     display: flex;
-  }
-
-  .mobile-brush-options {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: flex-start;
-    gap: 10px;
-    width: 100%;
-    padding: 4px 5px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .mobile-brush-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    flex: 0 0 58px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-    font-size: 10px;
-    cursor: pointer;
-  }
-
-  .mobile-brush-mark {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1.25px solid color-mix(in srgb, var(--ink) 16%, transparent);
-    border-radius: 50%;
-    background: transparent;
-  }
-
-  .mobile-brush-mark::before {
-    content: "";
-    width: 22px;
-    height: 3px;
-    border-radius: 999px;
-    background: currentColor;
-    transform: rotate(-32deg);
-  }
-
-  .mobile-brush-option.is-active {
-    color: var(--hover);
-  }
-
-  .mobile-brush-option.is-active .mobile-brush-mark {
-    border-color: var(--hover);
-    background: transparent;
-    box-shadow: none;
   }
 
   .mobile-color-panel {

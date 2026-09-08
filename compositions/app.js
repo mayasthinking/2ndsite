@@ -1,6 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
+import { mountBrushDial } from "./brush-dial.js?v=29";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -30,7 +31,6 @@ const brushControlsEl = document.querySelector("#brushControls");
 const placementEl = document.querySelector("#placement");
 const placementControlsEl = document.querySelector("#placementControls");
 const mobileEditor = document.querySelector("#mobileEditor");
-const mobileBrushOptions = document.querySelector(".mobile-brush-options");
 const mobileToolButtons = [...document.querySelectorAll("[data-mobile-tool]")];
 const mobileToolPanels = [...document.querySelectorAll("[data-tool-panel]")];
 const mobileEffectInputs = [...document.querySelectorAll("[data-mobile-effect]")];
@@ -78,6 +78,28 @@ function closeSheetColorMenus() {
   }
   for (const btn of document.querySelectorAll(".sheet-edit-color[aria-expanded='true']")) {
     btn.setAttribute("aria-expanded", "false");
+  }
+}
+
+function closeBrushDials() {
+  for (const menu of document.querySelectorAll(".brush-dial-menu")) {
+    menu.hidden = true;
+    const host = menu._host;
+    if (host && menu.parentElement !== host) host.append(menu);
+  }
+  for (const btn of document.querySelectorAll(".sheet-edit-brush[aria-expanded='true']")) {
+    btn.setAttribute("aria-expanded", "false");
+  }
+  const brushTool = mobileToolButtons.find((btn) => btn.dataset.mobileTool === "brush");
+  if (brushTool?.classList.contains("is-active")) {
+    brushTool.classList.remove("is-active");
+    brushTool.setAttribute("aria-pressed", "false");
+  }
+}
+
+function placeOpenBrushDials() {
+  for (const menu of document.querySelectorAll(".brush-dial-menu:not([hidden])")) {
+    menu._place?.();
   }
 }
 
@@ -187,6 +209,7 @@ function mountChoice(select, options = {}) {
   function open() {
     closeChoiceMenus(wrap);
     closeSheetColorMenus();
+    closeBrushDials();
     renderMenu();
     wrap.classList.add("is-open");
     trigger.setAttribute("aria-expanded", "true");
@@ -307,17 +330,20 @@ function closePopovers() {
   if (Date.now() < popoverHold) return;
   closeChoiceMenus();
   closeSheetColorMenus();
+  closeBrushDials();
 }
 
 document.addEventListener("pointerdown", (event) => {
   if (event.target.closest(".choice") || event.target.closest(".choice-menu")) return;
   if (event.target.closest(".sheet-edit-color") || event.target.closest(".sheet-color-menu")) return;
+  if (event.target.closest(".sheet-edit-brush") || event.target.closest(".brush-dial-menu")) return;
+  if (event.target.closest("[data-mobile-tool='brush']")) return;
   closePopovers();
 });
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
-  const popoverOpen = document.querySelector(".choice.is-open, .sheet-color-menu:not([hidden])");
+  const popoverOpen = document.querySelector(".choice.is-open, .sheet-color-menu:not([hidden]), .brush-dial-menu:not([hidden])");
   if (popoverOpen) {
     closePopovers();
     return;
@@ -326,7 +352,9 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("resize", () => {
-  closePopovers();
+  closeChoiceMenus();
+  closeSheetColorMenus();
+  placeOpenBrushDials();
   sizeScene();
   syncAppHeight();
 });
@@ -334,7 +362,7 @@ document.addEventListener(
   "scroll",
   (event) => {
     const target = event.target;
-    if (target instanceof Element && target.closest(".choice-menu, .sheet-color-menu, .sheet-edit")) return;
+    if (target instanceof Element && target.closest(".choice-menu, .sheet-color-menu, .brush-dial-menu, .sheet-edit")) return;
     closePopovers();
   },
   true
@@ -714,7 +742,7 @@ function syncSheetEditor(rec) {
   const fx = sheetEffects(rec);
   const swatch = edit.querySelector(".sheet-edit-swatch");
   const sat = edit.querySelector(".sheet-edit-sat input");
-  const brush = edit.querySelector(".sheet-edit-brush");
+  const brushBtn = edit.querySelector(".sheet-edit-brush");
   const hex = oklchToHex(fx.color || DEFAULT_COLOR);
   if (swatch) swatch.style.background = hex;
   if (sat) {
@@ -724,8 +752,13 @@ function syncSheetEditor(rec) {
     rail?.style.setProperty("--sat", String(pct / 100));
     rail?.style.setProperty("--pigment", hex);
   }
-  if (brush) brush.value = fx.brushType || "HB";
+  const brushName = fx.brushType || "HB";
+  if (brushBtn) {
+    brushBtn.dataset.brush = brushName;
+    brushBtn.setAttribute("aria-label", `brush, ${brushName.toLowerCase()}`);
+  }
   edit._colorPicker?.setValue(fx.color || DEFAULT_COLOR);
+  edit._brushDial?.setValue(brushName);
 }
 
 function afterDeskChange() {
@@ -747,24 +780,7 @@ function mountSheetEditor(sheet, item) {
   const grip = edit.querySelector(".sheet-edit-grip");
   const colorBtn = edit.querySelector(".sheet-edit-color");
   const sat = edit.querySelector(".sheet-edit-sat input");
-  const brush = edit.querySelector(".sheet-edit-brush");
-  brush.id = `sheet-brush-${item.id}`;
-  for (const name of BRUSH_TYPES) {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name.toLowerCase();
-    brush.append(option);
-  }
-  mountChoice(brush, {
-    renderTrigger(trigger, _value, label) {
-      const icon = document.querySelector('[data-mobile-tool="brush"] svg')?.cloneNode(true) || document.createElement("span");
-      icon.setAttribute("aria-hidden", "true");
-      const word = document.createElement("span");
-      word.textContent = label;
-      trigger.replaceChildren(icon, word);
-    },
-  });
-  brush.closest(".choice")?.classList.add("is-sheet");
+  const brushBtn = edit.querySelector(".sheet-edit-brush");
 
   const colorMenu = document.createElement("div");
   colorMenu.className = "choice-menu sheet-color-menu";
@@ -837,8 +853,25 @@ function mountSheetEditor(sheet, item) {
     rec.item.effects = clampEffects({ ...sheetEffects(rec), ...patch });
     selectPainting(item.id);
     persistSettings();
-    scheduleSheetRender(item.id);
+    scheduleSheetRender(item.id, patch.brushType ? 90 : 280);
   };
+
+  const brushMenu = document.createElement("div");
+  brushMenu.className = "brush-dial-menu";
+  brushMenu.setAttribute("role", "dialog");
+  brushMenu.setAttribute("aria-label", "brush");
+  brushMenu.id = `sheet-brush-${item.id}`;
+  brushMenu.dataset.sheet = item.id;
+  brushMenu.hidden = true;
+  brushMenu._host = edit;
+  edit._brushMenu = brushMenu;
+  brushBtn.setAttribute("aria-controls", brushMenu.id);
+  edit.append(brushMenu);
+  edit._brushDial = mountBrushDial({
+    host: brushMenu,
+    value: sheetEffects({ item }).brushType || "HB",
+    onChange: (brushType) => apply({ brushType }),
+  });
 
   const placeColorMenu = () => {
     const rect = colorBtn.getBoundingClientRect();
@@ -857,6 +890,7 @@ function mountSheetEditor(sheet, item) {
   const openColorMenu = () => {
     closeChoiceMenus();
     closeSheetColorMenus();
+    closeBrushDials();
     colorBtn.setAttribute("aria-expanded", "true");
     document.body.append(colorMenu);
     colorMenu.hidden = false;
@@ -870,6 +904,7 @@ function mountSheetEditor(sheet, item) {
     event.stopPropagation();
     if (!event.target.closest(".choice, .choice-menu")) closeChoiceMenus();
     if (!event.target.closest(".sheet-edit-color, .sheet-color-menu")) closeSheetColorMenus();
+    if (!event.target.closest(".sheet-edit-brush, .brush-dial-menu")) closeBrushDials();
   });
 
   let colorOpenedAt = 0;
@@ -897,7 +932,76 @@ function mountSheetEditor(sheet, item) {
     rail?.style.setProperty("--sat", String(Number(sat.value) / 100));
     apply({ color: { ...current, c: (Number(sat.value) / 100) * SAT_MAX } });
   });
-  brush.addEventListener("change", () => apply({ brushType: brush.value }));
+
+  const placeBrushDial = () => {
+    const painting = frame.getBoundingClientRect();
+    const staged = sheet.classList.contains("is-expanded");
+    brushMenu.classList.toggle("is-stage", staged);
+    const phone = isPhone();
+    const width = Math.round(
+      Math.max(phone ? 196 : 180, Math.min(painting.width * (phone ? 0.72 : 0.62), painting.width - (phone ? 28 : 48), phone ? 260 : 228))
+    );
+    const height = phone ? 56 : staged ? 56 : 52;
+    const fit = (height * height + (width / 2) ** 2) / (2 * height);
+    const radius = Math.round(Math.max(width * 1.08, fit * 1.85));
+    const iconR = Math.round(radius - 22);
+    const hashR = Math.max(iconR + 12, radius - 4);
+    const bar = staged ? 48 : 8;
+    brushMenu.style.width = `${width}px`;
+    brushMenu.style.height = `${height}px`;
+    brushMenu.style.setProperty("--apex", "5px");
+    brushMenu.style.setProperty("--radius", `${radius}px`);
+    brushMenu.style.setProperty("--icon-r", `${iconR}px`);
+    brushMenu.style.setProperty("--hash-r", `${hashR}px`);
+    brushMenu.style.setProperty("--cy", `${radius}px`);
+    if (brushMenu.parentElement !== frame) frame.append(brushMenu);
+    brushMenu.style.left = `${Math.round((painting.width - width) / 2)}px`;
+    brushMenu.style.top = `${Math.round(painting.height - height - bar)}px`;
+  };
+
+  const openBrushDial = () => {
+    closeChoiceMenus();
+    closeSheetColorMenus();
+    closeBrushDials();
+    brushBtn.setAttribute("aria-expanded", "true");
+    frame.append(brushMenu);
+    brushMenu.hidden = false;
+    holdPopovers();
+    placeBrushDial();
+    if (isPhone()) setMobileTool("brush");
+  };
+
+  brushMenu._place = placeBrushDial;
+  edit._openBrushDial = openBrushDial;
+  edit._toggleBrushDial = () => {
+    const open = brushBtn.getAttribute("aria-expanded") === "true" && !brushMenu.hidden;
+    if (open) {
+      closeBrushDials();
+      return false;
+    }
+    openBrushDial();
+    return true;
+  };
+
+  let brushOpenedAt = 0;
+  brushBtn.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (brushBtn.getAttribute("aria-expanded") === "true") {
+      if (Date.now() - brushOpenedAt < 400) return;
+      closeBrushDials();
+    } else {
+      openBrushDial();
+      brushOpenedAt = Date.now();
+    }
+  });
+  brushMenu.addEventListener("pointerdown", (event) => event.stopPropagation());
+  brushMenu.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeBrushDials();
+      brushBtn.focus();
+    }
+  });
 
   let dragging = false;
   const follow = (event) => {
@@ -1243,7 +1347,7 @@ function applyMobilePatch(patch) {
   syncSheetEditor(rec);
   syncMobileEditor(rec);
   persistSettings();
-  scheduleSheetRender(selectedId);
+  scheduleSheetRender(selectedId, patch.brushType ? 90 : 280);
 }
 
 function syncMobileEditor(rec = selectedId ? cards.get(selectedId) : null) {
@@ -1253,11 +1357,6 @@ function syncMobileEditor(rec = selectedId ? cards.get(selectedId) : null) {
   for (const input of mobileEffectInputs) {
     input.value = String(Math.round((fx[input.dataset.mobileEffect] ?? 0.5) * 100));
     input.closest(".mobile-tick-scale")?.style.setProperty("--value", input.value);
-  }
-  for (const button of mobileBrushOptions?.querySelectorAll("[data-brush-type]") || []) {
-    const on = button.dataset.brushType === fx.brushType;
-    button.classList.toggle("is-active", on);
-    button.setAttribute("aria-pressed", on ? "true" : "false");
   }
   const hex = oklchToHex(fx.color || DEFAULT_COLOR);
   document.querySelector(".mobile-color-icon")?.style.setProperty("--tool-color", hex);
@@ -1276,17 +1375,7 @@ function setMobileTool(name) {
 }
 
 function mountMobileEditor() {
-  if (!mobileEditor || !mobileBrushOptions) return;
-  for (const name of BRUSH_TYPES) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "mobile-brush-option";
-    button.dataset.brushType = name;
-    button.setAttribute("aria-pressed", "false");
-    button.innerHTML = `<span class="mobile-brush-mark" aria-hidden="true"></span><span>${name.toLowerCase()}</span>`;
-    button.addEventListener("click", () => applyMobilePatch({ brushType: name }));
-    mobileBrushOptions.append(button);
-  }
+  if (!mobileEditor) return;
   mobileColorPicker = mountColorSquare({
     host: document.querySelector("#mobilePigments"),
     value: effects.color || DEFAULT_COLOR,
@@ -1295,7 +1384,15 @@ function mountMobileEditor() {
   });
   for (const button of mobileToolButtons) {
     button.addEventListener("click", () => {
-      setMobileTool(button.classList.contains("is-active") ? null : button.dataset.mobileTool);
+      const name = button.dataset.mobileTool;
+      if (name === "brush") {
+        const rec = selectedId ? cards.get(selectedId) : null;
+        const opened = rec?.sheet.querySelector(".sheet-edit")?._toggleBrushDial?.();
+        setMobileTool(opened ? "brush" : null);
+        return;
+      }
+      closeBrushDials();
+      setMobileTool(button.classList.contains("is-active") ? null : name);
     });
   }
   for (const input of mobileEffectInputs) {
@@ -1488,11 +1585,11 @@ function scheduleEffectRender() {
   afterDeskChange();
 }
 
-function scheduleSheetRender(id) {
+function scheduleSheetRender(id, delay = 280) {
   if (!id) return;
   dirtyIds.add(id);
   clearTimeout(effectTimer);
-  effectTimer = setTimeout(flushEffects, 280);
+  effectTimer = setTimeout(flushEffects, delay);
 }
 
 function flushEffects() {
@@ -1707,7 +1804,9 @@ function closeSheetStage() {
 function clearWall() {
   closeSheetStage();
   closePopovers();
-  document.querySelectorAll(".sheet-color-menu").forEach((menu) => menu.remove());
+  document.querySelectorAll(".sheet-color-menu, .brush-dial-menu").forEach((menu) => {
+    menu.remove();
+  });
   paintQueue.length = 0;
   photoPreviewQueue.length = 0;
   paintingNow = false;
@@ -1767,7 +1866,13 @@ function renderGrid(items) {
               <input type="range" min="0" max="100" step="1" aria-label="saturation" />
             </span>
           </label>
-          <select class="sheet-edit-brush" aria-label="brush"></select>
+          <button type="button" class="sheet-edit-brush" title="brush" aria-label="brush" aria-haspopup="dialog" aria-expanded="false">
+            <span class="sheet-edit-brush-face" aria-hidden="true">
+              <svg class="lucide-icon" viewBox="0 0 24 24">
+                <use href="#icon-paintbrush"></use>
+              </svg>
+            </span>
+          </button>
         </div>
         <span class="caption-meta">
           <button type="button" class="save" data-id="${item.id}" aria-label="save png" title="save" disabled>
@@ -1973,7 +2078,7 @@ function mountMobileVariationSwipe() {
     "pointerdown",
     (event) => {
       if (!isPhone()) return;
-      if (event.target.closest("button, a, input, select, .variation-pager, .mobile-sheet")) return;
+      if (event.target.closest("button, a, input, select, .variation-pager, .mobile-sheet, .brush-dial-menu")) return;
       if (wallEl.querySelectorAll(".sheet").length < 2) return;
       startX = event.clientX;
       startY = event.clientY;
@@ -2373,7 +2478,7 @@ sheetStageEl?.addEventListener("click", (event) => {
   let startY = 0;
   let tracking = false;
   sheetStageEl?.addEventListener("pointerdown", (event) => {
-    if (!isCompact() || event.target.closest("button, input, select, .sheet-edit, a, .choice-menu, .frame")) return;
+    if (!isCompact() || event.target.closest("button, input, select, .sheet-edit, a, .choice-menu, .brush-dial-menu, .frame")) return;
     startY = event.clientY;
     tracking = true;
   });
