@@ -13,11 +13,13 @@ import {
   cosineSimilarity,
   expandVisualQuery,
   genreMatchScore,
-  genreSearchQuery,
+  identityScore,
+  matchKind,
   rankSeedRecords,
   SEMANTIC_MODEL,
   SEMANTIC_MODEL_DTYPE,
   semanticText,
+  sourceSearchQuery,
 } from "../lib/compositions/semantic-search.mjs";
 
 const STORAGE_KEY = "compositions.library.kept.v2";
@@ -130,6 +132,13 @@ function isCuratedRecord(record) {
 
 function seedMatchesSource(record) {
   return sourceFilter === "both" || recordSourceKind(record) === sourceFilter;
+}
+
+function seedMatchLabel(item, modelRanked = false) {
+  const kind = currentQuery ? matchKind(currentQuery, item) : "caption";
+  if (kind === "artist") return "artist match";
+  if (kind === "title") return "title match";
+  return modelRanked ? "semantic match" : "caption match";
 }
 
 function seedToItem(record) {
@@ -318,11 +327,19 @@ function curatedShelfItems() {
     .map((record) => seedToItem({ ...record, semanticScore: 1 }));
 }
 
+function rankingQuery(search = currentQuery) {
+  return sourceSearchQuery(search, genreFilter, "semantic");
+}
+
 function rankedSeed(query, queryEmbedding = null) {
   const pool = seedRecords.filter(seedMatchesSource).filter(licenseOk);
   const limit = isCuratedGenre() ? 20 : 12;
   return rankSeedRecords(query, pool, semanticIndex, queryEmbedding, genreFilter)
-    .filter((record) => record.semanticScore > 0.08 || isCuratedRecord(record))
+    .filter((record) =>
+      currentQuery
+        ? record.semanticScore > 0.28 || identityScore(query, record) >= 0.5
+        : record.semanticScore > 0.08 || isCuratedRecord(record),
+    )
     .slice(0, limit)
     .map(seedToItem);
 }
@@ -340,7 +357,7 @@ function interleaveSources(items) {
 }
 
 function currentVisibleResults(query, queryEmbedding = null) {
-  const curated = curatedShelfItems();
+  const curated = currentQuery ? [] : curatedShelfItems();
   const known = new Set(curated.map((item) => item.id));
   const includeRankedSeeds = Boolean(currentQuery) || !isCuratedGenre();
   const seed = includeRankedSeeds
@@ -370,17 +387,20 @@ async function rerankWithModel(query, sequence) {
     remoteResults = remoteResults
       .map((item) => ({
         ...item,
-        semanticScore: cosineSimilarity(queryEmbedding, candidateVectors.get(item.id)),
+        semanticScore: Math.max(
+          identityScore(query, item),
+          cosineSimilarity(queryEmbedding, candidateVectors.get(item.id)),
+        ),
       }))
       .sort((left, right) => right.semanticScore - left.semanticScore);
     renderResults(query, queryEmbedding, true);
     setStatus(
-      `${rankedSeed(query, queryEmbedding).length} caption matches · ${remoteResults.length} open-access candidates.`,
+      `${rankedSeed(query, queryEmbedding).length} matches · ${remoteResults.length} open-access candidates.`,
     );
   } catch {
     if (sequence === searchSequence) {
       setStatus(
-        `${rankedSeed(query).length} local caption matches · open-access results are ready. embedding model unavailable.`,
+        `${rankedSeed(query).length} local matches · open-access results are ready. embedding model unavailable.`,
       );
     }
   }
@@ -388,6 +408,15 @@ async function rerankWithModel(query, sequence) {
 
 function updateWallCopy() {
   const shelf = curatedShelf();
+  if (currentQuery) {
+    if (resultsEyebrow) {
+      resultsEyebrow.textContent = shelf
+        ? `search in ${shelf.label} · artist, title, and meaning`
+        : "artist, title, and meaning · met open access + commons";
+    }
+    if (resultsTitle) resultsTitle.textContent = currentQuery;
+    return;
+  }
   if (shelf) {
     if (resultsEyebrow) resultsEyebrow.textContent = "curated tray · met open access + commons";
     if (resultsTitle) resultsTitle.textContent = shelf.label;
@@ -404,7 +433,7 @@ async function searchLibrary({ append = false } = {}) {
     setStatus("add a search or choose a genre.");
     return;
   }
-  const rankQuery = genreSearchQuery(search, genreFilter, "semantic");
+  const rankQuery = rankingQuery(search);
   if (!search && isCuratedGenre() && !append) {
     const shelf = curatedShelf();
     requestController?.abort();
@@ -434,11 +463,11 @@ async function searchLibrary({ append = false } = {}) {
     gridEl.setAttribute("aria-busy", "true");
     renderResults(rankQuery);
   }
-  setStatus(append ? "opening another image shelf…" : "ranking captions by meaning…", true);
+  setStatus(append ? "opening another image shelf…" : "ranking by artist, title, and meaning…", true);
 
   try {
-    const expanded = expandVisualQuery(genreSearchQuery(search, genreFilter, "commons"), 8);
-    const metQuery = genreSearchQuery(search, genreFilter, "met");
+    const expanded = expandVisualQuery(sourceSearchQuery(search, genreFilter, "commons"), 8);
+    const metQuery = sourceSearchQuery(search, genreFilter, "met");
     const sources = selectedSources().filter(
       (source) => !append || continuations[source] !== null,
     );
@@ -459,11 +488,15 @@ async function searchLibrary({ append = false } = {}) {
       const source = sources[index];
       const incoming = result.value.items
         .filter((item) => !known.has(item.id))
-        .sort(
-          (left, right) =>
+        .sort((left, right) => {
+          const rightIdentity = identityScore(search, right);
+          const leftIdentity = identityScore(search, left);
+          if (rightIdentity !== leftIdentity) return rightIdentity - leftIdentity;
+          return (
             genreMatchScore(genreFilter, semanticText(toDatasetRecord(right))) -
-            genreMatchScore(genreFilter, semanticText(toDatasetRecord(left))),
-        );
+            genreMatchScore(genreFilter, semanticText(toDatasetRecord(left)))
+          );
+        });
       remoteResults.push(...incoming);
       incoming.forEach((item) => known.add(item.id));
       continuations[source] = result.value.continue;
@@ -473,14 +506,14 @@ async function searchLibrary({ append = false } = {}) {
     }
     renderResults(rankQuery);
     setStatus(
-      `${rankedSeed(rankQuery).length} caption matches · ${remoteResults.length} open-access candidates. refining…`,
+      `${rankedSeed(rankQuery).length} matches · ${remoteResults.length} open-access candidates. refining…`,
       true,
     );
     rerankWithModel(rankQuery, sequence);
   } catch (error) {
     if (error.name !== "AbortError") {
       renderResults(rankQuery);
-      setStatus(`${rankedSeed(rankQuery).length} local caption matches · image sources are quiet right now.`);
+      setStatus(`${rankedSeed(rankQuery).length} local matches · image sources are quiet right now.`);
       rerankWithModel(rankQuery, sequence);
     }
   } finally {
@@ -490,7 +523,7 @@ async function searchLibrary({ append = false } = {}) {
 }
 
 function renderResults(
-  query = genreSearchQuery(currentQuery, genreFilter, "semantic"),
+  query = rankingQuery(),
   queryEmbedding = null,
   modelRanked = false,
 ) {
@@ -503,7 +536,7 @@ function renderResults(
   resultCountEl.textContent = visible.length
     ? curatedCount && isCuratedGenre()
       ? `${curatedCount} curated · ${visible.length} showing`
-      : `${seedCount + curatedCount} meaning ${seedCount + curatedCount === 1 ? "match" : "matches"} · ${visible.length} showing`
+      : `${seedCount + curatedCount} ${seedCount + curatedCount === 1 ? "match" : "matches"} · ${visible.length} showing`
     : "";
   moreButton.hidden = !selectedSources().some((source) => continuations[source] !== null);
 }
@@ -536,7 +569,7 @@ function createCandidateCard(item, modelRanked = false) {
     item.isCurated
       ? `curated ${item.curatedLabel || "tray"} · ${item.source}`
       : item.isSeed
-        ? `${modelRanked ? "semantic" : "caption"} match · ${Math.round(item.semanticScore * 100)}%`
+        ? `${seedMatchLabel(item, modelRanked)} · ${Math.round(item.semanticScore * 100)}%`
         : item.semanticScore
           ? `${item.source} rerank · ${Math.round(item.semanticScore * 100)}%`
           : item.source,
