@@ -4,8 +4,10 @@ import { readFile } from "node:fs/promises";
 
 import { parseJsonl } from "../scripts/caption-compositions.mjs";
 import {
+  expandVisualQuery,
   identityScore,
   matchKind,
+  OPEN_ACCESS_BROWSE,
   rankSeedRecords,
   semanticText,
   sourceSearchQuery,
@@ -64,6 +66,29 @@ test("typed queries stay literal for Commons and Met instead of appending genre 
   assert.equal(sourceSearchQuery("", "romantic-wash", "met"), "romantic wash");
 });
 
+test("an empty all-genre browse does not inject romantic-wash vocabulary", () => {
+  const commonsBrowse = expandVisualQuery(sourceSearchQuery("", "", "commons"), 8);
+  assert.equal(sourceSearchQuery("", "", "commons"), OPEN_ACCESS_BROWSE.commons);
+  assert.equal(sourceSearchQuery("", "", "met"), OPEN_ACCESS_BROWSE.met);
+  assert.equal(sourceSearchQuery("", "", "semantic"), "");
+  assert.doesNotMatch(commonsBrowse, /romantic wash|watercolor|mist|airy|garden/);
+  assert.doesNotMatch(sourceSearchQuery("", "", "met"), /romantic wash|watercolor|mist|airy/);
+  assert.equal(OPEN_ACCESS_BROWSE.met, "*");
+});
+
+test("empty all-genre ranking does not boost the romantic-wash tray", () => {
+  const kitchen = {
+    id: "kitchen",
+    title: "Untitled",
+    caption_long: "A dim empty kitchen after supper.",
+    caption_short: "an empty kitchen",
+    category: "interior",
+  };
+  const ranked = rankSeedRecords("", [kitchen, romantic[0]], {}, null, "");
+  assert.equal(ranked[0].id, "kitchen");
+  assert.equal(ranked[0].semanticScore, ranked[1].semanticScore);
+});
+
 test("library copy and search path cover artist, title, and meaning", async () => {
   const [html, js] = await Promise.all([
     readFile(new URL("../compositions/library.html", import.meta.url), "utf8"),
@@ -77,5 +102,7 @@ test("library copy and search path cover artist, title, and meaning", async () =
   assert.match(js, /identityScore/);
   assert.match(js, /currentQuery \? \[\] : curatedShelfItems/);
   assert.match(js, /identityScore\(query, record\) >= 0\.5/);
+  assert.match(js, /browsingOpenAccess/);
+  assert.match(html, /<h2 id="resultsTitle">open access<\/h2>/);
   assert.doesNotMatch(js, /ranking captions by meaning/);
 });

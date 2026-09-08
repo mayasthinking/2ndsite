@@ -38,7 +38,6 @@ const CURATED_SHELVES = {
     empty: "the impressionism tray is quiet right now.",
   },
 };
-const DEFAULT_CURATED_GENRE = "romantic-wash";
 const searchForm = document.querySelector("#librarySearch");
 const queryInput = document.querySelector("#libraryQuery");
 const statusEl = document.querySelector("#libraryStatus");
@@ -54,7 +53,7 @@ const exportButton = document.querySelector("#exportKept");
 
 let licenseFilter = "public-domain";
 let sourceFilter = "both";
-let genreFilter = DEFAULT_CURATED_GENRE;
+let genreFilter = "";
 let exportFormat = "json";
 let continuations = { commons: null, met: null };
 let currentQuery = "";
@@ -331,14 +330,20 @@ function rankingQuery(search = currentQuery) {
   return sourceSearchQuery(search, genreFilter, "semantic");
 }
 
+function browsingOpenAccess() {
+  return !currentQuery && !isCuratedGenre();
+}
+
 function rankedSeed(query, queryEmbedding = null) {
   const pool = seedRecords.filter(seedMatchesSource).filter(licenseOk);
-  const limit = isCuratedGenre() ? 20 : 12;
+  const limit = isCuratedGenre() ? 20 : browsingOpenAccess() ? pool.length : 12;
   return rankSeedRecords(query, pool, semanticIndex, queryEmbedding, genreFilter)
     .filter((record) =>
       currentQuery
         ? record.semanticScore > 0.28 || identityScore(query, record) >= 0.5
-        : record.semanticScore > 0.08 || isCuratedRecord(record),
+        : browsingOpenAccess()
+          ? true
+          : record.semanticScore > 0.08 || isCuratedRecord(record),
     )
     .slice(0, limit)
     .map(seedToItem);
@@ -423,16 +428,11 @@ function updateWallCopy() {
     return;
   }
   if (resultsEyebrow) resultsEyebrow.textContent = "caption index + commons + met open access";
-  if (resultsTitle) resultsTitle.textContent = "meaning shelves";
+  if (resultsTitle) resultsTitle.textContent = "open access";
 }
 
 async function searchLibrary({ append = false } = {}) {
   const search = queryInput.value.trim();
-  if (!search && !genreFilter) {
-    queryInput.focus();
-    setStatus("add a search or choose a genre.");
-    return;
-  }
   const rankQuery = rankingQuery(search);
   if (!search && isCuratedGenre() && !append) {
     const shelf = curatedShelf();
