@@ -6,27 +6,45 @@ function hideSprite(svg) {
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
   svg.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+  svg.querySelectorAll("symbol[id]").forEach((symbol) => {
+    const name = symbol.id;
+    symbol.dataset.lucideName = name;
+    symbol.id = `lucide-${name}`;
+  });
 }
 
-export async function loadSprite(doc = document) {
+const pending = new WeakMap();
+
+export function loadSprite(doc = document) {
   const existing = doc.getElementById(SPRITE_ID);
-  if (existing) return existing;
+  if (existing) return Promise.resolve(existing);
 
-  const response = await fetch(SPRITE_URL);
-  if (!response.ok) {
-    throw new Error(`Could not load Lucide sprite (${response.status})`);
-  }
+  const inflight = pending.get(doc);
+  if (inflight) return inflight;
 
-  const wrapper = doc.createElement("div");
-  wrapper.innerHTML = await response.text();
-  const svg = wrapper.querySelector("svg");
-  if (!svg) {
-    throw new Error("Lucide sprite.svg did not contain an <svg>");
-  }
+  const task = (async () => {
+    const already = doc.getElementById(SPRITE_ID);
+    if (already) return already;
 
-  hideSprite(svg);
-  doc.body.prepend(svg);
-  return svg;
+    const response = await fetch(SPRITE_URL);
+    if (!response.ok) {
+      throw new Error(`Could not load Lucide sprite (${response.status})`);
+    }
+
+    const wrapper = doc.createElement("div");
+    wrapper.innerHTML = await response.text();
+    const svg = wrapper.querySelector("svg");
+    if (!svg) {
+      throw new Error("Lucide sprite.svg did not contain an <svg>");
+    }
+
+    hideSprite(svg);
+    doc.body.prepend(svg);
+    return svg;
+  })();
+
+  pending.set(doc, task);
+  return task;
 }
 
 export function iconSvg(name, doc = document) {
@@ -38,7 +56,7 @@ export function iconSvg(name, doc = document) {
   svg.dataset.lucide = name;
 
   const use = doc.createElementNS("http://www.w3.org/2000/svg", "use");
-  use.setAttribute("href", `#${name}`);
+  use.setAttribute("href", `#lucide-${name}`);
   svg.append(use);
   return svg;
 }

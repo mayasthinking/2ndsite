@@ -189,7 +189,7 @@
     ]);
 
     const icons = [...sprite.querySelectorAll("symbol")].map((symbol) => {
-      const name = symbol.id;
+      const name = symbol.dataset.lucideName || symbol.id.replace(/^lucide-/, "");
       const mark = [
         name,
         ...(tags[name] || []),
@@ -214,14 +214,27 @@
       toastTimer = window.setTimeout(() => toast.classList.remove("is-on"), 1400);
     }
 
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.cssText = "position:fixed;left:-9999px;top:0";
+        document.body.append(area);
+        area.select();
+        const ok = document.execCommand("copy");
+        area.remove();
+        return ok;
+      }
+    }
+
     async function copyIcon(icon) {
       const markup = svgMarkup(icon);
-      try {
-        await navigator.clipboard.writeText(markup);
-        say(`copied ${icon.name}`);
-      } catch {
-        say(`could not copy ${icon.name}`);
-      }
+      const ok = await copyText(markup);
+      say(ok ? `copied ${icon.name}` : `could not copy ${icon.name}`);
     }
 
     const cardFor = (() => {
@@ -235,7 +248,7 @@
         button.dataset.name = icon.name;
         button.innerHTML = `
           <svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <use href="#${icon.name}"></use>
+            <use href="#lucide-${icon.name}"></use>
           </svg>
           <span class="card-name">${icon.name}</span>
         `;
