@@ -413,22 +413,34 @@ h1 {
     display: flex;
     flex-direction: column;
     flex: 0 1 auto;
+    gap: 0;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    padding: 0;
+    border: 1px solid rgba(36, 33, 31, 0.1);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--paper) 88%, #fff);
+    box-shadow: 0 4px 11px rgba(36, 33, 31, 0.04);
+    overflow: hidden;
+  }
+
+  .mobile-sheet-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     gap: 12px;
     min-width: 0;
     min-height: 0;
     max-width: 100%;
     padding: 12px 16px 16px;
-    border: 1px solid rgba(36, 33, 31, 0.1);
-    border-radius: 22px;
-    background: color-mix(in srgb, var(--paper) 88%, #fff);
-    box-shadow: 0 4px 11px rgba(36, 33, 31, 0.04);
     overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
   }
 
-  .mobile-sheet::-webkit-scrollbar {
+  .mobile-sheet-body::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
@@ -2467,6 +2479,10 @@ body.is-sheet-open {
     height: 100%;
   }
 
+  .mobile-sheet-body {
+    display: contents;
+  }
+
   .desk-rail,
   .desk-resize {
     display: none !important;
@@ -3127,6 +3143,10 @@ body.is-sheet-open {
   .masthead h1 {
     font-size: 2.15rem;
     font-weight: 400;
+  }
+
+  .mobile-sheet-body {
+    display: contents;
   }
 
   .mobile-sheet {

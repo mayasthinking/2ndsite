@@ -2221,6 +2221,7 @@ function mountDeskResize() {
 function mountDeskScroll() {
   const desk = document.querySelector(".desk");
   const sheet = document.querySelector(".mobile-sheet");
+  const sheetBody = document.querySelector(".mobile-sheet-body");
   const rail = document.querySelector(".desk-rail");
   const thumb = document.querySelector(".desk-scroll");
   if (!desk || !rail || !thumb) return;
@@ -2230,7 +2231,7 @@ function mountDeskScroll() {
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const scroller = () =>
-    sheet && window.matchMedia("(min-width: 721px)").matches ? sheet : desk;
+    sheetBody && window.matchMedia("(min-width: 721px)").matches ? sheetBody : desk;
 
   const metrics = () => {
     const box = scroller();
@@ -2291,9 +2292,10 @@ function mountDeskScroll() {
   rail.addEventListener("pointercancel", endDrag);
 
   desk.addEventListener("scroll", sync, { passive: true });
-  sheet?.addEventListener("scroll", sync, { passive: true });
+  sheetBody?.addEventListener("scroll", sync, { passive: true });
   new ResizeObserver(sync).observe(desk);
   if (sheet) new ResizeObserver(sync).observe(sheet);
+  if (sheetBody) new ResizeObserver(sync).observe(sheetBody);
   new ResizeObserver(sync).observe(rail);
   desk.addEventListener("toggle", () => requestAnimationFrame(sync), true);
   window.matchMedia("(min-width: 721px)").addEventListener("change", sync);
