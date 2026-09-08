@@ -1,8 +1,8 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
 const STEP = 360 / BRUSH_TYPES.length;
-const DEG_PER_PX = 0.62;
-const VISIBLE = 64;
+const DEG_PER_PX = 0.72;
+const VISIBLE = 56;
 
 const ICONS = {
   HB: "icon-brush-hb",
@@ -76,9 +76,9 @@ export function mountBrushDial({ host, value, onChange }) {
   const hashes = document.createElement("div");
   hashes.className = "brush-arc-hashes";
   hashes.setAttribute("aria-hidden", "true");
-  for (let deg = -90; deg <= 90; deg += 5) {
+  for (let deg = 0; deg < 360; deg += 2) {
     const hash = document.createElement("span");
-    hash.className = `brush-arc-hash${deg % 15 === 0 ? " is-major" : ""}`;
+    hash.className = `brush-arc-hash${deg % 10 === 0 ? " is-major" : ""}`;
     hash.style.setProperty("--ang", `${deg}deg`);
     hashes.append(hash);
   }

@@ -2011,16 +2011,18 @@ select.choice-native {
 }
 
 .brush-dial-menu {
-  position: fixed;
-  z-index: 80;
+  position: absolute;
+  z-index: 4;
   padding: 0;
   border: 0;
   background: transparent;
-  overflow: visible;
-  --apex: 10px;
-  --radius: 240px;
-  --icon-r: 198px;
-  --cy: 240px;
+  overflow: hidden;
+  pointer-events: none;
+  --apex: 5px;
+  --radius: 140px;
+  --icon-r: 120px;
+  --hash-r: 138px;
+  --cy: 140px;
 }
 
 .brush-dial-menu[hidden] {
@@ -2035,24 +2037,25 @@ select.choice-native {
 
 .brush-arc-face {
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   touch-action: none;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: var(--radius) var(--radius) 0 0;
+  pointer-events: auto;
   background: transparent;
 }
 
 .brush-arc-ring {
   position: absolute;
-  left: 6%;
-  right: 6%;
-  top: 22px;
-  bottom: 0;
-  border: 1px solid rgba(36, 33, 31, 0.16);
-  border-bottom: none;
-  border-radius: 50% 50% 0 0;
+  left: 50%;
+  top: 0;
+  width: calc(var(--radius) * 2);
+  height: calc(var(--radius) * 2);
+  translate: -50% 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
   pointer-events: none;
 }
 
@@ -2071,15 +2074,17 @@ select.choice-native {
   left: 0;
   top: 0;
   width: 1px;
-  height: 8px;
+  height: 7px;
+  margin-left: -0.5px;
   border-radius: 1px;
-  background: rgba(36, 33, 31, 0.22);
-  transform: rotate(calc(var(--turn) + var(--ang))) translate(-50%, calc(-1 * var(--icon-r) + 18px));
+  background: color-mix(in srgb, var(--ink) 26%, transparent);
+  transform-origin: 50% 0;
+  transform: rotate(calc(var(--turn) + var(--ang))) translateY(calc(-1 * var(--hash-r)));
 }
 
 .brush-arc-hash.is-major {
-  height: 14px;
-  background: rgba(36, 33, 31, 0.38);
+  height: 11px;
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
 }
 
 .brush-arc-face:focus-visible {
@@ -2122,9 +2127,9 @@ select.choice-native {
   position: absolute;
   left: 0;
   top: 0;
-  width: 58px;
-  height: 64px;
-  transform: translate(-50%, calc(-1 * var(--icon-r) - 10px));
+  width: 40px;
+  height: 44px;
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 6px));
 }
 
 .brush-arc-tick.is-far {
@@ -2139,25 +2144,30 @@ select.choice-native {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  width: 58px;
-  transform: translate(-50%, calc(-1 * var(--icon-r) - 2px)) rotate(calc(-1 * var(--ang)));
+  gap: 1px;
+  width: 42px;
+  transform: translate(-50%, calc(-1 * var(--icon-r))) rotate(calc(-1 * var(--ang)));
   pointer-events: none;
 }
 
 .brush-arc-mark {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: transparent;
 }
 
 .brush-arc-label {
   display: block;
-  font-size: 10px;
-  letter-spacing: 0.03em;
+  font-family: var(--serif);
+  font-size: 9px;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: lowercase;
+  white-space: nowrap;
 }
 
 .brush-arc-tick.is-active,
@@ -2166,29 +2176,29 @@ select.choice-native {
 }
 
 .brush-arc-tick.is-active .brush-arc-mark {
-  width: 36px;
-  height: 36px;
+  width: 18px;
+  height: 18px;
   background: transparent;
 }
 
 .brush-arc-tick.is-active .brush-ico {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
 }
 
 .brush-arc-tick.is-active .brush-arc-label {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .brush-arc-pointer {
   position: absolute;
   left: 50%;
-  top: 8px;
+  top: 3px;
   z-index: 3;
-  width: 2px;
-  height: 12px;
+  width: 1.5px;
+  height: 10px;
   border-radius: 1px;
-  background: var(--hover);
+  background: color-mix(in srgb, var(--hover) 80%, transparent);
   transform: translateX(-50%);
   pointer-events: none;
 }

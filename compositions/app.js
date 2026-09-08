@@ -1,7 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial } from "./brush-dial.js?v=25";
+import { mountBrushDial } from "./brush-dial.js?v=27";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -935,28 +935,24 @@ function mountSheetEditor(sheet, item) {
 
   const placeBrushDial = () => {
     const painting = frame.getBoundingClientRect();
-    const view = viewSize();
     const staged = sheet.classList.contains("is-expanded");
     brushMenu.classList.toggle("is-stage", staged);
-    const width = Math.round(Math.max(320, Math.min(painting.width - 12, painting.width * 0.96)));
-    const height = staged ? 128 : 116;
+    const width = Math.round(Math.max(180, Math.min(painting.width * 0.62, painting.width - 48, 228)));
+    const height = staged ? 64 : 58;
     const radius = Math.round((height * height + (width / 2) ** 2) / (2 * height));
-    const apex = 10;
-    const iconR = Math.round(radius - 42);
+    const iconR = Math.round(radius - 20);
+    const hashR = Math.max(iconR + 8, radius - 2);
+    const bar = staged ? 48 : 0;
     brushMenu.style.width = `${width}px`;
     brushMenu.style.height = `${height}px`;
-    brushMenu.style.setProperty("--apex", `${apex}px`);
+    brushMenu.style.setProperty("--apex", "5px");
     brushMenu.style.setProperty("--radius", `${radius}px`);
     brushMenu.style.setProperty("--icon-r", `${iconR}px`);
+    brushMenu.style.setProperty("--hash-r", `${hashR}px`);
     brushMenu.style.setProperty("--cy", `${radius}px`);
-    let left = painting.left + (painting.width - width) / 2;
-    let top = painting.bottom - height;
-    left = Math.max(8, Math.min(left, view.width - width - 8));
-    const minTop = Math.max(8, painting.top + 8);
-    const maxTop = Math.min(view.height - height - 4, painting.bottom - 4);
-    top = Math.max(minTop, Math.min(top, maxTop));
-    brushMenu.style.left = `${left}px`;
-    brushMenu.style.top = `${top}px`;
+    if (brushMenu.parentElement !== frame) frame.append(brushMenu);
+    brushMenu.style.left = `${Math.round((painting.width - width) / 2)}px`;
+    brushMenu.style.top = `${Math.round(painting.height - height - bar)}px`;
   };
 
   const openBrushDial = () => {
@@ -964,7 +960,7 @@ function mountSheetEditor(sheet, item) {
     closeSheetColorMenus();
     closeBrushDials();
     brushBtn.setAttribute("aria-expanded", "true");
-    document.body.append(brushMenu);
+    frame.append(brushMenu);
     brushMenu.hidden = false;
     holdPopovers();
     placeBrushDial();
