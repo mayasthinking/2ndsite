@@ -297,7 +297,7 @@
                 title: "index.html",
                 path: "index.html",
                 blurb: "homepage — photos, bookmarks, little map",
-                body: `<p>one html file. it fetches the json beside it, then builds the carousel, bookmark list, and small map. footer also links to the studio on the right.</p>`
+                body: `<p>one html file. it fetches the json beside it, then builds the carousel, bookmark list, and small map. bookmarks and readings come in as two fetches; this page is what stitches them into one list. footer also links to the studio on the right.</p>`
             },
             compositions: {
                 title: "compositions/index.html",
@@ -327,13 +327,13 @@
                 title: "bookmarks.json",
                 path: "bookmarks.json",
                 blurb: "pinned safari links",
-                body: `<p>fetched first. then the homepage folds in readings and skips duplicate urls.</p>`
+                body: `<p>pinned links. the homepage fetches this on its own. it never reads <code>readings.json</code>.</p>`
             },
             readings: {
                 title: "readings.json",
                 path: "readings.json",
                 blurb: "notion reading log, in the repo",
-                body: `<p>same shape as bookmarks. shown ten at a time after the pinned list.</p>`
+                body: `<p>the notion reading log, saved in the repo. the homepage fetches this on its own, then shows ten at a time after the pinned bookmarks.</p>`
             },
             places: {
                 title: "places.json",
@@ -424,9 +424,8 @@
                     { via: "fetches", id: "snaps", children: [
                         { via: "lists", id: "photos" }
                     ] },
-                    { via: "fetches", id: "bookmarks", children: [
-                        { via: "then merges", id: "readings" }
-                    ] },
+                    { via: "fetches", id: "bookmarks" },
+                    { via: "fetches", id: "readings" },
                     { via: "fetches", id: "places", children: [
                         { via: "also opens", id: "footsteps" }
                     ] },
