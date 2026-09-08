@@ -938,11 +938,11 @@ function mountSheetEditor(sheet, item) {
     const view = viewSize();
     const staged = sheet.classList.contains("is-expanded");
     brushMenu.classList.toggle("is-stage", staged);
-    const radius = Math.round(Math.max(64, Math.min(painting.width * 0.2, painting.height * 0.18, staged ? 88 : 72)));
-    const width = radius * 2;
-    const height = radius;
-    const apex = 6;
-    const iconR = Math.round(radius * 0.76);
+    const width = Math.round(Math.max(168, Math.min(painting.width * 0.55, staged ? 260 : 220)));
+    const height = staged ? 46 : 40;
+    const radius = Math.round(width / 2);
+    const apex = 4;
+    const iconR = Math.round(height * 0.7);
     brushMenu.style.width = `${width}px`;
     brushMenu.style.height = `${height}px`;
     brushMenu.style.setProperty("--apex", `${apex}px`);

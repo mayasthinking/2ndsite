@@ -2019,10 +2019,10 @@ select.choice-native {
   overflow: clip;
   contain: layout paint;
   clip-path: inset(0);
-  --apex: 14px;
-  --radius: 128px;
-  --icon-r: 96px;
-  --cy: 128px;
+  --apex: 4px;
+  --radius: 110px;
+  --icon-r: 28px;
+  --cy: 40px;
   --turn: 0deg;
 }
 
@@ -2171,7 +2171,8 @@ select.choice-native {
 .brush-arc-readout {
   position: absolute;
   left: 50%;
-  top: calc(var(--apex) + 8px);
+  top: auto;
+  bottom: 8px;
   z-index: 4;
   display: flex;
   flex-direction: column;
