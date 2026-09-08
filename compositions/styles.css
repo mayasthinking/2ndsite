@@ -3294,7 +3294,10 @@ body.is-sheet-open {
     border-radius: 26px;
     background: color-mix(in srgb, var(--paper) 92%, #fff);
     box-shadow: none;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .mobile-sheet:not(.has-paintings) {
@@ -3461,7 +3464,10 @@ body.is-sheet-open {
     height: auto;
     max-height: min(43dvh, 350px);
     padding: 6px 10px max(10px, env(safe-area-inset-bottom));
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     background: transparent;
     box-shadow: none;
   }

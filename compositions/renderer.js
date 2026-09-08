@@ -1,4 +1,4 @@
-import { imageWork } from "./image-work.js?v=7";
+import { imageWork } from "./image-work.js?v=8";
 
 const PAPER = "#f3eee4";
 

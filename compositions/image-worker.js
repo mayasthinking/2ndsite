@@ -12,13 +12,14 @@ async function sourceFrom(payload) {
 
 async function rasterize(payload) {
   const bitmap = await sourceFrom(payload);
-  const max = 1400;
+  const max = Number(payload.max) || 1400;
+  const quality = Number(payload.quality) || 0.86;
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const width = Math.max(1, Math.round(bitmap.width * scale));
   const height = Math.max(1, Math.round(bitmap.height * scale));
   const canvas = new OffscreenCanvas(width, height);
   canvas.getContext("2d").drawImage(bitmap, 0, 0, width, height);
-  const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.86 });
+  const blob = await canvas.convertToBlob({ type: "image/jpeg", quality });
   const hex = averageHex(bitmap);
   bitmap.close?.();
   return { dataUrl: await blobToDataUrl(blob), hex };
@@ -68,6 +69,7 @@ async function renderWash(payload) {
   ctx.globalCompositeOperation = "multiply";
 
   const baseBlur = Math.max(0.05, (size / 720) * profile.blur);
+  const skipBlur = Boolean(payload.preview) || size <= 400;
 
   for (const mark of marks) {
     if (mark.kind !== "poly") continue;
@@ -86,7 +88,7 @@ async function renderWash(payload) {
         if (y > maxY) maxY = y;
       }
       const area = Math.max(8, (maxX - minX) * (maxY - minY));
-      const dots = Math.min(90, Math.max(8, Math.round(area / 180)));
+      const dots = Math.min(payload.preview ? 36 : 90, Math.max(8, Math.round(area / (payload.preview ? 280 : 180))));
       ctx.globalAlpha = alpha;
       ctx.filter = "none";
       for (let i = 0; i < dots; i++) {
@@ -100,9 +102,9 @@ async function renderWash(payload) {
       continue;
     }
     ctx.globalAlpha = alpha;
-    ctx.filter = profile.hardEdge ? "none" : `blur(${baseBlur}px)`;
+    ctx.filter = skipBlur || profile.hardEdge ? "none" : `blur(${baseBlur}px)`;
     fillPolygon(ctx, mark.pts);
-    if (profile.secondPass > 0.05) {
+    if (profile.secondPass > 0.05 && !payload.preview) {
       ctx.filter = profile.hardEdge ? "none" : `blur(${Math.max(0.05, baseBlur * 0.4)}px)`;
       ctx.globalAlpha *= profile.secondPass;
       fillPolygon(ctx, mark.pts);

@@ -1,7 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { imageWork } from "./image-work.js?v=7";
+import { imageWork } from "./image-work.js?v=8";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=7";
 const sceneEl = document.querySelector("#scene");
 const sceneRow = document.querySelector(".scene-row");
@@ -57,6 +57,8 @@ const sheetStageEl = document.querySelector("#sheetStage");
 let hydrating = false;
 const SAT_MAX = 0.22;
 const PAINT_SIZE = 720;
+const PHONE_PREVIEW_SIZE = 360;
+const PHONE_RASTER_MAX = 900;
 let currentPhoto = null;
 let paintWatch = 0;
 let waitingDensity = 1;
@@ -294,7 +296,15 @@ function viewSize() {
 }
 
 function syncAppHeight() {
-  document.documentElement.style.setProperty("--app-h", `${viewSize().height}px`);
+  const next = `${viewSize().height}px`;
+  const root = document.documentElement;
+  if (root.style.getPropertyValue("--app-h") === next) return;
+  const sheetTop = mobileSheet?.scrollTop ?? 0;
+  const deskTop = deskEl?.scrollTop ?? 0;
+  root.style.setProperty("--app-h", next);
+  // Preserve scrollports: changing --app-h mid-gesture can clamp scrollTop to 0.
+  if (mobileSheet && Math.abs(mobileSheet.scrollTop - sheetTop) > 1) mobileSheet.scrollTop = sheetTop;
+  if (deskEl && Math.abs(deskEl.scrollTop - deskTop) > 1) deskEl.scrollTop = deskTop;
 }
 
 let popoverHold = 0;
@@ -339,8 +349,9 @@ document.addEventListener(
   },
   true
 );
+// Only react to viewport *resize* (chrome show/hide / keyboard). Never sync on
+// visualViewport "scroll" — that fires while the sheet scrolls and snaps it to top.
 window.visualViewport?.addEventListener("resize", syncAppHeight);
-window.visualViewport?.addEventListener("scroll", syncAppHeight);
 window.addEventListener("orientationchange", () => {
   requestAnimationFrame(() => {
     syncAppHeight();
@@ -448,18 +459,18 @@ function averageHex(img) {
   return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
-function rasterizePhoto(source) {
+function rasterizePhoto(source, maxEdge = 1400) {
   const width = source.naturalWidth || source.width;
   const height = source.naturalHeight || source.height;
   if (!width || !height) throw new Error("that photograph would not open.");
-  const max = 1400;
+  const max = maxEdge;
   const scale = Math.min(1, max / Math.max(width, height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(width * scale));
   canvas.height = Math.max(1, Math.round(height * scale));
   canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
   return {
-    dataUrl: canvas.toDataURL("image/jpeg", 0.86),
+    dataUrl: canvas.toDataURL("image/jpeg", 0.82),
     hex: averageHex(source),
   };
 }
@@ -475,8 +486,9 @@ function loadImageUrl(url) {
 
 async function readPhotoFile(file) {
   const name = file.name.replace(/\.[^.]+$/, "").toLowerCase() || "photograph";
+  const maxEdge = isPhone() ? PHONE_RASTER_MAX : 1400;
   try {
-    const next = await imageWork("rasterize", { file });
+    const next = await imageWork("rasterize", { file, max: maxEdge, quality: 0.82 });
     if (next?.dataUrl) return { ...next, name };
   } catch {
     /* fall through */
@@ -484,7 +496,7 @@ async function readPhotoFile(file) {
   if (typeof createImageBitmap === "function") {
     try {
       const bitmap = await createImageBitmap(file);
-      const next = rasterizePhoto(bitmap);
+      const next = rasterizePhoto(bitmap, maxEdge);
       bitmap.close?.();
       return { ...next, name };
     } catch {
@@ -494,7 +506,7 @@ async function readPhotoFile(file) {
   const url = URL.createObjectURL(file);
   try {
     const img = await loadImageUrl(url);
-    return { ...rasterizePhoto(img), name };
+    return { ...rasterizePhoto(img, maxEdge), name };
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -559,7 +571,9 @@ function setStudioMode(mode) {
   }
   if (paintKit) paintKit.open = next === "customize";
   if (next === "customize") openPaintSections();
-  if (deskEl && next === "create") {
+  // On phone the desk box is display:contents — only reset the create pane when
+  // leaving customize, and never fight an in-progress sheet scroll.
+  if (!isPhone() && deskEl && next === "create") {
     deskEl.scrollTop = 0;
     requestAnimationFrame(() => {
       deskEl.scrollTop = 0;
@@ -994,7 +1008,17 @@ async function ensureSplit(rec) {
 function prefetchSplit(rec) {
   const src = rec?.dataUrl;
   if (!src || rec.split?.src === src) return;
-  ensureSplit(rec).catch(() => {});
+  // On phone, defer subject-split until idle so it doesn't block the wash queue.
+  const run = () => ensureSplit(rec).catch(() => {});
+  if (isPhone() && typeof requestIdleCallback === "function") {
+    requestIdleCallback(run, { timeout: 2500 });
+    return;
+  }
+  if (isPhone()) {
+    setTimeout(run, 600);
+    return;
+  }
+  run();
 }
 
 function hitSubject(frame, rec, clientX, clientY) {
@@ -1579,8 +1603,9 @@ async function drainPhotoPreviews() {
     const { dataUrl } = await imageWork("renderWash", {
       photo: rec.item.photo,
       seed: rec.item.seed,
-      size: PAINT_SIZE,
+      size: isPhone() ? PHONE_PREVIEW_SIZE : PAINT_SIZE,
       effects: sheetEffects(rec),
+      preview: isPhone(),
     });
     if (dataUrl && cards.get(id) === rec) {
       applyPaintedData(rec, dataUrl, 1);
@@ -1832,7 +1857,22 @@ function renderGrid(items) {
   const first = items.find((item) => item.code || item.photo);
   if (first) selectPainting(first.id);
   else syncMobileVariationPager();
-  drainPhotoPreviews();
+
+  // On phone, finish variation 1 before queueing the rest so the first wash appears ASAP.
+  if (isPhone() && photoPreviewQueue.length > 1) {
+    const [primary, ...rest] = photoPreviewQueue;
+    photoPreviewQueue.length = 0;
+    photoPreviewQueue.push(primary);
+    drainPhotoPreviews();
+    setTimeout(() => {
+      for (const id of rest) {
+        if (cards.has(id) && !photoPreviewQueue.includes(id)) photoPreviewQueue.push(id);
+      }
+      drainPhotoPreviews();
+    }, 40);
+  } else {
+    drainPhotoPreviews();
+  }
   drainQueue();
 }
 
