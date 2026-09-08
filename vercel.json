@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "node scripts/skip-defunct-vercel-project.mjs",
   "redirects": [
     { "source": "/compositions", "destination": "/compositions/", "permanent": false }
   ],
