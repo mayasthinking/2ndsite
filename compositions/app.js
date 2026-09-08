@@ -948,7 +948,7 @@ function mountSheetEditor(sheet, item) {
     brushMenu.style.setProperty("--apex", `${apex}px`);
     brushMenu.style.setProperty("--radius", `${radius}px`);
     brushMenu.style.setProperty("--icon-r", `${iconR}px`);
-    brushMenu.style.setProperty("--cy", `${height}px`);
+    brushMenu.style.setProperty("--cy", `${radius}px`);
     let left = painting.left + (painting.width - width) / 2;
     let top = painting.bottom - height;
     left = Math.max(8, Math.min(left, view.width - width - 8));
