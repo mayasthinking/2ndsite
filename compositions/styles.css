@@ -2136,13 +2136,7 @@ select.choice-native {
 }
 
 .brush-arc-label {
-  max-width: 48px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 8px;
-  letter-spacing: 0.02em;
-  text-shadow: 0 0 6px color-mix(in srgb, var(--paper) 74%, transparent);
+  display: none;
 }
 
 .brush-arc-tick.is-active,
@@ -2175,7 +2169,7 @@ select.choice-native {
 .brush-arc-readout {
   position: absolute;
   left: 50%;
-  top: calc(var(--apex) + 12px);
+  top: calc(var(--apex) + 14px);
   z-index: 4;
   display: flex;
   flex-direction: column;

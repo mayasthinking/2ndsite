@@ -1,7 +1,7 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
-const STEP = 18;
-const DEG_PER_PX = 0.48;
+const STEP = 24;
+const DEG_PER_PX = 0.5;
 
 const ICONS = {
   HB: "icon-brush-hb",
