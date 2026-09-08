@@ -2019,10 +2019,10 @@ select.choice-native {
   overflow: clip;
   contain: layout paint;
   clip-path: inset(0);
-  --apex: 10px;
-  --radius: 102px;
-  --icon-r: 71px;
-  --cy: 102px;
+  --apex: 12px;
+  --radius: 110px;
+  --icon-r: 86px;
+  --cy: 110px;
   --turn: 0deg;
 }
 
@@ -2043,7 +2043,7 @@ select.choice-native {
   user-select: none;
   -webkit-user-select: none;
   border-radius: 50% 50% 0 0;
-  background: color-mix(in srgb, var(--paper) 58%, transparent);
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
