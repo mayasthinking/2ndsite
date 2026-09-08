@@ -2017,10 +2017,10 @@ select.choice-native {
   border: 0;
   background: transparent;
   overflow: visible;
-  --apex: 14px;
-  --radius: 176px;
-  --icon-r: 128px;
-  --cy: 176px;
+  --apex: 10px;
+  --radius: 240px;
+  --icon-r: 222px;
+  --cy: 240px;
 }
 
 .brush-dial-menu[hidden] {
@@ -2035,7 +2035,7 @@ select.choice-native {
 
 .brush-arc-face {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   touch-action: none;
   cursor: grab;
   user-select: none;
@@ -2053,14 +2053,13 @@ select.choice-native {
 
 .brush-arc-ring {
   position: absolute;
-  left: 50%;
+  left: 7%;
+  right: 7%;
+  top: 34px;
   bottom: 0;
-  width: calc(var(--icon-r) * 2);
-  height: var(--icon-r);
-  border: 1.5px solid rgba(36, 33, 31, 0.22);
+  border: 1.5px solid rgba(36, 33, 31, 0.2);
   border-bottom: none;
-  border-radius: var(--icon-r) var(--icon-r) 0 0;
-  transform: translateX(-50%);
+  border-radius: 50% 50% 0 0;
   pointer-events: none;
 }
 
