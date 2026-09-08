@@ -2019,10 +2019,10 @@ select.choice-native {
   overflow: clip;
   contain: layout paint;
   clip-path: inset(0);
-  --apex: 12px;
-  --radius: 110px;
-  --icon-r: 86px;
-  --cy: 110px;
+  --apex: 14px;
+  --radius: 128px;
+  --icon-r: 96px;
+  --cy: 128px;
   --turn: 0deg;
 }
 
@@ -2043,12 +2043,26 @@ select.choice-native {
   user-select: none;
   -webkit-user-select: none;
   border-radius: 50% 50% 0 0;
-  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  background: rgba(250, 249, 246, 0.86);
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.brush-arc-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--icon-r) * 2);
+  height: var(--icon-r);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border-bottom: none;
+  border-radius: var(--icon-r) var(--icon-r) 0 0;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .brush-arc-face:focus-visible {

@@ -62,6 +62,10 @@ export function mountBrushDial({ host, value, onChange }) {
   track.setAttribute("role", "listbox");
   track.setAttribute("aria-label", "brushes");
 
+  const ring = document.createElement("div");
+  ring.className = "brush-arc-ring";
+  ring.setAttribute("aria-hidden", "true");
+
   const pointer = document.createElement("div");
   pointer.className = "brush-arc-pointer";
   pointer.setAttribute("aria-hidden", "true");
@@ -98,8 +102,18 @@ export function mountBrushDial({ host, value, onChange }) {
     track.append(tick);
   }
 
-  face.append(track, pointer, readout);
+  face.append(ring, track, pointer, readout);
   host.append(face);
+
+  function angleAt(event) {
+    const box = face.getBoundingClientRect();
+    const cx = box.left + box.width / 2;
+    const cy = box.top + box.height;
+    return {
+      deg: (Math.atan2(event.clientY - cy, event.clientX - cx) * 180) / Math.PI,
+      dist: Math.hypot(event.clientX - cx, event.clientY - cy),
+    };
+  }
 
   function applyTurn(nextTurn, emit) {
     turn = nextTurn;
@@ -138,6 +152,7 @@ export function mountBrushDial({ host, value, onChange }) {
   let dragged = false;
   let dragStartX = 0;
   let dragStartTurn = 0;
+  let dragStartAngle = 0;
 
   face.addEventListener("pointerdown", (event) => {
     if (event.button != null && event.button !== 0) return;
@@ -147,6 +162,7 @@ export function mountBrushDial({ host, value, onChange }) {
     dragged = false;
     dragStartX = event.clientX;
     dragStartTurn = turn;
+    dragStartAngle = angleAt(event).deg;
     face.classList.add("is-dragging");
     try {
       face.setPointerCapture(event.pointerId);
@@ -156,9 +172,12 @@ export function mountBrushDial({ host, value, onChange }) {
   });
   face.addEventListener("pointermove", (event) => {
     if (!dragging) return;
+    const next = angleAt(event);
     const dx = event.clientX - dragStartX;
-    if (Math.abs(dx) > 6) dragged = true;
-    applyTurn(dragStartTurn + dx * DEG_PER_PX, true);
+    const dAngle = next.deg - dragStartAngle;
+    if (Math.abs(dx) > 6 || Math.abs(dAngle) > 4) dragged = true;
+    const byArc = next.dist > 28 ? dAngle : dx * DEG_PER_PX;
+    applyTurn(dragStartTurn + byArc, true);
   });
   const endDrag = (event) => {
     if (!dragging) return;
