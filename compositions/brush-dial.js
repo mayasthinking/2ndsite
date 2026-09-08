@@ -1,8 +1,8 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
-const ARC = 108;
-const STEP = ARC / BRUSH_TYPES.length;
-const DEG_PER_PX = 0.38;
+const STEP = 360 / BRUSH_TYPES.length;
+const DEG_PER_PX = 0.48;
+const VISIBLE = 78;
 
 const ICONS = {
   HB: "icon-brush-hb",
@@ -42,10 +42,15 @@ export function brushFromTurn(turn, types = BRUSH_TYPES) {
   return types[snapped];
 }
 
-function wrapToArc(deg) {
-  let a = ((deg % ARC) + ARC) % ARC;
-  if (a > ARC / 2) a -= ARC;
+function norm360(deg) {
+  let a = deg % 360;
+  if (a < 0) a += 360;
   return a;
+}
+
+function fromApex(deg) {
+  const a = norm360(deg);
+  return Math.min(a, 360 - a);
 }
 
 export function mountBrushDial({ host, value, onChange }) {
@@ -71,9 +76,9 @@ export function mountBrushDial({ host, value, onChange }) {
   const hashes = document.createElement("div");
   hashes.className = "brush-arc-hashes";
   hashes.setAttribute("aria-hidden", "true");
-  for (let deg = -52; deg <= 52; deg += 4) {
+  for (let deg = -90; deg <= 90; deg += 3) {
     const hash = document.createElement("span");
-    hash.className = `brush-arc-hash${deg % 12 === 0 ? " is-major" : ""}`;
+    hash.className = `brush-arc-hash${deg % 15 === 0 ? " is-major" : ""}`;
     hash.style.setProperty("--ang", `${deg}deg`);
     hashes.append(hash);
   }
@@ -102,18 +107,13 @@ export function mountBrushDial({ host, value, onChange }) {
     tick.setAttribute("role", "option");
     tick.setAttribute("aria-label", name.toLowerCase());
     tick.tabIndex = -1;
-    const stem = document.createElement("span");
-    stem.className = "brush-arc-stem";
     const spoke = document.createElement("span");
     spoke.className = "brush-arc-spoke";
     const mark = document.createElement("span");
     mark.className = "brush-arc-mark";
     paintBrushMark(mark, name);
-    const label = document.createElement("span");
-    label.className = "brush-arc-label";
-    label.textContent = name.toLowerCase();
-    spoke.append(mark, label);
-    tick.append(stem, spoke);
+    spoke.append(mark);
+    tick.append(spoke);
     track.append(tick);
   }
 
@@ -134,16 +134,19 @@ export function mountBrushDial({ host, value, onChange }) {
     turn = nextTurn;
     const name = brushFromTurn(turn);
     const index = brushIndex(name);
+    hashes.style.setProperty("--turn", `${turn}deg`);
     face.setAttribute("aria-valuenow", String(index));
     face.setAttribute("aria-valuetext", name.toLowerCase());
     readName.textContent = name.toLowerCase();
     for (const tick of track.querySelectorAll(".brush-arc-tick")) {
       const on = tick.dataset.brush === name;
-      const ang = wrapToArc(Number(tick.dataset.index) * STEP + turn);
+      const ang = Number(tick.dataset.index) * STEP + turn;
+      const away = fromApex(ang);
       tick.classList.toggle("is-active", on);
+      tick.classList.toggle("is-far", away > VISIBLE);
       tick.setAttribute("aria-selected", on ? "true" : "false");
       tick.style.setProperty("--ang", `${ang}deg`);
-      tick.style.setProperty("--from", String(Math.abs(ang)));
+      tick.style.setProperty("--from", String(away));
     }
     if (emit && name !== current) {
       current = name;
@@ -186,7 +189,7 @@ export function mountBrushDial({ host, value, onChange }) {
     const dx = event.clientX - dragStartX;
     const dAngle = next.deg - dragStartAngle;
     if (Math.abs(dx) > 6 || Math.abs(dAngle) > 4) dragged = true;
-    const byArc = next.dist > 36 ? dAngle : dx * DEG_PER_PX;
+    const byArc = next.dist > 40 ? dAngle : dx * DEG_PER_PX;
     applyTurn(dragStartTurn + byArc, true);
   });
   const endDrag = (event) => {
