@@ -2216,16 +2216,9 @@ select.choice-native {
 .brush-arc-mark {
   display: grid;
   place-items: center;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   background: transparent;
-}
-
-.brush-arc-mark .brush-ico {
-  width: 13px;
-  height: 13px;
-  fill: currentColor;
-  stroke: none;
 }
 
 .brush-arc-label {
