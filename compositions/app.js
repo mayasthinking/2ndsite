@@ -2220,6 +2220,7 @@ function mountDeskResize() {
 
 function mountDeskScroll() {
   const desk = document.querySelector(".desk");
+  const sheet = document.querySelector(".mobile-sheet");
   const rail = document.querySelector(".desk-rail");
   const thumb = document.querySelector(".desk-scroll");
   if (!desk || !rail || !thumb) return;
@@ -2228,24 +2229,27 @@ function mountDeskScroll() {
   let thumbH = 64;
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const scroller = () =>
+    sheet && window.matchMedia("(min-width: 721px)").matches ? sheet : desk;
 
   const metrics = () => {
-    const max = Math.max(0, desk.scrollHeight - desk.clientHeight);
+    const box = scroller();
+    const max = Math.max(0, box.scrollHeight - box.clientHeight);
     const railH = rail.clientHeight;
-    thumbH = max <= 4 ? railH : Math.max(28, Math.round((desk.clientHeight / desk.scrollHeight) * railH));
+    thumbH = max <= 4 ? railH : Math.max(28, Math.round((box.clientHeight / box.scrollHeight) * railH));
     const travel = Math.max(1, railH - thumbH);
-    return { max, travel };
+    return { box, max, travel };
   };
 
   const sync = () => {
-    const { max, travel } = metrics();
+    const { box, max, travel } = metrics();
     if (max <= 4) {
       rail.hidden = true;
       return;
     }
     rail.hidden = false;
     thumb.style.height = `${thumbH}px`;
-    const ratio = clamp(desk.scrollTop / max, 0, 1);
+    const ratio = clamp(box.scrollTop / max, 0, 1);
     thumb.style.transform = `translateY(${ratio * travel}px)`;
     rail.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
     rail.setAttribute("aria-valuemin", "0");
@@ -2253,10 +2257,10 @@ function mountDeskScroll() {
   };
 
   const scrollToClientY = (clientY) => {
-    const { max, travel } = metrics();
+    const { box, max, travel } = metrics();
     if (max <= 4) return;
     const y = clamp(clientY - rail.getBoundingClientRect().top - thumbH / 2, 0, travel);
-    desk.scrollTop = (y / travel) * max;
+    box.scrollTop = (y / travel) * max;
     thumb.style.transform = `translateY(${y}px)`;
   };
 
@@ -2287,9 +2291,12 @@ function mountDeskScroll() {
   rail.addEventListener("pointercancel", endDrag);
 
   desk.addEventListener("scroll", sync, { passive: true });
+  sheet?.addEventListener("scroll", sync, { passive: true });
   new ResizeObserver(sync).observe(desk);
+  if (sheet) new ResizeObserver(sync).observe(sheet);
   new ResizeObserver(sync).observe(rail);
   desk.addEventListener("toggle", () => requestAnimationFrame(sync), true);
+  window.matchMedia("(min-width: 721px)").addEventListener("change", sync);
   sync();
 }
 
