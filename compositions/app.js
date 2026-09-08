@@ -2227,7 +2227,13 @@ function mountDeskScroll() {
   if (!desk || !rail || !thumb) return;
 
   let dragging = false;
-  let thumbH = 64;
+  let dragOffset = 0;
+  let dragBox = null;
+  let dragMax = 0;
+  let dragTravel = 1;
+  let thumbH = 32;
+  let frame = 0;
+  let pendingY = null;
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const scroller = () =>
@@ -2237,12 +2243,14 @@ function mountDeskScroll() {
     const box = scroller();
     const max = Math.max(0, box.scrollHeight - box.clientHeight);
     const railH = rail.clientHeight;
-    thumbH = max <= 4 ? railH : Math.max(28, Math.round((box.clientHeight / box.scrollHeight) * railH));
+    const proportional = railH * (box.clientHeight / Math.max(box.scrollHeight, 1));
+    thumbH = max <= 4 ? railH : Math.max(28, Math.round(Math.min(railH * 0.5, proportional * 0.5)));
     const travel = Math.max(1, railH - thumbH);
     return { box, max, travel };
   };
 
   const sync = () => {
+    if (dragging) return;
     const { box, max, travel } = metrics();
     if (max <= 4) {
       rail.hidden = true;
@@ -2257,36 +2265,62 @@ function mountDeskScroll() {
     rail.setAttribute("aria-valuemax", "100");
   };
 
-  const scrollToClientY = (clientY) => {
-    const { box, max, travel } = metrics();
-    if (max <= 4) return;
-    const y = clamp(clientY - rail.getBoundingClientRect().top - thumbH / 2, 0, travel);
-    box.scrollTop = (y / travel) * max;
-    thumb.style.transform = `translateY(${y}px)`;
+  const applyY = (y) => {
+    if (!dragBox) return;
+    const next = clamp(y, 0, dragTravel);
+    dragBox.scrollTop = (next / dragTravel) * dragMax;
+    thumb.style.transform = `translateY(${next}px)`;
+  };
+
+  const queueY = (clientY) => {
+    pendingY = clientY - rail.getBoundingClientRect().top - dragOffset;
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (pendingY == null) return;
+      applyY(pendingY);
+      pendingY = null;
+    });
   };
 
   rail.addEventListener("pointerdown", (event) => {
     if (event.button != null && event.button !== 0) return;
+    const { box, max, travel } = metrics();
+    if (max <= 4) return;
     event.preventDefault();
+    const railTop = rail.getBoundingClientRect().top;
+    const thumbBox = thumb.getBoundingClientRect();
+    const onThumb = event.clientY >= thumbBox.top - 6 && event.clientY <= thumbBox.bottom + 6;
     dragging = true;
+    dragBox = box;
+    dragMax = max;
+    dragTravel = travel;
+    dragOffset = onThumb ? event.clientY - thumbBox.top : thumbH / 2;
     rail.classList.add("is-dragging");
     try {
       rail.setPointerCapture(event.pointerId);
     } catch {
       /* ignore */
     }
-    scrollToClientY(event.clientY);
+    applyY(event.clientY - railTop - dragOffset);
   });
 
   rail.addEventListener("pointermove", (event) => {
     if (!dragging) return;
     event.preventDefault();
-    scrollToClientY(event.clientY);
+    queueY(event.clientY);
   });
 
   const endDrag = () => {
     dragging = false;
+    dragBox = null;
+    pendingY = null;
+    if (frame) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    }
     rail.classList.remove("is-dragging");
+    sync();
   };
   rail.addEventListener("pointerup", endDrag);
   rail.addEventListener("pointercancel", endDrag);

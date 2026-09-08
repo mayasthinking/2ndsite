@@ -579,12 +579,12 @@ h1 {
 .desk-rail {
   position: absolute;
   top: 12px;
-  right: 6px;
+  right: 4px;
   bottom: 12px;
   z-index: 4;
-  width: 14px;
+  width: 22px;
   overflow: hidden;
-  cursor: ns-resize;
+  cursor: grab;
   touch-action: none;
 }
 
@@ -596,9 +596,9 @@ h1 {
   position: absolute;
   top: 0;
   left: 50%;
-  width: 3px;
-  height: 64px;
-  margin-left: -1.5px;
+  width: 4px;
+  height: 32px;
+  margin-left: -2px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--hover) 40%, transparent);
   pointer-events: none;
@@ -608,6 +608,10 @@ h1 {
 .desk-rail:hover .desk-scroll,
 .desk-rail.is-dragging .desk-scroll {
   background: color-mix(in srgb, var(--hover) 65%, transparent);
+}
+
+.desk-rail.is-dragging {
+  cursor: grabbing;
 }
 
 .desk-resize {
