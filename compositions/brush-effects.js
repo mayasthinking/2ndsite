@@ -1,6 +1,6 @@
 import { parseColor, oklchToHex, mixOklch } from "./color.js";
 
-const PAPER = parseColor("#f3eee4");
+const PAPER = parseColor("#faf9f6");
 const SHADE = parseColor("#302822");
 const WARM = parseColor("#d2602a");
 const COOL = parseColor("#6e8eba");
@@ -8,6 +8,7 @@ const GOLD = parseColor("#c49646");
 const SLATE = parseColor("#565c76");
 const CHAR = parseColor("#463e3a");
 const DUST = parseColor("#a8845c");
+const ROSE = parseColor("#c45450");
 const CANVAS_SCALE = 2.8;
 
 const BRUSH_PRESETS = {
@@ -186,20 +187,23 @@ function styleColor(color, e) {
   const pigment = parseColor(e.color);
   if (pigment) ok = mixOklch(ok, pigment, amp(e.pigment, 0.22, 0.88));
 
-  ok = mixOklch(ok, PAPER, mixAmt(e.luminosity, 0, 0.32));
-  ok = mixOklch(ok, SHADE, mixAmt(e.luminosity, 0.22, 0));
-  ok = mixOklch(ok, PAPER, mixAmt(e.transparency, 0, 0.2));
-  ok = mixOklch(ok, PAPER, mixAmt(e.vulnerability, 0, 0.18));
-  ok = mixOklch(ok, PAPER, mixAmt(e.dreaminess, 0, 0.14));
-  ok = mixOklch(ok, WARM, mixAmt(e.warmth, 0, 0.22));
-  ok = mixOklch(ok, COOL, mixAmt(e.warmth, 0.18, 0));
-  ok = mixOklch(ok, GOLD, mixAmt(e.valence, 0, 0.16));
-  ok = mixOklch(ok, SLATE, mixAmt(e.valence, 0.14, 0));
-  ok = mixOklch(ok, CHAR, mixAmt(e.eventImminence, 0, 0.16));
-  ok = mixOklch(ok, DUST, mixAmt(e.nostalgia, 0, 0.14));
+  ok = mixOklch(ok, PAPER, mixAmt(e.luminosity, 0, 0.28));
+  ok = mixOklch(ok, SHADE, mixAmt(e.luminosity, 0.18, 0));
+  ok = mixOklch(ok, PAPER, mixAmt(e.transparency, 0, 0.16));
+  ok = mixOklch(ok, PAPER, mixAmt(e.vulnerability, 0, 0.14));
+  ok = mixOklch(ok, PAPER, mixAmt(e.dreaminess, 0, 0.1));
+  ok = mixOklch(ok, WARM, mixAmt(e.warmth, 0, 0.18));
+  ok = mixOklch(ok, COOL, mixAmt(e.warmth, 0.12, 0));
+  ok = mixOklch(ok, GOLD, mixAmt(e.valence, 0, 0.12));
+  ok = mixOklch(ok, SLATE, mixAmt(e.valence, 0.08, 0));
+  ok = mixOklch(ok, CHAR, mixAmt(e.eventImminence, 0, 0.1));
+  ok = mixOklch(ok, DUST, mixAmt(e.nostalgia, 0, 0.08));
   ok = hueShift(ok, e.uncanniness - 0.5);
-  ok = saturate(ok, amp(e.psychologicalSpecificity, 0.62, 1.38) * amp(e.pigment, 0.82, 1.18));
-  ok = saturate(ok, amp(e.density, 0.82, 1.16));
+  ok = saturate(ok, amp(e.psychologicalSpecificity, 0.78, 1.38) * amp(e.pigment, 0.9, 1.22));
+  ok = saturate(ok, amp(e.density, 0.9, 1.16));
+  if ((ok.c || 0) < 0.06 && (ROSE.c || 0) > 0) {
+    ok = { ...ok, c: Math.max(ok.c || 0, ROSE.c * 0.45) };
+  }
   return oklchToHex(ok);
 }
 

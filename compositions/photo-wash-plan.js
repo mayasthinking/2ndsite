@@ -1,6 +1,6 @@
 import { clampEffects } from "./effect-model.js?v=15";
 
-export const PAPER = { r: 243, g: 238, b: 228 };
+export const PAPER = { r: 250, g: 249, b: 246 };
 export const CELLS = 96;
 
 function clamp(n, a, b) {

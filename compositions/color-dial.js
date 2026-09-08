@@ -1,7 +1,7 @@
 import { parseColor, oklchToHex, hexToRgb, rgbToHex } from "./color.js";
 
 export const PIGMENTS = [
-  { hex: "#8b2f32", name: "alizarin" },
+  { hex: "#c45450", name: "alizarin" },
   { hex: "#c45a2a", name: "sienna" },
   { hex: "#d4a24a", name: "ochre" },
   { hex: "#5f7a3a", name: "sap" },

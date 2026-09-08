@@ -4,6 +4,7 @@
   --paper-2: #f7f5f1;
   --ink: #24211f;
   --hover: #8b2f32;
+  --pigment: #c45450;
   --line: rgba(36, 33, 31, 0.08);
   --muted: rgba(36, 33, 31, 0.5);
   --fill: color-mix(in srgb, var(--ink) 5%, var(--paper));
@@ -1703,7 +1704,9 @@ select.choice-native {
 }
 
 .wall {
-  padding: 14px 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   min-width: 0;
   max-width: 100%;
   overflow-x: clip;
@@ -1712,13 +1715,40 @@ select.choice-native {
   max-height: calc(100vh - 36px);
 }
 
+.wall:empty::before {
+  content: "";
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(
+      ellipse 90% 80% at 48% 42%,
+      color-mix(in srgb, var(--pigment) 28%, transparent),
+      color-mix(in srgb, var(--pigment) 12%, transparent) 46%,
+      color-mix(in srgb, var(--pigment) 4%, transparent) 70%,
+      transparent 86%
+    );
+  box-shadow: none;
+}
+
 .grid {
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  grid-auto-rows: 1fr;
+  gap: 8px;
+  min-height: 0;
+  height: 100%;
+  align-content: stretch;
 }
 
 .sheet {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1728,8 +1758,7 @@ select.choice-native {
 }
 
 .sheet.active .frame {
-  outline: 1px solid var(--hover);
-  outline-offset: 3px;
+  outline: none;
 }
 
 .sheet.is-adjusting img {
@@ -2068,10 +2097,12 @@ select.choice-native {
 
 .frame {
   position: relative;
-  aspect-ratio: 1;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
   overflow: hidden;
-  background: var(--paper-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: transparent;
+  box-shadow: none;
 }
 
 .sheet.active .frame:has(img),
@@ -2284,9 +2315,9 @@ body:has(.frame.is-carrying) {
 .sheet-stage .sheet {
   position: relative;
   display: block;
-  width: min(100dvw, 100dvh);
-  height: min(100dvw, 100dvh);
-  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  max-width: none;
   cursor: default;
 }
 
@@ -3325,13 +3356,16 @@ body.is-sheet-open {
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    border-radius: 18px;
+    border-radius: 0;
     background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.7), transparent 58%),
-      var(--paper-2);
-    box-shadow:
-      inset 0 0 0 1px rgba(36, 33, 31, 0.035),
-      0 10px 28px rgba(36, 33, 31, 0.05);
+      radial-gradient(
+        ellipse 92% 82% at 50% 44%,
+        color-mix(in srgb, var(--pigment) 30%, transparent),
+        color-mix(in srgb, var(--pigment) 12%, transparent) 48%,
+        color-mix(in srgb, var(--pigment) 4%, transparent) 72%,
+        transparent 88%
+      );
+    box-shadow: none;
   }
 
   .wall .grid {

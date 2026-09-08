@@ -9,7 +9,7 @@ function startWorker() {
     return worker;
   }
   try {
-    worker = new Worker(new URL("./image-worker.js?v=4", import.meta.url), { type: "module" });
+    worker = new Worker(new URL("./image-worker.js?v=5", import.meta.url), { type: "module" });
     worker.onmessage = (event) => {
       const { id, ok, result, error } = event.data || {};
       const job = pending.get(id);

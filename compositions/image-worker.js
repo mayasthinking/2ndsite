@@ -1,4 +1,4 @@
-import { CELLS, averageHex, blobToDataUrl, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
+import { CELLS, averageHex, blobToDataUrl, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=5";
 
 async function sourceFrom(payload) {
   if (payload.bitmap) return payload.bitmap;
@@ -60,7 +60,7 @@ async function renderWash(payload) {
   const marks = planFromPixels(pixels, CELLS, size, payload.seed, payload.effects);
   const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#f3eee4";
+  ctx.fillStyle = "#faf9f6";
   ctx.fillRect(0, 0, size, size);
   ctx.globalCompositeOperation = "multiply";
 
