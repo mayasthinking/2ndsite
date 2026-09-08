@@ -2224,7 +2224,8 @@ select.choice-native {
 .brush-arc-mark .brush-ico {
   width: 13px;
   height: 13px;
-  stroke-width: 1.7;
+  fill: currentColor;
+  stroke: none;
 }
 
 .brush-arc-label {
