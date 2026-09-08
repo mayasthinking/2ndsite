@@ -433,7 +433,7 @@ h1 {
     min-width: 0;
     min-height: 0;
     max-width: 100%;
-    padding: 12px var(--rail-gap, 28px) 16px 16px;
+    padding: 18px var(--rail-gap, 28px) 18px 20px;
     overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior: contain;
