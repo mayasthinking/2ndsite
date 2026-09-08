@@ -2140,6 +2140,7 @@ select.choice-native {
   background: color-mix(in srgb, var(--ink) 40%, transparent);
   transform-origin: 50% 0;
   transform: rotate(calc(var(--turn) + var(--ang))) translateY(calc(-1 * var(--hash-r)));
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .brush-arc-hash.is-major {
@@ -2180,6 +2181,7 @@ select.choice-native {
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   transform: rotate(var(--ang));
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .brush-arc-tick::after {
@@ -2207,6 +2209,7 @@ select.choice-native {
   gap: 1px;
   width: 42px;
   transform: translate(-50%, calc(-1 * var(--icon-r))) rotate(calc(-1 * var(--ang)));
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
 }
 

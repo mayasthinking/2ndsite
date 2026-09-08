@@ -36,6 +36,10 @@ export function brushIndex(name) {
   return index >= 0 ? index : 0;
 }
 
+export function snapTurn(turn) {
+  return Math.round(turn / STEP) * STEP;
+}
+
 export function brushFromTurn(turn, types = BRUSH_TYPES) {
   const n = types.length;
   const snapped = ((Math.round(-turn / STEP) % n) + n) % n;
@@ -187,7 +191,7 @@ export function mountBrushDial({ host, value, onChange }) {
     if (Math.abs(dx) > 6 || Math.abs(dAngle) > 4) dragged = true;
     const bySwipe = dx * DEG_PER_PX;
     const byArc = Math.abs(dAngle) > Math.abs(bySwipe) ? dAngle : bySwipe;
-    applyTurn(dragStartTurn + byArc, true);
+    applyTurn(snapTurn(dragStartTurn + byArc), true);
   });
   const endDrag = (event) => {
     if (!dragging) return;
