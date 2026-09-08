@@ -119,7 +119,7 @@ export function mountBrushDial({ host, value, onChange }) {
       if (ang < 0) ang += 360;
       const fromApex = Math.min(ang, 360 - ang);
       tick.style.setProperty("--from", String(fromApex));
-      tick.classList.toggle("is-far", fromApex > 58);
+      tick.classList.toggle("is-far", fromApex > 72);
     }
     if (emit && name !== current) {
       current = name;
