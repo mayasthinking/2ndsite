@@ -1,28 +1,5 @@
 [
   {
-    "label": "september 2026",
-    "preview": 2,
-    "groups": [
-      {
-        "city": "nyc",
-        "photos": [
-          {
-            "src": "photos/pulitzer-fountain.jpeg",
-            "alt": "Pomona statue on the Pulitzer Fountain, with the Plaza Hotel behind it",
-            "caption": "pulitzer fountain, september 2026",
-            "ariaLabel": "Open Pulitzer Fountain photo"
-          },
-          {
-            "src": "photos/midtown.jpeg",
-            "alt": "Looking up at midtown skyscrapers",
-            "caption": "midtown, september 2026",
-            "ariaLabel": "Open Midtown photo"
-          }
-        ]
-      }
-    ]
-  },
-  {
     "label": "july 2026",
     "preview": 2,
     "groups": [
@@ -174,6 +151,37 @@
             "alt": "Manhattan Municipal Building tower at night",
             "caption": "municipal building, august 2026",
             "ariaLabel": "Open Municipal Building photo"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "september 2026",
+    "preview": 2,
+    "sortLast": true,
+    "groups": [
+      {
+        "city": "nyc",
+        "photos": [
+          {
+            "src": "photos/pulitzer-fountain.jpeg",
+            "alt": "Pomona statue on the Pulitzer Fountain, with the Plaza Hotel behind it",
+            "caption": "pulitzer fountain, september 2026",
+            "ariaLabel": "Open Pulitzer Fountain photo",
+            "objectPosition": "center 25%"
+          },
+          {
+            "src": "photos/midtown.jpeg",
+            "alt": "Looking up at midtown skyscrapers",
+            "caption": "midtown, september 2026",
+            "ariaLabel": "Open Midtown photo"
+          },
+          {
+            "src": "photos/park-avenue.jpeg",
+            "alt": "Looking up at 432 Park Avenue and nearby midtown towers",
+            "caption": "park avenue, september 2026",
+            "ariaLabel": "Open Park Avenue photo"
           }
         ]
       }

@@ -2524,6 +2524,7 @@
 
         function flattenAlbumPhotos(albums) {
             const photos = [];
+            const trailing = [];
 
             [...albums]
                 .sort((a, b) => albumSortKey(b) - albumSortKey(a))
@@ -2532,6 +2533,8 @@
                         return;
                     }
 
+                    const bucket = album.sortLast ? trailing : photos;
+
                     album.groups.forEach((group) => {
                         if (!Array.isArray(group?.photos)) {
                             return;
@@ -2539,13 +2542,13 @@
 
                         group.photos.forEach((photo) => {
                             if (photo?.src) {
-                                photos.push(photo);
+                                bucket.push(photo);
                             }
                         });
                     });
                 });
 
-            return photos;
+            return photos.concat(trailing);
         }
 
         function buildPhotoItem(photo, captionToggleIndex) {
