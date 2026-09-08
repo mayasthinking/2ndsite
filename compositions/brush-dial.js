@@ -2,7 +2,7 @@ import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
 const STEP = 360 / BRUSH_TYPES.length;
 const DEG_PER_PX = 0.72;
-const VISIBLE = 56;
+const VISIBLE = 34;
 
 const ICONS = {
   HB: "icon-brush-hb",
