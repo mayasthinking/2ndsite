@@ -2115,12 +2115,12 @@ select.choice-native {
   height: calc(var(--radius) * 2 + 52px);
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 24%, transparent);
+  background: color-mix(in srgb, var(--paper) 42%, transparent);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
-    0 0 0 1px color-mix(in srgb, var(--ink) 7%, transparent);
-  backdrop-filter: blur(11px);
-  -webkit-backdrop-filter: blur(11px);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   -webkit-mask: radial-gradient(
     circle at center,
     transparent calc(var(--radius) - 27px),
