@@ -1,8 +1,8 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { imageWork } from "./image-work.js?v=6";
-import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=6";
+import { imageWork } from "./image-work.js?v=7";
+import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=7";
 const sceneEl = document.querySelector("#scene");
 const sceneRow = document.querySelector(".scene-row");
 const sceneCaption = document.querySelector("#sceneCaption");

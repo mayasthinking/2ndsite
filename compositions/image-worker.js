@@ -1,4 +1,4 @@
-import { CELLS, averageHex, blobToDataUrl, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=6";
+import { CELLS, averageHex, blobToDataUrl, brushPreviewProfile, planFromPixels, rasterContain, splitSubjectFromImageData } from "./photo-wash-plan.js?v=7";
 
 async function sourceFrom(payload) {
   if (payload.bitmap) return payload.bitmap;
@@ -59,9 +59,7 @@ async function renderWash(payload) {
   const pixels = await previewSource(payload.photo);
   const effects = payload.effects || {};
   const brushType = effects.brushType || "HB";
-  const wet = !["charcoal", "cpencil", "crayon", "spray"].includes(brushType);
-  const chalky = brushType === "charcoal" || brushType === "crayon";
-  const fine = brushType === "2H" || brushType === "cpencil";
+  const profile = brushPreviewProfile(brushType);
   const marks = planFromPixels(pixels, CELLS, size, payload.seed, effects);
   const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext("2d");
@@ -69,30 +67,55 @@ async function renderWash(payload) {
   ctx.fillRect(0, 0, size, size);
   ctx.globalCompositeOperation = "multiply";
 
-  const baseBlur = wet ? Math.max(0.9, size / 640) : chalky ? Math.max(0.25, size / 1600) : Math.max(0.45, size / 1100);
-  const fillAlpha = wet ? 0.58 : chalky ? 0.78 : fine ? 0.42 : brushType === "spray" ? 0.34 : 0.64;
-  const secondPass = wet ? 0.42 : chalky ? 0.55 : fine ? 0.28 : 0.38;
+  const baseBlur = Math.max(0.05, (size / 720) * profile.blur);
 
   for (const mark of marks) {
     if (mark.kind !== "poly") continue;
     ctx.fillStyle = mark.hex;
-    ctx.globalAlpha = Math.min(0.82, (mark.opacity / 255) * fillAlpha);
-    ctx.filter = `blur(${baseBlur}px)`;
+    const alpha = Math.min(0.92, (mark.opacity / 255) * profile.fillAlpha);
+    if (profile.stipple || mark.stipple) {
+      // Spray: scatter small dots inside each polygon bounds instead of a solid fill.
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      for (const [x, y] of mark.pts) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+      const area = Math.max(8, (maxX - minX) * (maxY - minY));
+      const dots = Math.min(90, Math.max(8, Math.round(area / 180)));
+      ctx.globalAlpha = alpha;
+      ctx.filter = "none";
+      for (let i = 0; i < dots; i++) {
+        const px = minX + Math.random() * (maxX - minX);
+        const py = minY + Math.random() * (maxY - minY);
+        const r = 0.6 + Math.random() * Math.max(1.2, size / 280);
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      continue;
+    }
+    ctx.globalAlpha = alpha;
+    ctx.filter = profile.hardEdge ? "none" : `blur(${baseBlur}px)`;
     fillPolygon(ctx, mark.pts);
-    ctx.filter = chalky ? `blur(${Math.max(0.15, baseBlur * 0.35)}px)` : "none";
-    ctx.globalAlpha *= secondPass;
-    fillPolygon(ctx, mark.pts);
+    if (profile.secondPass > 0.05) {
+      ctx.filter = profile.hardEdge ? "none" : `blur(${Math.max(0.05, baseBlur * 0.4)}px)`;
+      ctx.globalAlpha *= profile.secondPass;
+      fillPolygon(ctx, mark.pts);
+    }
   }
 
   ctx.filter = "none";
-  ctx.lineCap = chalky ? "square" : "round";
-  const lineAlpha = wet ? 0.48 : chalky ? 0.72 : fine ? 0.58 : 0.52;
-  const lineScale = wet ? 1.6 : chalky ? 2.4 : fine ? 1.05 : brushType === "spray" ? 3.2 : 1.9;
+  ctx.lineCap = profile.lineCap;
   for (const mark of marks) {
     if (mark.kind !== "line") continue;
     ctx.strokeStyle = mark.hex;
-    ctx.globalAlpha = lineAlpha;
-    ctx.lineWidth = Math.max(0.55, mark.weight * lineScale);
+    ctx.globalAlpha = profile.lineAlpha;
+    ctx.lineWidth = Math.max(0.45, mark.weight * profile.lineScale);
     ctx.beginPath();
     ctx.moveTo(mark.x1, mark.y1);
     ctx.lineTo(mark.x2, mark.y2);
