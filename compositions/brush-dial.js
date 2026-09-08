@@ -46,6 +46,26 @@ export function brushFromTurn(turn, types = BRUSH_TYPES) {
   return types[snapped];
 }
 
+export function nearestTurn(name, from = 0) {
+  const base = -brushIndex(name) * STEP;
+  let best = base;
+  let bestDist = Infinity;
+  for (let k = -2; k <= 2; k++) {
+    const cand = base + k * 360;
+    const dist = Math.abs(cand - from);
+    if (dist < bestDist) {
+      best = cand;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
+function signedDeg(deg) {
+  const a = ((deg % 360) + 360) % 360;
+  return a > 180 ? a - 360 : a;
+}
+
 function norm360(deg) {
   let a = deg % 360;
   if (a < 0) a += 360;
@@ -132,15 +152,15 @@ export function mountBrushDial({ host, value, onChange }) {
   }
 
   function applyTurn(nextTurn, emit) {
-    turn = nextTurn;
-    const name = brushFromTurn(turn);
+    const name = brushFromTurn(nextTurn);
+    turn = nearestTurn(name, nextTurn);
     const index = brushIndex(name);
     hashes.style.setProperty("--turn", `${turn}deg`);
     face.setAttribute("aria-valuenow", String(index));
     face.setAttribute("aria-valuetext", name.toLowerCase());
     for (const tick of track.querySelectorAll(".brush-arc-tick")) {
       const on = tick.dataset.brush === name;
-      const ang = Number(tick.dataset.index) * STEP + turn;
+      const ang = signedDeg(Number(tick.dataset.index) * STEP + turn);
       const away = fromApex(ang);
       tick.classList.toggle("is-active", on);
       tick.classList.toggle("is-far", away > VISIBLE);
@@ -158,7 +178,7 @@ export function mountBrushDial({ host, value, onChange }) {
 
   function commit(name, emit) {
     const next = BRUSH_TYPES.includes(name) ? name : "HB";
-    applyTurn(-brushIndex(next) * STEP, emit);
+    applyTurn(nearestTurn(next, turn), emit);
   }
 
   let dragging = false;
