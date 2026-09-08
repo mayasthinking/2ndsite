@@ -73,9 +73,7 @@ summary,
 .upload,
 .choice-trigger,
 .about-label,
-.sheet-edit-brush,
-.brush-dial-face,
-.brush-dial-tick {
+.sheet-edit-brush {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -1960,7 +1958,6 @@ select.choice-native {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.35),
     0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
-  --angle: 0deg;
 }
 
 .sheet-edit-brush-mark {
@@ -1968,34 +1965,6 @@ select.choice-native {
   place-items: center;
   width: 11px;
   height: 11px;
-  transform: rotate(calc(-1 * var(--angle)));
-}
-
-.sheet-edit-brush-mark svg,
-.brush-dial-tick-mark svg,
-.brush-dial-hub-mark svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.sheet-edit-brush-notch {
-  position: absolute;
-  inset: 0;
-  transform: rotate(var(--angle));
-  pointer-events: none;
-}
-
-.sheet-edit-brush-notch::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 1px;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: currentColor;
-  transform: translateX(-50%);
 }
 
 .sheet-edit-brush:hover,
@@ -2013,6 +1982,76 @@ select.choice-native {
     0 0 0 3px color-mix(in srgb, var(--hover) 16%, transparent);
 }
 
+.brush-dot {
+  position: relative;
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.brush-dot[data-texture="dot"] {
+  width: 6px;
+  height: 6px;
+}
+
+.brush-dot[data-texture="soft"] {
+  width: 9px;
+  height: 9px;
+  opacity: 0.5;
+}
+
+.brush-dot[data-texture="pin"] {
+  width: 3px;
+  height: 3px;
+}
+
+.brush-dot[data-texture="grain"] {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+  box-shadow:
+    1px 2px 0 0.55px currentColor,
+    5px 1px 0 0.45px currentColor,
+    3px 6px 0 0.65px currentColor,
+    7px 5px 0 0.4px currentColor;
+}
+
+.brush-dot[data-texture="ring"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.35px currentColor;
+}
+
+.brush-dot[data-texture="blob"] {
+  width: 9px;
+  height: 7px;
+  border-radius: 60% 40% 55% 45%;
+  opacity: 0.82;
+}
+
+.brush-dot[data-texture="mist"] {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  box-shadow:
+    2px 1px 0 0.4px currentColor,
+    7px 3px 0 0.32px currentColor,
+    4px 6px 0 0.48px currentColor,
+    9px 8px 0 0.28px currentColor,
+    1px 8px 0 0.34px currentColor;
+}
+
+.brush-dot[data-texture="nib"] {
+  width: 7px;
+  height: 3.5px;
+  border-radius: 1px 1px 2px 2px;
+}
+
+.sheet-edit-brush-mark .brush-dot {
+  transform: scale(0.86);
+}
+
 .sheet-color-menu {
   position: fixed;
   padding: 10px;
@@ -2026,178 +2065,213 @@ select.choice-native {
   padding: 0;
   border: 0;
   background: transparent;
+  overflow: hidden;
+  --apex: 16px;
+  --radius: 170px;
+  --cy: 186px;
+  --turn: 0deg;
 }
 
 .brush-dial-menu[hidden] {
   display: none;
 }
 
-.brush-dial {
-  --dial-size: 196px;
-  width: var(--dial-size);
-  height: var(--dial-size);
-}
-
-.brush-dial-face {
+.brush-arc,
+.brush-arc-face {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 68%, transparent);
-  box-shadow:
-    0 0 0 1px rgba(36, 33, 31, 0.08),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.38),
-    0 16px 40px rgba(36, 33, 31, 0.1);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+}
+
+.brush-arc-face {
   touch-action: none;
   cursor: grab;
-  --angle: 0deg;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.brush-dial-face:focus-visible {
+.brush-arc-face:focus-visible {
   outline: 1px solid color-mix(in srgb, var(--hover) 45%, transparent);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
 
-.brush-dial-face:active {
+.brush-arc-face.is-dragging {
   cursor: grabbing;
 }
 
-.brush-dial-ring {
-  position: absolute;
-  inset: 11%;
-  border-radius: 50%;
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--ink) 6%, transparent);
-  pointer-events: none;
-}
-
-.brush-dial-needle {
-  position: absolute;
-  inset: 10%;
-  pointer-events: none;
-  transform: rotate(var(--angle));
-}
-
-.brush-dial-needle::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 1px;
-  height: 16%;
-  background: color-mix(in srgb, var(--hover) 70%, var(--ink));
-  transform: translateX(-50%);
-}
-
-.brush-dial-needle::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 15%;
-  width: 5px;
-  height: 5px;
-  border: 1px solid var(--hover);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 80%, #fff);
-  transform: translate(-50%, -50%);
-}
-
-.brush-dial-ticks {
+.brush-arc-band {
   position: absolute;
   inset: 0;
+  pointer-events: none;
 }
 
-.brush-dial-tick {
+.brush-arc-band::before {
+  content: "";
   position: absolute;
   left: 50%;
-  top: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  width: 44px;
+  top: var(--cy);
+  width: calc(var(--radius) * 2 + 52px);
+  height: calc(var(--radius) * 2 + 52px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--paper) 24%, transparent);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 0 0 1px color-mix(in srgb, var(--ink) 7%, transparent);
+  backdrop-filter: blur(11px);
+  -webkit-backdrop-filter: blur(11px);
+  -webkit-mask: radial-gradient(
+    circle at center,
+    transparent calc(var(--radius) - 27px),
+    #000 calc(var(--radius) - 26px),
+    #000 calc(var(--radius) + 21px),
+    transparent calc(var(--radius) + 22px)
+  );
+  mask: radial-gradient(
+    circle at center,
+    transparent calc(var(--radius) - 27px),
+    #000 calc(var(--radius) - 26px),
+    #000 calc(var(--radius) + 21px),
+    transparent calc(var(--radius) + 22px)
+  );
+}
+
+.brush-arc-track {
+  position: absolute;
+  left: 50%;
+  top: var(--cy);
+  width: 0;
+  height: 0;
+  --turn: 0deg;
+}
+
+.brush-arc-tick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
   margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--ink) 58%, transparent);
   font: inherit;
-  font-size: 8px;
-  letter-spacing: 0.02em;
   line-height: 1;
-  pointer-events: none;
-  transform: translate(-50%, -50%) rotate(var(--tick)) translateY(calc(var(--dial-size) * -0.37)) rotate(calc(-1 * var(--tick)));
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transform: rotate(calc(var(--turn) + var(--tick) - 90deg));
+  opacity: clamp(0, calc(1.12 - var(--from) / 78), 1);
 }
 
-.brush-dial-tick-mark {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-}
-
-.brush-dial-tick-mark svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.brush-dial-tick-name {
-  max-width: 44px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.brush-dial-tick:hover,
-.brush-dial-tick:focus-visible,
-.brush-dial-tick.is-active {
-  color: var(--hover);
-}
-
-.brush-dial-tick:focus-visible {
-  outline: none;
-}
-
-.brush-dial-hub {
+.brush-arc-tick::after {
+  content: "";
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: 0;
+  top: 0;
+  width: 46px;
+  height: 54px;
+  transform: translate(-50%, calc(-1 * var(--radius) - 30px));
+}
+
+.brush-arc-tick.is-far {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.brush-arc-stem {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.5px;
+  height: 11px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: translate(-50%, calc(-1 * var(--radius) + 6px));
+  pointer-events: none;
+}
+
+.brush-arc-spoke {
+  position: absolute;
+  left: 0;
+  top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 2px;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 55%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
-  color: var(--ink);
-  transform: translate(-50%, -50%);
+  width: 48px;
+  transform: translate(-50%, calc(-1 * var(--radius) - 22px)) rotate(calc(90deg - var(--turn) - var(--tick)));
   pointer-events: none;
 }
 
-.brush-dial-hub-mark {
+.brush-arc-mark {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 16px;
+  height: 16px;
 }
 
-.brush-dial-hub-mark svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.brush-dial-hub-name {
-  font-size: 10px;
+.brush-arc-label {
+  max-width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 8px;
   letter-spacing: 0.02em;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--paper) 74%, transparent);
+}
+
+.brush-arc-tick.is-active,
+.brush-arc-tick:hover {
   color: var(--hover);
+}
+
+.brush-arc-tick.is-active .brush-arc-stem {
+  height: 15px;
+  background: var(--hover);
+}
+
+.brush-arc-tick.is-active .brush-arc-label {
+  opacity: 0;
+}
+
+.brush-arc-pointer {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--apex) - 1px);
+  z-index: 3;
+  width: 8px;
+  height: 6px;
+  background: var(--hover);
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.brush-arc-readout {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--apex) + 9px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--hover);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.brush-arc-readout-dot {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+}
+
+.brush-arc-readout-name {
+  font-size: 11px;
+  letter-spacing: 0.03em;
 }
 
 .frame {
@@ -2532,8 +2606,8 @@ body:has(.frame.is-carrying) {
   height: 14px;
 }
 
-.brush-dial-menu.is-stage {
-  --dial-size: 220px;
+.brush-dial-menu.is-stage .brush-arc-label {
+  font-size: 9px;
 }
 
 .sheet-stage .expand {
@@ -3104,6 +3178,15 @@ body.is-sheet-open {
   .sheet-edit-brush-mark {
     width: 16px;
     height: 16px;
+  }
+
+  .brush-arc-readout-name {
+    font-size: 12px;
+  }
+
+  .brush-arc-tick::after {
+    width: 56px;
+    height: 62px;
   }
 
   .sheet-color-menu {
@@ -3720,37 +3803,6 @@ body.is-sheet-open {
 
   [data-tool-panel].is-active {
     display: flex;
-  }
-
-  .mobile-tool-panel:has([data-tool-panel="brush"].is-active) {
-    max-height: 220px;
-    min-height: 176px;
-  }
-
-  #mobileBrushDial.brush-dial {
-    --dial-size: min(64vw, 176px);
-    margin: 0 auto;
-  }
-
-  #mobileBrushDial .brush-dial-face {
-    box-shadow:
-      0 0 0 1px rgba(36, 33, 31, 0.08),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-  }
-
-  #mobileBrushDial .brush-dial-tick {
-    width: 40px;
-    font-size: 8px;
-  }
-
-  #mobileBrushDial .brush-dial-tick-mark {
-    width: 20px;
-    height: 20px;
-  }
-
-  #mobileBrushDial .brush-dial-hub {
-    width: 62px;
-    height: 62px;
   }
 
   .mobile-color-panel {

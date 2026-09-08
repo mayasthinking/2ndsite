@@ -1,21 +1,26 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
 const STEP = 360 / BRUSH_TYPES.length;
+const DEG_PER_PX = 0.42;
 
-const BRUSH_ICONS = {
-  HB: "icon-pencil",
-  "2B": "icon-pencil-line",
-  "2H": "icon-pen-line",
-  charcoal: "icon-brush",
-  cpencil: "icon-pen",
-  crayon: "icon-paintbrush-tool",
-  spray: "icon-spray-can",
-  marker: "icon-highlighter",
+const TEXTURE = {
+  HB: "dot",
+  "2B": "soft",
+  "2H": "pin",
+  charcoal: "grain",
+  cpencil: "ring",
+  crayon: "blob",
+  spray: "mist",
+  marker: "nib",
 };
 
+export function textureName(name) {
+  return TEXTURE[name] || "dot";
+}
+
 export function strokeSvg(name) {
-  const icon = BRUSH_ICONS[name] || BRUSH_ICONS.HB;
-  return `<svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#${icon}"></use></svg>`;
+  const type = BRUSH_TYPES.includes(name) ? name : "HB";
+  return `<span class="brush-dot" data-texture="${TEXTURE[type]}" aria-hidden="true"></span>`;
 }
 
 export function paintBrushMark(el, name) {
@@ -30,121 +35,147 @@ export function brushIndex(name) {
   return index >= 0 ? index : 0;
 }
 
-export function angleFromPoint(x, y, cx, cy) {
-  return ((Math.atan2(y - cy, x - cx) * 180) / Math.PI + 360) % 360;
-}
-
-export function brushFromAngle(deg, types = BRUSH_TYPES) {
+export function brushFromTurn(turn, types = BRUSH_TYPES) {
   const n = types.length;
-  const adjusted = (deg + 90 + 360) % 360;
-  return types[Math.round(adjusted / (360 / n)) % n];
+  const snapped = ((Math.round(-turn / STEP) % n) + n) % n;
+  return types[snapped];
 }
 
 export function mountBrushDial({ host, value, onChange }) {
   if (!host) return null;
 
   let current = BRUSH_TYPES.includes(value) ? value : "HB";
-  host.classList.add("brush-dial");
+  let turn = -brushIndex(current) * STEP;
+  host.classList.add("brush-arc");
   host.replaceChildren();
 
   const face = document.createElement("div");
-  face.className = "brush-dial-face";
+  face.className = "brush-arc-face";
   face.tabIndex = 0;
   face.setAttribute("role", "slider");
   face.setAttribute("aria-label", "brush");
   face.setAttribute("aria-valuemin", "0");
   face.setAttribute("aria-valuemax", String(BRUSH_TYPES.length - 1));
 
-  const ring = document.createElement("div");
-  ring.className = "brush-dial-ring";
-  ring.setAttribute("aria-hidden", "true");
+  const band = document.createElement("div");
+  band.className = "brush-arc-band";
+  band.setAttribute("aria-hidden", "true");
 
-  const needle = document.createElement("div");
-  needle.className = "brush-dial-needle";
-  needle.setAttribute("aria-hidden", "true");
+  const track = document.createElement("div");
+  track.className = "brush-arc-track";
+  track.setAttribute("role", "listbox");
+  track.setAttribute("aria-label", "brushes");
 
-  const ticks = document.createElement("div");
-  ticks.className = "brush-dial-ticks";
-  ticks.setAttribute("role", "listbox");
-  ticks.setAttribute("aria-label", "brushes");
+  const pointer = document.createElement("div");
+  pointer.className = "brush-arc-pointer";
+  pointer.setAttribute("aria-hidden", "true");
 
-  const hub = document.createElement("div");
-  hub.className = "brush-dial-hub";
-  const hubMark = document.createElement("span");
-  hubMark.className = "brush-dial-hub-mark";
-  const hubName = document.createElement("span");
-  hubName.className = "brush-dial-hub-name";
-  hub.append(hubMark, hubName);
+  const readout = document.createElement("div");
+  readout.className = "brush-arc-readout";
+  const readDot = document.createElement("span");
+  readDot.className = "brush-arc-readout-dot";
+  const readName = document.createElement("span");
+  readName.className = "brush-arc-readout-name";
+  readout.append(readDot, readName);
 
   for (const [index, name] of BRUSH_TYPES.entries()) {
     const tick = document.createElement("button");
     tick.type = "button";
-    tick.className = "brush-dial-tick";
+    tick.className = "brush-arc-tick";
     tick.dataset.brush = name;
     tick.setAttribute("role", "option");
     tick.setAttribute("aria-label", name.toLowerCase());
     tick.tabIndex = -1;
     tick.style.setProperty("--tick", `${index * STEP}deg`);
+    const stem = document.createElement("span");
+    stem.className = "brush-arc-stem";
+    const spoke = document.createElement("span");
+    spoke.className = "brush-arc-spoke";
     const mark = document.createElement("span");
-    mark.className = "brush-dial-tick-mark";
-    mark.setAttribute("aria-hidden", "true");
+    mark.className = "brush-arc-mark";
     paintBrushMark(mark, name);
     const label = document.createElement("span");
-    label.className = "brush-dial-tick-name";
+    label.className = "brush-arc-label";
     label.textContent = name.toLowerCase();
-    tick.append(mark, label);
-    tick.addEventListener("click", (event) => {
-      event.preventDefault();
-      commit(name, true);
-    });
-    ticks.append(tick);
+    spoke.append(mark, label);
+    tick.append(stem, spoke);
+    track.append(tick);
   }
 
-  face.append(ring, needle, ticks, hub);
+  face.append(band, track, pointer, readout);
   host.append(face);
+
+  function applyTurn(nextTurn, emit) {
+    turn = nextTurn;
+    const name = brushFromTurn(turn);
+    face.style.setProperty("--turn", `${turn}deg`);
+    track.style.setProperty("--turn", `${turn}deg`);
+    const index = brushIndex(name);
+    face.setAttribute("aria-valuenow", String(index));
+    face.setAttribute("aria-valuetext", name.toLowerCase());
+    readName.textContent = name.toLowerCase();
+    paintBrushMark(readDot, name);
+    for (const tick of track.querySelectorAll(".brush-arc-tick")) {
+      const on = tick.dataset.brush === name;
+      tick.classList.toggle("is-active", on);
+      tick.setAttribute("aria-selected", on ? "true" : "false");
+      let ang = (brushIndex(tick.dataset.brush) * STEP + turn) % 360;
+      if (ang < 0) ang += 360;
+      const fromApex = Math.min(ang, 360 - ang);
+      tick.style.setProperty("--from", String(fromApex));
+      tick.classList.toggle("is-far", fromApex > 100);
+    }
+    if (emit && name !== current) {
+      current = name;
+      onChange?.(current);
+    } else {
+      current = name;
+    }
+  }
 
   function commit(name, emit) {
     const next = BRUSH_TYPES.includes(name) ? name : "HB";
-    const changed = next !== current;
-    current = next;
-    const index = brushIndex(current);
-    face.style.setProperty("--angle", `${index * STEP}deg`);
-    face.setAttribute("aria-valuenow", String(index));
-    face.setAttribute("aria-valuetext", current.toLowerCase());
-    hubName.textContent = current.toLowerCase();
-    paintBrushMark(hubMark, current);
-    for (const tick of ticks.querySelectorAll(".brush-dial-tick")) {
-      const on = tick.dataset.brush === current;
-      tick.classList.toggle("is-active", on);
-      tick.setAttribute("aria-selected", on ? "true" : "false");
-    }
-    if (emit && changed) onChange?.(current);
-  }
-
-  function pickFromEvent(event) {
-    const rect = face.getBoundingClientRect();
-    const name = brushFromAngle(angleFromPoint(event.clientX, event.clientY, rect.left + rect.width / 2, rect.top + rect.height / 2));
-    commit(name, true);
+    applyTurn(-brushIndex(next) * STEP, emit);
   }
 
   let dragging = false;
+  let dragged = false;
+  let dragStartX = 0;
+  let dragStartTurn = 0;
+
   face.addEventListener("pointerdown", (event) => {
-    if (event.target.closest(".brush-dial-tick")) return;
+    if (event.button != null && event.button !== 0) return;
     event.preventDefault();
+    event.stopPropagation();
     dragging = true;
+    dragged = false;
+    dragStartX = event.clientX;
+    dragStartTurn = turn;
+    face.classList.add("is-dragging");
     try {
       face.setPointerCapture(event.pointerId);
     } catch {
       /* ignore */
     }
-    pickFromEvent(event);
   });
   face.addEventListener("pointermove", (event) => {
     if (!dragging) return;
-    pickFromEvent(event);
+    const dx = event.clientX - dragStartX;
+    if (Math.abs(dx) > 6) dragged = true;
+    applyTurn(dragStartTurn + dx * DEG_PER_PX, true);
   });
-  const endDrag = () => {
+  const endDrag = (event) => {
+    if (!dragging) return;
     dragging = false;
+    face.classList.remove("is-dragging");
+    if (!dragged) {
+      const tick = event.target instanceof Element ? event.target.closest(".brush-arc-tick") : null;
+      if (tick?.dataset.brush) {
+        commit(tick.dataset.brush, true);
+        return;
+      }
+    }
+    commit(brushFromTurn(turn), true);
   };
   face.addEventListener("pointerup", endDrag);
   face.addEventListener("pointercancel", endDrag);

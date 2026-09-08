@@ -1,7 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial, paintBrushMark } from "./brush-dial.js?v=3";
+import { mountBrushDial, paintBrushMark } from "./brush-dial.js?v=6";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -31,11 +31,9 @@ const brushControlsEl = document.querySelector("#brushControls");
 const placementEl = document.querySelector("#placement");
 const placementControlsEl = document.querySelector("#placementControls");
 const mobileEditor = document.querySelector("#mobileEditor");
-const mobileBrushHost = document.querySelector("#mobileBrushDial");
 const mobileToolButtons = [...document.querySelectorAll("[data-mobile-tool]")];
 const mobileToolPanels = [...document.querySelectorAll("[data-tool-panel]")];
 const mobileEffectInputs = [...document.querySelectorAll("[data-mobile-effect]")];
-let mobileBrushDial = null;
 
 const stored = JSON.parse(localStorage.getItem("wash.settings") || "{}");
 if (stored.provider) providerEl.value = stored.provider;
@@ -91,6 +89,17 @@ function closeBrushDials() {
   }
   for (const btn of document.querySelectorAll(".sheet-edit-brush[aria-expanded='true']")) {
     btn.setAttribute("aria-expanded", "false");
+  }
+  const brushTool = mobileToolButtons.find((btn) => btn.dataset.mobileTool === "brush");
+  if (brushTool?.classList.contains("is-active")) {
+    brushTool.classList.remove("is-active");
+    brushTool.setAttribute("aria-pressed", "false");
+  }
+}
+
+function placeOpenBrushDials() {
+  for (const menu of document.querySelectorAll(".brush-dial-menu:not([hidden])")) {
+    menu._place?.();
   }
 }
 
@@ -328,6 +337,7 @@ document.addEventListener("pointerdown", (event) => {
   if (event.target.closest(".choice") || event.target.closest(".choice-menu")) return;
   if (event.target.closest(".sheet-edit-color") || event.target.closest(".sheet-color-menu")) return;
   if (event.target.closest(".sheet-edit-brush") || event.target.closest(".brush-dial-menu")) return;
+  if (event.target.closest("[data-mobile-tool='brush']")) return;
   closePopovers();
 });
 
@@ -342,7 +352,9 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("resize", () => {
-  closePopovers();
+  closeChoiceMenus();
+  closeSheetColorMenus();
+  placeOpenBrushDials();
   sizeScene();
   syncAppHeight();
 });
@@ -745,8 +757,6 @@ function syncSheetEditor(rec) {
     brushBtn.dataset.brush = brushName;
     brushBtn.setAttribute("aria-label", `brush, ${brushName.toLowerCase()}`);
     paintBrushMark(brushBtn.querySelector(".sheet-edit-brush-mark"), brushName);
-    const face = brushBtn.querySelector(".sheet-edit-brush-face");
-    face?.style.setProperty("--angle", `${BRUSH_TYPES.indexOf(brushName) * (360 / BRUSH_TYPES.length)}deg`);
   }
   edit._colorPicker?.setValue(fx.color || DEFAULT_COLOR);
   edit._brushDial?.setValue(brushName);
@@ -925,24 +935,27 @@ function mountSheetEditor(sheet, item) {
   });
 
   const placeBrushDial = () => {
-    const box = brushMenu.getBoundingClientRect();
     const painting = frame.getBoundingClientRect();
     const view = viewSize();
-    let left = painting.left + (painting.width - box.width) / 2;
-    let top = painting.top + (painting.height - box.height) / 2;
-    const fits =
-      painting.width > box.width + 24 &&
-      painting.height > box.height + 24 &&
-      painting.top < view.height &&
-      painting.bottom > 0;
-    if (!fits) {
-      const rect = brushBtn.getBoundingClientRect();
-      left = rect.left + rect.width / 2 - box.width / 2;
-      top = rect.top - box.height - 10;
-      if (top < 8) top = rect.bottom + 10;
-    }
-    brushMenu.style.left = `${Math.max(8, Math.min(left, view.width - box.width - 8))}px`;
-    brushMenu.style.top = `${Math.max(8, Math.min(top, view.height - box.height - 8))}px`;
+    const staged = sheet.classList.contains("is-expanded");
+    brushMenu.classList.toggle("is-stage", staged);
+    const width = Math.round(Math.max(220, Math.min(painting.width - 12, view.width - 16, staged ? 460 : 400)));
+    const height = Math.round(Math.max(96, Math.min(staged ? 138 : 122, painting.height * 0.38, view.height * 0.3)));
+    const apex = 16;
+    const radius = Math.round(Math.min(width * 0.52, height * 1.65));
+    brushMenu.style.width = `${width}px`;
+    brushMenu.style.height = `${height}px`;
+    brushMenu.style.setProperty("--apex", `${apex}px`);
+    brushMenu.style.setProperty("--radius", `${radius}px`);
+    brushMenu.style.setProperty("--cy", `${apex + radius}px`);
+    let left = painting.left + (painting.width - width) / 2;
+    let top = painting.bottom - height - (staged ? 8 : 4);
+    left = Math.max(8, Math.min(left, view.width - width - 8));
+    const minTop = Math.max(8, painting.top + 8);
+    const maxTop = Math.min(view.height - height - 8, painting.bottom - 6);
+    top = Math.max(minTop, Math.min(top, maxTop));
+    brushMenu.style.left = `${left}px`;
+    brushMenu.style.top = `${top}px`;
   };
 
   const openBrushDial = () => {
@@ -950,12 +963,24 @@ function mountSheetEditor(sheet, item) {
     closeSheetColorMenus();
     closeBrushDials();
     brushBtn.setAttribute("aria-expanded", "true");
-    brushMenu.classList.toggle("is-stage", sheet.classList.contains("is-expanded"));
     document.body.append(brushMenu);
     brushMenu.hidden = false;
     holdPopovers();
     placeBrushDial();
+    if (isPhone()) setMobileTool("brush");
     edit._brushDial?.focus();
+  };
+
+  brushMenu._place = placeBrushDial;
+  edit._openBrushDial = openBrushDial;
+  edit._toggleBrushDial = () => {
+    const open = brushBtn.getAttribute("aria-expanded") === "true" && !brushMenu.hidden;
+    if (open) {
+      closeBrushDials();
+      return false;
+    }
+    openBrushDial();
+    return true;
   };
 
   let brushOpenedAt = 0;
@@ -969,6 +994,7 @@ function mountSheetEditor(sheet, item) {
       brushOpenedAt = Date.now();
     }
   });
+  brushMenu.addEventListener("pointerdown", (event) => event.stopPropagation());
   brushMenu.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -1332,7 +1358,6 @@ function syncMobileEditor(rec = selectedId ? cards.get(selectedId) : null) {
     input.value = String(Math.round((fx[input.dataset.mobileEffect] ?? 0.5) * 100));
     input.closest(".mobile-tick-scale")?.style.setProperty("--value", input.value);
   }
-  mobileBrushDial?.setValue(fx.brushType || "HB");
   const hex = oklchToHex(fx.color || DEFAULT_COLOR);
   document.querySelector(".mobile-color-icon")?.style.setProperty("--tool-color", hex);
   mobileColorPicker?.setValue(fx.color || DEFAULT_COLOR);
@@ -1350,12 +1375,7 @@ function setMobileTool(name) {
 }
 
 function mountMobileEditor() {
-  if (!mobileEditor || !mobileBrushHost) return;
-  mobileBrushDial = mountBrushDial({
-    host: mobileBrushHost,
-    value: effects.brushType || "HB",
-    onChange: (brushType) => applyMobilePatch({ brushType }),
-  });
+  if (!mobileEditor) return;
   mobileColorPicker = mountColorSquare({
     host: document.querySelector("#mobilePigments"),
     value: effects.color || DEFAULT_COLOR,
@@ -1364,7 +1384,15 @@ function mountMobileEditor() {
   });
   for (const button of mobileToolButtons) {
     button.addEventListener("click", () => {
-      setMobileTool(button.classList.contains("is-active") ? null : button.dataset.mobileTool);
+      const name = button.dataset.mobileTool;
+      if (name === "brush") {
+        const rec = selectedId ? cards.get(selectedId) : null;
+        const opened = rec?.sheet.querySelector(".sheet-edit")?._toggleBrushDial?.();
+        setMobileTool(opened ? "brush" : null);
+        return;
+      }
+      closeBrushDials();
+      setMobileTool(button.classList.contains("is-active") ? null : name);
     });
   }
   for (const input of mobileEffectInputs) {
@@ -1776,7 +1804,9 @@ function closeSheetStage() {
 function clearWall() {
   closeSheetStage();
   closePopovers();
-  document.querySelectorAll(".sheet-color-menu, .brush-dial-menu").forEach((menu) => menu.remove());
+  document.querySelectorAll(".sheet-color-menu, .brush-dial-menu").forEach((menu) => {
+    menu.remove();
+  });
   paintQueue.length = 0;
   photoPreviewQueue.length = 0;
   paintingNow = false;
@@ -1839,7 +1869,6 @@ function renderGrid(items) {
           <button type="button" class="sheet-edit-brush" title="brush" aria-label="brush" aria-haspopup="dialog" aria-expanded="false">
             <span class="sheet-edit-brush-face" aria-hidden="true">
               <span class="sheet-edit-brush-mark"></span>
-              <span class="sheet-edit-brush-notch"></span>
             </span>
           </button>
         </div>
