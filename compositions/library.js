@@ -22,7 +22,21 @@ import {
 
 const STORAGE_KEY = "compositions.library.kept.v2";
 const MODEL_MODULE = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/+esm";
-const CURATED_GENRE = "romantic-wash";
+const CURATED_SHELVES = {
+  "romantic-wash": {
+    label: "romantic wash",
+    file: "data/seed/romantic-wash-seed.jsonl",
+    ready: (count) => `${count} curated romantic washes ready to browse or keep.`,
+    empty: "the romantic wash tray is quiet right now.",
+  },
+  impressionism: {
+    label: "impressionism",
+    file: "data/seed/impressionism-seed.jsonl",
+    ready: (count) => `${count} curated impressionist paintings ready to browse or keep.`,
+    empty: "the impressionism tray is quiet right now.",
+  },
+};
+const DEFAULT_CURATED_GENRE = "romantic-wash";
 const searchForm = document.querySelector("#librarySearch");
 const queryInput = document.querySelector("#libraryQuery");
 const statusEl = document.querySelector("#libraryStatus");
@@ -38,7 +52,7 @@ const exportButton = document.querySelector("#exportKept");
 
 let licenseFilter = "public-domain";
 let sourceFilter = "both";
-let genreFilter = CURATED_GENRE;
+let genreFilter = DEFAULT_CURATED_GENRE;
 let exportFormat = "json";
 let continuations = { commons: null, met: null };
 let currentQuery = "";
@@ -96,8 +110,22 @@ function displaySource(record) {
   return recordSourceKind(record) === "met" ? "met open access" : "wikimedia commons";
 }
 
+function curatedShelf(genreId = genreFilter) {
+  return CURATED_SHELVES[genreId] || null;
+}
+
+function isCuratedGenre(genreId = genreFilter) {
+  return Boolean(curatedShelf(genreId));
+}
+
+function curatedGenreId(record) {
+  if (record.category === "romantic wash") return "romantic-wash";
+  if (record.category === "impressionism") return "impressionism";
+  return "";
+}
+
 function isCuratedRecord(record) {
-  return record.is_curated === true || record.category === "romantic wash";
+  return record.is_curated === true || Boolean(curatedGenreId(record));
 }
 
 function seedMatchesSource(record) {
@@ -130,23 +158,26 @@ function seedToItem(record) {
     semanticScore: record.semanticScore,
     isSeed: true,
     isCurated: isCuratedRecord(record),
+    curatedLabel: curatedShelf(curatedGenreId(record))?.label || "",
   };
 }
 
+async function loadJsonl(path) {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`${path} unavailable`);
+  return parseJsonl(await response.text());
+}
+
 async function loadSeed() {
-  const [recordsResponse, curatedResponse, indexResponse] = await Promise.allSettled([
+  const curatedPaths = Object.values(CURATED_SHELVES).map((shelf) => shelf.file);
+  const [recordsResponse, indexResponse, ...curatedResponses] = await Promise.allSettled([
     fetch("data/seed/commons-seed.jsonl"),
-    fetch("data/seed/romantic-wash-seed.jsonl"),
     fetch("data/seed/semantic-index.json"),
+    ...curatedPaths.map((path) => loadJsonl(path)),
   ]);
-  try {
-    curatedRecords =
-      curatedResponse.status === "fulfilled" && curatedResponse.value.ok
-        ? parseJsonl(await curatedResponse.value.text())
-        : [];
-  } catch {
-    curatedRecords = [];
-  }
+  curatedRecords = curatedResponses.flatMap((result) =>
+    result.status === "fulfilled" ? result.value : [],
+  );
   try {
     const commonsRecords =
       recordsResponse.status === "fulfilled" && recordsResponse.value.ok
@@ -279,8 +310,9 @@ function licenseOk(record) {
 }
 
 function curatedShelfItems() {
-  if (genreFilter !== CURATED_GENRE) return [];
+  if (!isCuratedGenre()) return [];
   return curatedRecords
+    .filter((record) => curatedGenreId(record) === genreFilter)
     .filter(seedMatchesSource)
     .filter(licenseOk)
     .map((record) => seedToItem({ ...record, semanticScore: 1 }));
@@ -288,7 +320,7 @@ function curatedShelfItems() {
 
 function rankedSeed(query, queryEmbedding = null) {
   const pool = seedRecords.filter(seedMatchesSource).filter(licenseOk);
-  const limit = genreFilter === CURATED_GENRE ? 20 : 12;
+  const limit = isCuratedGenre() ? 20 : 12;
   return rankSeedRecords(query, pool, semanticIndex, queryEmbedding, genreFilter)
     .filter((record) => record.semanticScore > 0.08 || isCuratedRecord(record))
     .slice(0, limit)
@@ -310,7 +342,7 @@ function interleaveSources(items) {
 function currentVisibleResults(query, queryEmbedding = null) {
   const curated = curatedShelfItems();
   const known = new Set(curated.map((item) => item.id));
-  const includeRankedSeeds = Boolean(currentQuery) || genreFilter !== CURATED_GENRE;
+  const includeRankedSeeds = Boolean(currentQuery) || !isCuratedGenre();
   const seed = includeRankedSeeds
     ? rankedSeed(query, queryEmbedding).filter((item) => !known.has(item.id))
     : [];
@@ -355,9 +387,10 @@ async function rerankWithModel(query, sequence) {
 }
 
 function updateWallCopy() {
-  if (genreFilter === CURATED_GENRE) {
+  const shelf = curatedShelf();
+  if (shelf) {
     if (resultsEyebrow) resultsEyebrow.textContent = "curated tray · met open access + commons";
-    if (resultsTitle) resultsTitle.textContent = "romantic wash";
+    if (resultsTitle) resultsTitle.textContent = shelf.label;
     return;
   }
   if (resultsEyebrow) resultsEyebrow.textContent = "caption index + commons + met open access";
@@ -372,7 +405,8 @@ async function searchLibrary({ append = false } = {}) {
     return;
   }
   const rankQuery = genreSearchQuery(search, genreFilter, "semantic");
-  if (!search && genreFilter === CURATED_GENRE && !append) {
+  if (!search && isCuratedGenre() && !append) {
+    const shelf = curatedShelf();
     requestController?.abort();
     requestController = null;
     searchSequence += 1;
@@ -383,11 +417,7 @@ async function searchLibrary({ append = false } = {}) {
     updateWallCopy();
     renderResults(rankQuery);
     const curatedCount = curatedShelfItems().filter((item) => !skipped.has(item.id)).length;
-    setStatus(
-      curatedCount
-        ? `${curatedCount} curated romantic washes ready to browse or keep.`
-        : "the romantic wash tray is quiet right now.",
-    );
+    setStatus(curatedCount ? shelf.ready(curatedCount) : shelf.empty);
     moreButton.hidden = true;
     return;
   }
@@ -471,7 +501,7 @@ function renderResults(
   const curatedCount = visible.filter((item) => item.isCurated).length;
   const seedCount = visible.filter((item) => item.isSeed && !item.isCurated).length;
   resultCountEl.textContent = visible.length
-    ? curatedCount && genreFilter === CURATED_GENRE
+    ? curatedCount && isCuratedGenre()
       ? `${curatedCount} curated · ${visible.length} showing`
       : `${seedCount + curatedCount} meaning ${seedCount + curatedCount === 1 ? "match" : "matches"} · ${visible.length} showing`
     : "";
@@ -504,7 +534,7 @@ function createCandidateCard(item, modelRanked = false) {
     "span",
     "library-match",
     item.isCurated
-      ? `curated romantic wash · ${item.source}`
+      ? `curated ${item.curatedLabel || "tray"} · ${item.source}`
       : item.isSeed
         ? `${modelRanked ? "semantic" : "caption"} match · ${Math.round(item.semanticScore * 100)}%`
         : item.semanticScore

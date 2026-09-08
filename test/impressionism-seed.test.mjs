@@ -5,14 +5,14 @@ import { readFile } from "node:fs/promises";
 import { parseJsonl } from "../scripts/caption-compositions.mjs";
 import { genreSearchQuery, rankSeedRecords } from "../lib/compositions/semantic-search.mjs";
 
-const seedPath = new URL("../compositions/data/seed/romantic-wash-seed.jsonl", import.meta.url);
+const seedPath = new URL("../compositions/data/seed/impressionism-seed.jsonl", import.meta.url);
 const records = parseJsonl(await readFile(seedPath, "utf8"));
 
 const catalogLanguage =
   /\b(?:accession(?: number)?|gift of|catalog(?:ue)? no\.|dimensions?:|\d+\s*[×x]\s*\d+\s*(?:in|cm))\b/i;
 const labeledFields = /\b(?:Composition|Subject|Materials and surface|Light|Color|Mood):/;
 
-test("romantic wash seed holds 10–16 unique public-domain records", () => {
+test("impressionism seed holds 10–16 unique public-domain records", () => {
   assert.ok(records.length >= 10 && records.length <= 16);
   assert.equal(new Set(records.map((record) => record.id)).size, records.length);
   assert.equal(new Set(records.map((record) => record.source_url)).size, records.length);
@@ -22,7 +22,7 @@ test("romantic wash seed holds 10–16 unique public-domain records", () => {
   assert.ok(records.some((record) => record.source === "commons"));
 });
 
-test("romantic wash records include prompt captions, artist, and provenance", () => {
+test("impressionism records include prompt captions, artist, and provenance", () => {
   const required = [
     "id",
     "source",
@@ -37,7 +37,7 @@ test("romantic wash records include prompt captions, artist, and provenance", ()
   ];
   for (const record of records) {
     for (const field of required) assert.ok(field in record, `${record.id} is missing ${field}`);
-    assert.equal(record.category, "romantic wash");
+    assert.equal(record.category, "impressionism");
     assert.equal(record.is_curated, true);
     assert.ok(record.caption_long.length >= 260, `${record.id} long caption is too short`);
     assert.ok(record.caption_short.length >= 25 && record.caption_short.length <= 180);
@@ -47,23 +47,22 @@ test("romantic wash records include prompt captions, artist, and provenance", ()
   }
 });
 
-test("the romantic wash tray includes the requested Turner, Sargent, and Fragonard veins", () => {
+test("the impressionism tray includes Monet, Pissarro, Sisley, and Renoir veins", () => {
   const ids = new Set(records.map((record) => record.id));
-  assert.ok(ids.has("met:12119"));
-  assert.ok(ids.has("met:12098"));
-  assert.ok(ids.has("met:337499"));
-  assert.ok(ids.has("met:459371"));
-  assert.ok(ids.has("commons:22213523"));
-  assert.ok(ids.has("commons:43119644"));
-  assert.ok(records.some((record) => /turner/i.test(record.artist)));
-  assert.ok(records.some((record) => /sargent/i.test(record.artist)));
-  assert.ok(records.some((record) => /fragonard/i.test(record.artist)));
-  assert.ok(records.some((record) => /homer/i.test(record.artist)));
+  assert.ok(ids.has("commons:23750619"));
+  assert.ok(ids.has("commons:22174454"));
+  assert.ok(ids.has("met:437313"));
+  assert.ok(ids.has("met:437683"));
+  assert.ok(ids.has("met:438010"));
+  assert.ok(records.some((record) => /monet/i.test(record.artist)));
+  assert.ok(records.some((record) => /pissarro/i.test(record.artist)));
+  assert.ok(records.some((record) => /sisley/i.test(record.artist)));
+  assert.ok(records.some((record) => /renoir/i.test(record.artist)));
 });
 
-test("romantic wash genre language boosts the curated tray over unrelated seeds", () => {
+test("impressionism genre language boosts the curated tray over unrelated seeds", () => {
   const ranked = rankSeedRecords(
-    "soft watercolor garden mist",
+    "plein air garden light",
     [
       {
         id: "kitchen",
@@ -76,32 +75,26 @@ test("romantic wash genre language boosts the curated tray over unrelated seeds"
     ],
     {},
     null,
-    "romantic-wash",
+    "impressionism",
   );
   assert.equal(ranked[0].id, records[0].id);
 });
 
-test("romantic wash genre queries stay source-aware", () => {
-  const commons = genreSearchQuery("", "romantic-wash", "commons");
-  const met = genreSearchQuery("", "romantic-wash", "met");
-  assert.match(commons, /romantic wash/);
-  assert.match(commons, /watercolor|wash|mist/);
-  assert.equal(met, "romantic wash");
-});
-
-test("an empty romantic wash view keeps the curated tray from mixing in other seeds", async () => {
-  const library = await readFile(new URL("../compositions/library.js", import.meta.url), "utf8");
-  assert.match(library, /includeRankedSeeds/);
-  assert.match(library, /!isCuratedGenre\(\)/);
-});
-
-test("the library opens on a romantic wash tray and stays unlinked from the studio", async () => {
-  const [library, studio] = await Promise.all([
+test("the library loads an impressionism curated shelf without a studio link", async () => {
+  const [libraryJs, libraryHtml, studio] = await Promise.all([
+    readFile(new URL("../compositions/library.js", import.meta.url), "utf8"),
     readFile(new URL("../compositions/library.html", import.meta.url), "utf8"),
     readFile(new URL("../compositions/index.html", import.meta.url), "utf8"),
   ]);
-  assert.match(library, /data-genre="romantic-wash"/);
-  assert.match(library, /romantic wash/);
-  assert.match(library, /curated tray/);
+  assert.match(libraryJs, /impressionism-seed\.jsonl/);
+  assert.match(libraryHtml, /data-genre="impressionism"/);
   assert.doesNotMatch(studio, /href=["'][^"']*library\.html/);
+});
+
+test("impressionism genre queries stay source-aware", () => {
+  const commons = genreSearchQuery("", "impressionism", "commons");
+  const met = genreSearchQuery("", "impressionism", "met");
+  assert.match(commons, /impressionism/);
+  assert.match(commons, /impressionist|plein air/);
+  assert.equal(met, "impressionism");
 });

@@ -7,9 +7,15 @@ images remain on Commons; no source binaries are committed here.
 
 `romantic-wash-seed.jsonl` is a smaller ready-to-browse tray of soft romantic public-domain
 watercolors and washes (Turner, Sargent, Fragonard, Homer, Morisot, Whistler). The library
-opens on the `romantic wash` genre chip so these works appear without a search. Records use
-`source` of `met` or `commons`, keep prompt-style captions, and leave museum provenance in
-metadata fields. Only Met Open Access / Commons public-domain files are included.
+opens on the `romantic wash` genre chip so these works appear without a search.
+
+`impressionism-seed.jsonl` is a second curated tray of light plein-air Impressionist paintings
+(Monet, Pissarro, Sisley, Renoir, Cassatt, Caillebotte, Chase). Choosing the `impressionism`
+chip shows that tray immediately. Met Monet and Cassatt oils are omitted because the Met API
+does not mark them Open Access; those artists appear from Commons public-domain files instead.
+
+Records use `source` of `met` or `commons`, keep prompt-style captions, and leave museum
+provenance in metadata fields. Only Met Open Access / Commons public-domain files are included.
 
 ## Record format
 
