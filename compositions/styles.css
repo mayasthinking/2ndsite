@@ -2041,9 +2041,11 @@ select.choice-native {
   user-select: none;
   -webkit-user-select: none;
   border-radius: var(--radius) var(--radius) 0 0;
-  background: rgba(250, 249, 246, 0.78);
+  background: rgb(236, 232, 223);
+  background: color-mix(in srgb, var(--paper) 70%, rgba(36, 33, 31, 0.16));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 18px 40px rgba(36, 33, 31, 0.08),
     0 0 0 1px rgba(36, 33, 31, 0.16);
   backdrop-filter: blur(22px) saturate(1.12);
   -webkit-backdrop-filter: blur(22px) saturate(1.12);
@@ -2079,7 +2081,7 @@ select.choice-native {
   height: 7px;
   border-radius: 1px;
   background: rgba(36, 33, 31, 0.28);
-  transform: rotate(var(--ang)) translate(-50%, calc(-1 * var(--icon-r) + 18px));
+  transform: rotate(var(--ang)) translate(-50%, calc(-1 * var(--icon-r) + 30px));
 }
 
 .brush-arc-hash.is-major {
@@ -2140,7 +2142,7 @@ select.choice-native {
   height: 9px;
   border-radius: 1px;
   background: currentColor;
-  transform: translate(-50%, calc(-1 * var(--icon-r) + 16px));
+  transform: translate(-50%, calc(-1 * var(--icon-r) + 28px));
   pointer-events: none;
 }
 
@@ -2153,7 +2155,7 @@ select.choice-native {
   align-items: center;
   gap: 3px;
   width: 46px;
-  transform: translate(-50%, calc(-1 * var(--icon-r) - 8px)) rotate(calc(-1 * var(--ang)));
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 16px)) rotate(calc(-1 * var(--ang)));
   pointer-events: none;
 }
 
