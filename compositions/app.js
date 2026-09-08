@@ -2290,7 +2290,8 @@ function mountDeskScroll() {
     event.preventDefault();
     const railTop = rail.getBoundingClientRect().top;
     const thumbBox = thumb.getBoundingClientRect();
-    const onThumb = event.clientY >= thumbBox.top - 6 && event.clientY <= thumbBox.bottom + 6;
+    const slop = window.matchMedia("(pointer: coarse)").matches ? 20 : 12;
+    const onThumb = event.clientY >= thumbBox.top - slop && event.clientY <= thumbBox.bottom + slop;
     dragging = true;
     dragBox = box;
     dragMax = max;
@@ -2325,7 +2326,19 @@ function mountDeskScroll() {
   rail.addEventListener("pointerup", endDrag);
   rail.addEventListener("pointercancel", endDrag);
 
+  rail.addEventListener(
+    "wheel",
+    (event) => {
+      const box = scroller();
+      if (box.scrollHeight <= box.clientHeight + 1) return;
+      event.preventDefault();
+      box.scrollTop += event.deltaY;
+    },
+    { passive: false }
+  );
+
   desk.addEventListener("scroll", sync, { passive: true });
+  sheet?.addEventListener("scroll", sync, { passive: true });
   sheetBody?.addEventListener("scroll", sync, { passive: true });
   new ResizeObserver(sync).observe(desk);
   if (sheet) new ResizeObserver(sync).observe(sheet);
@@ -2334,6 +2347,22 @@ function mountDeskScroll() {
   desk.addEventListener("toggle", () => requestAnimationFrame(sync), true);
   window.matchMedia("(min-width: 721px)").addEventListener("change", sync);
   sync();
+}
+
+function mountMenuScrollEase() {
+  const menuBox = (el) => el?.closest?.(".mobile-sheet-body, .mobile-sheet, .desk");
+
+  document.addEventListener(
+    "wheel",
+    (event) => {
+      const range = event.target.closest?.("input[type=range]");
+      const box = menuBox(range);
+      if (!range || !box || box.scrollHeight <= box.clientHeight + 1) return;
+      event.preventDefault();
+      box.scrollTop += event.deltaY;
+    },
+    { capture: true, passive: false }
+  );
 }
 
 sheetStageEl?.addEventListener("click", (event) => {
@@ -2367,4 +2396,5 @@ mountMobileSheet();
 mountMobileVariationSwipe();
 sizeScene();
 mountDeskScroll();
+mountMenuScrollEase();
 mountDeskResize();
