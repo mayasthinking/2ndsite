@@ -1,8 +1,8 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { imageWork } from "./image-work.js?v=8";
-import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=7";
+import { imageWork } from "./image-work.js?v=9";
+import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=8";
 const sceneEl = document.querySelector("#scene");
 const sceneRow = document.querySelector(".scene-row");
 const sceneCaption = document.querySelector("#sceneCaption");
@@ -45,6 +45,7 @@ let selectedId = null;
 const cards = new Map();
 const paintQueue = [];
 const photoPreviewQueue = [];
+const pendingPhotoIds = new Set();
 let paintingNow = false;
 let photoPreviewNow = false;
 let rendererReady = false;
@@ -57,8 +58,8 @@ const sheetStageEl = document.querySelector("#sheetStage");
 let hydrating = false;
 const SAT_MAX = 0.22;
 const PAINT_SIZE = 720;
-const PHONE_PREVIEW_SIZE = 360;
-const PHONE_RASTER_MAX = 900;
+const PHONE_PREVIEW_SIZE = 280;
+const PHONE_RASTER_MAX = 640;
 let currentPhoto = null;
 let paintWatch = 0;
 let waitingDensity = 1;
@@ -516,14 +517,40 @@ async function onPhotoChosen() {
   const file = photoEl.files?.[0];
   if (!file) return;
   setStatus("opening the photograph…");
+  const name = file.name.replace(/\.[^.]+$/, "").toLowerCase() || "photograph";
+  // Instant path: show + wash from a blob URL, don't wait on a base64 rasterize.
+  const objectUrl = URL.createObjectURL(file);
   try {
-    const photo = await readPhotoFile(file);
-    currentPhoto = photo.dataUrl;
-    setPhotoLabel(photo.name);
-    if (photo.hex) colorPicker?.setValue(photo.hex);
+    if (currentPhoto?.startsWith("blob:")) URL.revokeObjectURL(currentPhoto);
+    currentPhoto = objectUrl;
+    setPhotoLabel(name);
     persistSettings();
-    showSceneCaption(photo.dataUrl, photo.name);
+    showSceneCaption(objectUrl, name);
     paintPhoto();
+
+    // Background: pull a cheap average color (and optional compact jpeg) without blocking.
+    imageWork("rasterize", {
+      file,
+      max: isPhone() ? 256 : 1400,
+      quality: 0.7,
+      asBlob: true,
+    })
+      .then((photo) => {
+        if (photo?.hex) colorPicker?.setValue(photo.hex);
+        if (photo?.blob && isPhone()) {
+          const compact = URL.createObjectURL(photo.blob);
+          const previous = currentPhoto;
+          currentPhoto = compact;
+          for (const rec of cards.values()) {
+            if (rec.item?.source === "photo") rec.item.photo = compact;
+          }
+          if (previous?.startsWith("blob:") && previous !== compact) {
+            // Keep the original until washes that already started finish; revoke later.
+            setTimeout(() => URL.revokeObjectURL(previous), 8000);
+          }
+        }
+      })
+      .catch(() => {});
   } catch (err) {
     setStatus(err.message || "that photograph would not open.");
   }
@@ -1008,17 +1035,9 @@ async function ensureSplit(rec) {
 function prefetchSplit(rec) {
   const src = rec?.dataUrl;
   if (!src || rec.split?.src === src) return;
-  // On phone, defer subject-split until idle so it doesn't block the wash queue.
-  const run = () => ensureSplit(rec).catch(() => {});
-  if (isPhone() && typeof requestIdleCallback === "function") {
-    requestIdleCallback(run, { timeout: 2500 });
-    return;
-  }
-  if (isPhone()) {
-    setTimeout(run, 600);
-    return;
-  }
-  run();
+  // Phone: never contend with wash jobs until the user expands/drags.
+  if (isPhone()) return;
+  ensureSplit(rec).catch(() => {});
 }
 
 function hitSubject(frame, rec, clientX, clientY) {
@@ -1559,15 +1578,21 @@ function requestHighRes(id) {
 }
 
 function applyPaintedData(rec, dataUrl, density = 1) {
+  if (rec.objectUrl && rec.objectUrl !== dataUrl) {
+    URL.revokeObjectURL(rec.objectUrl);
+    rec.objectUrl = null;
+  }
+  if (dataUrl?.startsWith("blob:")) rec.objectUrl = dataUrl;
   rec.dataUrl = dataUrl;
   rec.item.dataUrl = dataUrl;
   rec.paintDensity = density;
   rec.wantDensity = null;
   const frame = rec.sheet.querySelector(".frame");
-  let img = frame.querySelector("img:not(.wash-lift)");
+  let img = frame.querySelector("img:not(.wash-lift):not(.wash-placeholder)");
   if (img) {
     img.src = dataUrl;
     img.style.transform = "";
+    img.classList.remove("wash-placeholder");
   } else {
     img = document.createElement("img");
     img.alt = rec.item.prompt || "watercolor";
@@ -1576,6 +1601,7 @@ function applyPaintedData(rec, dataUrl, density = 1) {
     frame.prepend(img);
   }
   img.draggable = false;
+  frame.querySelector(".wash-placeholder")?.remove();
   frame.querySelector(".wash-lift")?.remove();
   rec.split = null;
   prefetchSplit(rec);
@@ -1600,13 +1626,16 @@ async function drainPhotoPreviews() {
   }
   photoPreviewNow = true;
   try {
-    const { dataUrl } = await imageWork("renderWash", {
+    const result = await imageWork("renderWash", {
       photo: rec.item.photo,
       seed: rec.item.seed,
       size: isPhone() ? PHONE_PREVIEW_SIZE : PAINT_SIZE,
       effects: sheetEffects(rec),
       preview: isPhone(),
+      asBlob: isPhone(),
     });
+    let dataUrl = result?.dataUrl || null;
+    if (!dataUrl && result?.blob) dataUrl = URL.createObjectURL(result.blob);
     if (dataUrl && cards.get(id) === rec) {
       applyPaintedData(rec, dataUrl, 1);
       // Keep the adjusting state if a full-quality paint is still pending.
@@ -1746,8 +1775,12 @@ function clearWall() {
   document.querySelectorAll(".sheet-color-menu").forEach((menu) => menu.remove());
   paintQueue.length = 0;
   photoPreviewQueue.length = 0;
+  pendingPhotoIds.clear();
   paintingNow = false;
   waitingId = null;
+  for (const rec of cards.values()) {
+    if (rec.objectUrl) URL.revokeObjectURL(rec.objectUrl);
+  }
   cards.clear();
   wallEl.innerHTML = "";
 }
@@ -1850,29 +1883,26 @@ function renderGrid(items) {
       veil.textContent = item.error || "no sketch returned";
       return;
     }
-    if (isPhone() && item.photo) photoPreviewQueue.push(item.id);
-    else paintQueue.push(item.id);
+    if (isPhone() && item.photo) {
+      // Instant feedback: show the photo dimmed under the veil while the wash cooks.
+      const placeholder = document.createElement("img");
+      placeholder.className = "wash-placeholder";
+      placeholder.alt = "";
+      placeholder.src = item.photo;
+      placeholder.draggable = false;
+      sheet.querySelector(".frame")?.prepend(placeholder);
+      // Only enqueue the first/active wash now; others paint when selected.
+      if (index === 0) photoPreviewQueue.push(item.id);
+      else pendingPhotoIds.add(item.id);
+    } else {
+      paintQueue.push(item.id);
+    }
   });
 
   const first = items.find((item) => item.code || item.photo);
   if (first) selectPainting(first.id);
   else syncMobileVariationPager();
-
-  // On phone, finish variation 1 before queueing the rest so the first wash appears ASAP.
-  if (isPhone() && photoPreviewQueue.length > 1) {
-    const [primary, ...rest] = photoPreviewQueue;
-    photoPreviewQueue.length = 0;
-    photoPreviewQueue.push(primary);
-    drainPhotoPreviews();
-    setTimeout(() => {
-      for (const id of rest) {
-        if (cards.has(id) && !photoPreviewQueue.includes(id)) photoPreviewQueue.push(id);
-      }
-      drainPhotoPreviews();
-    }, 40);
-  } else {
-    drainPhotoPreviews();
-  }
+  drainPhotoPreviews();
   drainQueue();
 }
 
@@ -1970,6 +2000,11 @@ function selectPainting(id) {
   applyEffectsToControls(rec.item.effects);
   syncSheetEditor(rec);
   syncMobileEditor(rec);
+  // Lazy-paint phone variations when the user swipes to them.
+  if (isPhone() && rec.item.photo && !rec.dataUrl && pendingPhotoIds.has(id)) {
+    pendingPhotoIds.delete(id);
+    queuePhotoPreview(id);
+  }
 }
 
 function syncMobileVariationPager() {

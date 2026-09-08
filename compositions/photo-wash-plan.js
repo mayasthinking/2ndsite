@@ -3,6 +3,7 @@ import { oklchToHex, hexToRgb } from "./color.js";
 
 export const PAPER = { r: 243, g: 238, b: 228 };
 export const CELLS = 96;
+export const PREVIEW_CELLS = 40;
 
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
@@ -152,11 +153,11 @@ function regionStats(data, cells, x0, y0, x1, y1) {
   };
 }
 
-function collectDabs(data, cells) {
+function collectDabs(data, cells, { fast = false } = {}) {
   const dabs = [];
-  const minLeaf = 3;
-  const alwaysSplit = 8;
-  const washAt = 12;
+  const minLeaf = fast ? 5 : 3;
+  const alwaysSplit = fast ? 12 : 8;
+  const washAt = fast ? 16 : 12;
   function visit(x0, y0, x1, y1) {
     const w = x1 - x0;
     const h = y1 - y0;
@@ -392,11 +393,13 @@ export function brushPreviewProfile(brushType) {
   return BRUSH_PREVIEW[brushType] || BRUSH_PREVIEW.HB;
 }
 
-function planMarks(data, cells, size, rand, brushType, tint = null, tintAmt = 0) {
+function planMarks(data, cells, size, rand, brushType, tint = null, tintAmt = 0, opts = {}) {
   const profile = brushPreviewProfile(brushType);
   const wet = profile.wet;
-  const dabs = collectDabs(data, cells);
+  const fast = Boolean(opts.fast);
+  let dabs = collectDabs(data, cells, { fast });
   dabs.sort((a, b) => Number(b.wash) - Number(a.wash) || b.area - a.area || a.luma - b.luma);
+  if (opts.maxDabs && dabs.length > opts.maxDabs) dabs = dabs.slice(0, opts.maxDabs);
 
   const scale = size / cells;
   const marks = [];
@@ -438,7 +441,9 @@ function planMarks(data, cells, size, rand, brushType, tint = null, tintAmt = 0)
     });
   }
 
-  const lineBudget = profile.lineBudget;
+  if (opts.skipLines) return marks;
+
+  const lineBudget = Math.max(4, Math.round(profile.lineBudget * (opts.lineScale || 1)));
   const edges = [];
   for (let y = 1; y < cells - 1; y++) {
     for (let x = 1; x < cells - 1; x++) {
@@ -488,7 +493,7 @@ function planMarks(data, cells, size, rand, brushType, tint = null, tintAmt = 0)
   return marks;
 }
 
-export function planFromPixels(data, cells, size, seed, effects) {
+export function planFromPixels(data, cells, size, seed, effects, opts = {}) {
   const e = clampEffects(effects || {});
   const tintHex = e.color ? oklchToHex(e.color) : null;
   const tint = tintHex ? hexToRgb(tintHex) : null;
@@ -501,7 +506,8 @@ export function planFromPixels(data, cells, size, seed, effects) {
     mulberry32(Number(seed) || 1),
     e.brushType || "HB",
     tint,
-    tintAmt
+    tintAmt,
+    opts
   );
 }
 
