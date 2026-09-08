@@ -16,7 +16,7 @@
             --paper: #faf9f6;
             --ink: #24211f;
             --hover: #8b2f32;
-            --line: rgba(139, 47, 50, 0.2);
+            --line: rgba(139, 47, 50, 0.22);
             --muted: rgba(36, 33, 31, 0.58);
             --paper-highlight: white;
         }
@@ -37,7 +37,7 @@
         a { color: inherit; text-decoration: none; }
 
         main {
-            width: min(calc(100% - 40px), 1180px);
+            width: min(calc(100% - 40px), 1080px);
             margin: 0 auto;
             padding: 48px 0 80px;
         }
@@ -49,7 +49,7 @@
         }
 
         .lead {
-            margin: 0 0 36px;
+            margin: 0 0 32px;
             max-width: 38em;
             color: var(--muted);
         }
@@ -72,79 +72,102 @@
 
         @media (min-width: 960px) {
             .atlas-wrap {
-                grid-template-columns: minmax(0, 1fr) minmax(260px, 30%);
+                grid-template-columns: minmax(0, 1fr) minmax(250px, 30%);
                 align-items: start;
             }
         }
 
-        .diagram-scroll {
-            overflow-x: auto;
-            padding-bottom: 8px;
+        .host {
+            margin-bottom: 22px;
         }
 
-        .diagram {
-            position: relative;
-            min-width: 860px;
+        .forest {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 36px 18px;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 36px;
         }
 
-        .edges {
+        @media (min-width: 820px) {
+            .forest {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 48px;
+            }
+        }
+
+        .tree-label {
+            margin: 0 0 10px;
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        .tree,
+        .branch {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .branch {
+            margin-left: 11px;
+            padding-left: 16px;
+            border-left: 1px solid var(--line);
+        }
+
+        .twig {
+            position: relative;
+            margin: 10px 0 0;
+        }
+
+        .twig::before {
+            content: "";
             position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: visible;
+            left: -16px;
+            top: 1.05rem;
+            width: 14px;
+            height: 1px;
+            background: var(--line);
         }
 
-        .edge {
-            fill: none;
-            stroke: color-mix(in srgb, var(--ink) 16%, transparent);
-            stroke-width: 1;
-            transition: stroke 180ms ease, stroke-width 180ms ease;
+        .twig.is-on-path::before,
+        .twig.is-on-path > .via {
+            color: var(--hover);
         }
 
-        .edge.is-lit {
-            stroke: var(--hover);
-            stroke-width: 1.4;
+        .twig.is-on-path::before {
+            background: var(--hover);
         }
 
-        .edge-label {
-            fill: var(--muted);
-            font-size: 11px;
-            font-family: "Libre Baskerville", serif;
-            opacity: 0;
-            pointer-events: none;
+        .branch.is-on-path {
+            border-left-color: color-mix(in srgb, var(--hover) 55%, transparent);
         }
 
-        .edge-label.is-lit {
-            fill: var(--hover);
-            opacity: 1;
+        .via {
+            display: block;
+            margin: 0 0 5px;
+            color: var(--muted);
+            font-size: 0.7rem;
         }
 
         .node {
-            position: relative;
-            z-index: 1;
             appearance: none;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 4px;
+            gap: 3px;
+            width: 100%;
             border: 1px solid var(--line);
             background: color-mix(in srgb, var(--paper) 88%, var(--paper-highlight));
             color: var(--ink);
             font: inherit;
             text-align: left;
-            padding: 10px 12px 11px;
+            padding: 9px 12px 10px;
             border-radius: 12px;
             cursor: pointer;
-            transition: color 180ms ease, border-color 180ms ease, background 180ms ease, opacity 180ms ease;
+            transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
         }
 
         .node-name {
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             line-height: 1.3;
             word-break: break-word;
         }
@@ -173,10 +196,6 @@
             color: var(--hover);
             border-color: color-mix(in srgb, var(--hover) 55%, transparent);
             background: color-mix(in srgb, var(--hover) 8%, var(--paper));
-        }
-
-        .diagram.is-focused .node:not(.is-open):not(.is-related) {
-            opacity: 0.38;
         }
 
         .dossier {
@@ -211,7 +230,7 @@
         }
 
         .connections {
-            margin: 0 0 14px;
+            margin: 0;
             padding: 0;
             list-style: none;
             color: var(--muted);
@@ -252,13 +271,12 @@
     <main>
         <a class="home phrase" href="index.html">filing cabinet</a>
         <h1 class="phrase">how this is built</h1>
-        <p class="lead">a map of what talks to what. lines are loads, fetches, and posts. click a file.</p>
+        <p class="lead">two trees. each file sits under the thing that talks to it — no crossing lines. click a file.</p>
 
         <div class="atlas-wrap">
-            <div class="diagram-scroll">
-                <div class="diagram" id="atlas">
-                    <svg class="edges" id="edges" aria-hidden="true"></svg>
-                </div>
+            <div id="atlas">
+                <div class="host" id="host"></div>
+                <div class="forest" id="forest"></div>
             </div>
             <aside class="dossier" id="dossier" hidden>
                 <p class="dossier-kicker">file</p>
@@ -272,201 +290,188 @@
             vercel: {
                 title: "vercel.json",
                 path: "vercel.json",
-                blurb: "hosts the files and the paint api",
-                body: `<p>static hosting for every html page. the only extra rules: send <code>/compositions</code> to <code>/compositions/</code>, and give <code>api/generate.mjs</code> sixty seconds.</p>`,
-                col: "2 / 4",
-                row: 1
+                blurb: "hosts the site and the paint api",
+                body: `<p>serves every page as a static file. extra rules: send <code>/compositions</code> to <code>/compositions/</code>, and give generate sixty seconds.</p>`
             },
             index: {
                 title: "index.html",
                 path: "index.html",
                 blurb: "homepage — photos, bookmarks, little map",
-                body: `<p>one html file. after load it fetches the json beside it and builds the carousel, bookmark list, and small map. the lightbox lives here too. footer links go to the studio and the sketchbook.</p>`,
-                col: "1 / 3",
-                row: 2
+                body: `<p>one html file. it fetches the json beside it, then builds the carousel, bookmark list, and small map. footer also links to the studio on the right.</p>`
             },
             compositions: {
                 title: "compositions/index.html",
                 path: "compositions/index.html",
                 blurb: "watercolor studio page",
-                body: `<p>the studio at <code>/compositions/</code>. loads <code>app.js</code> and <code>styles.css</code>, and embeds <code>renderer.html</code> in an iframe.</p>`,
-                col: "3 / 5",
-                row: 2
+                body: `<p>the studio. loads <code>app.js</code> and <code>styles.css</code>, and embeds the renderer iframe.</p>`
             },
             "paper-time": {
                 title: "paper-time.js",
                 path: "paper-time.js",
                 blurb: "tints the paper with the time of day",
-                body: `<p>reads your clock and fades the background from morning cream to dusk brown. also sets ink, hover, and stain colors. the homepage and footsteps both load it. try <code>?hour=18</code> or <code>?scheme=dark</code>.</p>`,
-                col: "1 / 2",
-                row: 3
+                body: `<p>reads your clock and fades the background from morning cream to dusk brown. footsteps loads this too, so the map matches the homepage. try <code>?hour=18</code>.</p>`
             },
             snaps: {
                 title: "snaps.json",
                 path: "snaps.json",
                 blurb: "photo album list",
-                body: `<p>months, cities, and photo objects. the homepage fetches this and builds the carousel. <code>photos/</code> is the folder the <code>src</code> paths point at.</p>`,
-                col: "2 / 3",
-                row: 3
-            },
-            app: {
-                title: "compositions/app.js",
-                path: "compositions/app.js",
-                blurb: "prompt, chips, paint, upload",
-                body: `<p>studio controller. posts a scene to <code>/api/generate</code>, gets chips from <code>/api/samples</code>, sends <code>paint()</code> to the iframe, and runs photo washes in a worker.</p>`,
-                col: "3 / 4",
-                row: 3
-            },
-            styles: {
-                title: "compositions/styles.css",
-                path: "compositions/styles.css",
-                blurb: "desk, wall, mobile sheet",
-                body: `<p>studio layout. same paper / ink / hover as the cabinet, with inter on the controls.</p>`,
-                col: "4 / 5",
-                row: 3
-            },
-            bookmarks: {
-                title: "bookmarks.json",
-                path: "bookmarks.json",
-                blurb: "pinned safari links",
-                body: `<p>the homepage fetches this, then merges in <code>readings.json</code> (bookmarks first, skip duplicate urls). these stay visible; readings paginate.</p>`,
-                col: "1 / 2",
-                row: 4
-            },
-            readings: {
-                title: "readings.json",
-                path: "readings.json",
-                blurb: "notion reading log, in the repo",
-                body: `<p>same shape as bookmarks. shown ten at a time after the pinned list.</p>`,
-                col: "2 / 3",
-                row: 4
-            },
-            renderer: {
-                title: "compositions/renderer.html",
-                path: "compositions/renderer.html",
-                blurb: "hidden page that draws paintings",
-                body: `<p>iframe. <code>renderer.js</code> compiles <code>paint()</code>, draws with p5.brush, and posts a png back. vendor copies are in <code>compositions/vendor/</code>.</p>`,
-                col: "3 / 4",
-                row: 4
-            },
-            "image-worker": {
-                title: "compositions/image-worker.js",
-                path: "compositions/image-worker.js",
-                blurb: "turns a photo into wash marks",
-                body: `<p>web worker: rasterize, plan marks, encode png. used when you upload a photo instead of typing a scene.</p>`,
-                col: "4 / 5",
-                row: 4
-            },
-            places: {
-                title: "places.json",
-                path: "places.json",
-                blurb: "map pins",
-                body: `<p>names, lat/lon, regions, photo links. the homepage draws the small svg. footsteps fetches the same file for the full map.</p>`,
-                col: "1 / 2",
-                row: 5
+                body: `<p>months and photo objects. the homepage fetches this and builds the carousel. footsteps reads it too, to pair pins with pictures.</p>`
             },
             photos: {
                 title: "photos/",
                 path: "photos/",
                 blurb: "the jpeg files",
-                body: `<p>the images <code>snaps.json</code> points at. the homepage and lightbox load them from here.</p>`,
-                col: "2 / 3",
-                row: 5
+                body: `<p>the images listed in <code>snaps.json</code>. the carousel and lightbox load them from here.</p>`
             },
-            generate: {
-                title: "api/generate.mjs",
-                path: "api/generate.mjs",
-                blurb: "paint button’s server endpoint",
-                body: `<p><code>POST /api/generate</code>. hands the scene to <code>lib/compositions/generate.js</code>.</p>`,
-                col: "3 / 4",
-                row: 5
+            bookmarks: {
+                title: "bookmarks.json",
+                path: "bookmarks.json",
+                blurb: "pinned safari links",
+                body: `<p>fetched first. then the homepage folds in readings and skips duplicate urls.</p>`
             },
-            samples: {
-                title: "api/samples.mjs",
-                path: "api/samples.mjs",
-                blurb: "preset chips list",
-                body: `<p><code>GET /api/samples</code>. returns the chip list from <code>templates.js</code> — fingerprints, coffee, tree, roses, little prince.</p>`,
-                col: "4 / 5",
-                row: 5
+            readings: {
+                title: "readings.json",
+                path: "readings.json",
+                blurb: "notion reading log, in the repo",
+                body: `<p>same shape as bookmarks. shown ten at a time after the pinned list.</p>`
+            },
+            places: {
+                title: "places.json",
+                path: "places.json",
+                blurb: "map pins",
+                body: `<p>names, lat/lon, photo links. the homepage draws the small svg. the full-page map is the next file down.</p>`
             },
             footsteps: {
                 title: "footsteps.html",
                 path: "footsteps.html",
                 blurb: "full-page map",
-                body: `<p>reads <code>places.json</code> and <code>snaps.json</code>. loads <code>paper-time.js</code> so the paper matches the homepage. back link returns to the cabinet.</p>`,
-                col: "1 / 2",
-                row: 6
+                body: `<p>same <code>places.json</code> as the homepage, plus <code>snaps.json</code> and <code>paper-time.js</code> so the paper matches.</p>`
             },
             sketchbook: {
                 title: "sketchbook.html",
                 path: "sketchbook.html",
                 blurb: "notebook cover",
-                body: `<p>“enter here” opens <code>desktop.html</code>. also links back to the cabinet. styled by <code>styles.css</code>.</p>`,
-                col: "2 / 3",
-                row: 6
-            },
-            "lib-generate": {
-                title: "lib/compositions/generate.js",
-                path: "lib/compositions/generate.js",
-                blurb: "asks a model, or uses a preset",
-                body: `<p>if you tapped a chip, it returns that stored <code>paint()</code>. if you typed a scene, it calls grok / anthropic / openai, then keeps only a safe <code>paint()</code> function.</p>`,
-                col: "3 / 4",
-                row: 6
-            },
-            prompt: {
-                title: "lib/compositions/prompt.js",
-                path: "lib/compositions/prompt.js",
-                blurb: "instructions for the model",
-                body: `<p>the system prompt, the user prompt builder, and the allowed brush names.</p>`,
-                col: "4 / 5",
-                row: 6
+                body: `<p>“enter here” opens the retro desktop. also links back to the cabinet.</p>`
             },
             desktop: {
                 title: "desktop.html",
                 path: "desktop.html",
                 blurb: "windows-98 desktop",
-                body: `<p>about window, music player, moodboard. <code>mobile.js</code> makes it one window on a phone. opened from the sketchbook.</p>`,
-                col: "2 / 3",
-                row: 7
+                body: `<p>about, music, moodboard. opened from the sketchbook.</p>`
+            },
+            styles: {
+                title: "compositions/styles.css",
+                path: "compositions/styles.css",
+                blurb: "desk, wall, mobile sheet",
+                body: `<p>how the studio looks.</p>`
+            },
+            app: {
+                title: "compositions/app.js",
+                path: "compositions/app.js",
+                blurb: "prompt, chips, paint, upload",
+                body: `<p>the studio controller. everything under it is something this file calls.</p>`
+            },
+            renderer: {
+                title: "compositions/renderer.html",
+                path: "compositions/renderer.html",
+                blurb: "hidden page that draws paintings",
+                body: `<p>iframe. compiles <code>paint()</code>, draws with p5.brush, posts a png back to <code>app.js</code>.</p>`
+            },
+            "image-worker": {
+                title: "compositions/image-worker.js",
+                path: "compositions/image-worker.js",
+                blurb: "turns a photo into wash marks",
+                body: `<p>used when you upload a photo instead of typing a scene.</p>`
+            },
+            generate: {
+                title: "api/generate.mjs",
+                path: "api/generate.mjs",
+                blurb: "paint button’s server endpoint",
+                body: `<p><code>POST /api/generate</code>. hands the scene to <code>generate.js</code>.</p>`
+            },
+            samples: {
+                title: "api/samples.mjs",
+                path: "api/samples.mjs",
+                blurb: "preset chips list",
+                body: `<p><code>GET /api/samples</code>. reads the chip names from <code>templates.js</code>.</p>`
+            },
+            "lib-generate": {
+                title: "lib/compositions/generate.js",
+                path: "lib/compositions/generate.js",
+                blurb: "asks a model, or uses a preset",
+                body: `<p>chip tap → stored <code>paint()</code> from templates. typed scene → grok / anthropic / openai, then a safety check.</p>`
+            },
+            prompt: {
+                title: "lib/compositions/prompt.js",
+                path: "lib/compositions/prompt.js",
+                blurb: "instructions for the model",
+                body: `<p>the system prompt and the allowed brush names.</p>`
             },
             templates: {
                 title: "lib/compositions/templates.js",
                 path: "lib/compositions/templates.js",
                 blurb: "saved paint() scenes",
-                body: `<p>the actual code behind the chips. generate uses it for presets; samples uses it for the chip list.</p>`,
-                col: "3 / 4",
-                row: 7
+                body: `<p>the code behind the chips. generate uses it for presets; samples uses it for the chip list.</p>`
             }
         };
 
-        const edges = [
-            { from: "vercel", to: "compositions", via: "redirects" },
-            { from: "vercel", to: "generate", via: "hosts" },
-            { from: "index", to: "paper-time", via: "loads" },
-            { from: "index", to: "snaps", via: "fetches" },
-            { from: "index", to: "bookmarks", via: "fetches" },
-            { from: "index", to: "readings", via: "fetches" },
-            { from: "index", to: "places", via: "fetches" },
-            { from: "index", to: "compositions", via: "links" },
-            { from: "index", to: "sketchbook", via: "links" },
-            { from: "snaps", to: "photos", via: "lists" },
-            { from: "bookmarks", to: "readings", via: "merged with" },
-            { from: "places", to: "footsteps", via: "also read by" },
-            { from: "footsteps", to: "paper-time", via: "loads" },
-            { from: "footsteps", to: "snaps", via: "fetches" },
-            { from: "sketchbook", to: "desktop", via: "opens" },
-            { from: "compositions", to: "app", via: "loads" },
-            { from: "compositions", to: "styles", via: "loads" },
-            { from: "compositions", to: "renderer", via: "embeds" },
-            { from: "app", to: "renderer", via: "messages" },
-            { from: "app", to: "image-worker", via: "jobs" },
-            { from: "app", to: "generate", via: "posts" },
-            { from: "app", to: "samples", via: "gets" },
-            { from: "generate", to: "lib-generate", via: "calls" },
-            { from: "lib-generate", to: "prompt", via: "uses" },
-            { from: "lib-generate", to: "templates", via: "uses" },
-            { from: "samples", to: "templates", via: "reads" }
+        const forest = [
+            {
+                label: "filing cabinet",
+                id: "index",
+                children: [
+                    { via: "loads", id: "paper-time" },
+                    { via: "fetches", id: "snaps", children: [
+                        { via: "lists", id: "photos" }
+                    ] },
+                    { via: "fetches", id: "bookmarks", children: [
+                        { via: "then merges", id: "readings" }
+                    ] },
+                    { via: "fetches", id: "places", children: [
+                        { via: "also opens", id: "footsteps" }
+                    ] },
+                    { via: "links to", id: "sketchbook", children: [
+                        { via: "opens", id: "desktop" }
+                    ] }
+                ]
+            },
+            {
+                label: "compositions/",
+                id: "compositions",
+                children: [
+                    { via: "loads", id: "styles" },
+                    { via: "loads", id: "app", children: [
+                        { via: "embeds", id: "renderer" },
+                        { via: "jobs", id: "image-worker" },
+                        { via: "posts", id: "generate", children: [
+                            { via: "calls", id: "lib-generate", children: [
+                                { via: "uses", id: "prompt" },
+                                { via: "uses", id: "templates" }
+                            ] }
+                        ] },
+                        { via: "gets", id: "samples" }
+                    ] }
+                ]
+            }
         ];
+
+        const extras = {
+            vercel: [
+                { via: "serves", id: "index" },
+                { via: "serves", id: "compositions" },
+                { via: "hosts", id: "generate" }
+            ],
+            index: [
+                { via: "also links to", id: "compositions" }
+            ],
+            footsteps: [
+                { via: "also loads", id: "paper-time" },
+                { via: "also fetches", id: "snaps" }
+            ],
+            samples: [
+                { via: "reads", id: "templates" }
+            ]
+        };
 
         const aliases = {
             you: "index",
@@ -475,33 +480,31 @@
             tokens: "paper-time",
             shortcuts: "index",
             worker: "image-worker",
-            health: "generate",
-            "little-prince": "index",
-            stoccato: "index",
-            "text-editor": "index",
-            "add-photo": "snaps",
-            "add-bookmark": "bookmarks",
-            "ios-photo": "snaps",
-            "ios-bookmark": "bookmarks",
-            "docs-photos": "snaps",
-            "docs-bookmarks": "bookmarks"
+            health: "generate"
         };
 
-        const atlas = document.getElementById("atlas");
-        const edgesSvg = document.getElementById("edges");
+        const host = document.getElementById("host");
+        const forestEl = document.getElementById("forest");
         const dossier = document.getElementById("dossier");
         const dossierTitle = document.getElementById("dossierTitle");
         const dossierBody = document.getElementById("dossierBody");
         const buttons = {};
+        const parentOf = { index: "vercel", compositions: "vercel" };
+        const childrenOf = { vercel: ["index", "compositions"] };
 
-        Object.entries(files).forEach(([id, entry]) => {
+        function walk(node, parentId) {
+            if (parentId) parentOf[node.id] = parentId;
+            childrenOf[node.id] = (node.children || []).map((child) => child.id);
+            (node.children || []).forEach((child) => walk(child, node.id));
+        }
+        forest.forEach((tree) => walk(tree, "vercel"));
+
+        function makeNode(id) {
+            const entry = files[id];
             const button = document.createElement("button");
             button.type = "button";
             button.className = "node";
-            button.id = `node-${id}`;
             button.dataset.id = id;
-            button.style.gridColumn = entry.col;
-            button.style.gridRow = String(entry.row);
             const name = document.createElement("span");
             name.className = "node-name";
             name.textContent = entry.title;
@@ -510,49 +513,123 @@
             blurb.textContent = entry.blurb;
             button.append(name, blurb);
             button.addEventListener("click", () => openNode(id));
-            buttons[id] = button;
-            atlas.append(button);
-        });
-
-        function connectionsOf(id) {
-            return edges.filter((edge) => edge.from === id || edge.to === id);
+            (buttons[id] ||= []).push(button);
+            return button;
         }
 
-        function neighborsOf(id) {
-            const next = new Set();
-            connectionsOf(id).forEach((edge) => {
-                next.add(edge.from === id ? edge.to : edge.from);
+        function renderKids(kids) {
+            if (!kids?.length) return null;
+            const list = document.createElement("ul");
+            list.className = "branch";
+            kids.forEach((kid) => {
+                const item = document.createElement("li");
+                item.className = "twig";
+                item.dataset.id = kid.id;
+                const via = document.createElement("span");
+                via.className = "via";
+                via.textContent = kid.via;
+                item.append(via, makeNode(kid.id));
+                const nested = renderKids(kid.children);
+                if (nested) item.append(nested);
+                list.append(item);
             });
-            return next;
+            return list;
+        }
+
+        host.append(makeNode("vercel"));
+
+        forest.forEach((tree) => {
+            const column = document.createElement("div");
+            const label = document.createElement("p");
+            label.className = "tree-label";
+            label.textContent = tree.label;
+            const root = document.createElement("div");
+            root.className = "tree";
+            root.append(makeNode(tree.id));
+            const kids = renderKids(tree.children);
+            if (kids) root.append(kids);
+            column.append(label, root);
+            forestEl.append(column);
+        });
+
+        function lineage(id) {
+            const up = new Set([id]);
+            let current = parentOf[id];
+            while (current) {
+                up.add(current);
+                current = parentOf[current];
+            }
+            const down = [id];
+            while (down.length) {
+                const next = childrenOf[down.pop()] || [];
+                next.forEach((child) => {
+                    up.add(child);
+                    down.push(child);
+                });
+            }
+            return up;
+        }
+
+        function relations(id) {
+            const items = [];
+            const parent = parentOf[id];
+            if (parent) {
+                const via = findVia(parent, id) || "from";
+                items.push({ via: `${via} ←`, id: parent });
+            }
+            (childrenOf[id] || []).forEach((child) => {
+                items.push({ via: findVia(id, child), id: child });
+            });
+            (extras[id] || []).forEach((extra) => items.push(extra));
+            return items;
+        }
+
+        function findVia(parentId, childId) {
+            const search = (nodes) => {
+                for (const node of nodes || []) {
+                    if (node.id === parentId) {
+                        return (node.children || []).find((child) => child.id === childId)?.via;
+                    }
+                    const nested = search(node.children);
+                    if (nested) return nested;
+                }
+                return null;
+            };
+            if (parentId === "vercel") {
+                return childId === "generate" ? "hosts" : "serves";
+            }
+            return search(forest);
         }
 
         function openNode(id) {
             const entry = files[id];
             if (!entry) return;
 
-            const already = buttons[id].classList.contains("is-open");
-            Object.values(buttons).forEach((button) => button.classList.remove("is-open", "is-related"));
-            edgesSvg.querySelectorAll(".edge, .edge-label").forEach((el) => el.classList.remove("is-lit"));
+            const already = buttons[id]?.some((button) => button.classList.contains("is-open"));
+            document.querySelectorAll(".node").forEach((button) => button.classList.remove("is-open", "is-related"));
+            document.querySelectorAll(".twig, .branch").forEach((el) => el.classList.remove("is-on-path"));
 
             if (already) {
-                atlas.classList.remove("is-focused");
                 dossier.hidden = true;
                 history.replaceState(null, "", "architecture.html");
                 return;
             }
 
-            atlas.classList.add("is-focused");
-            buttons[id].classList.add("is-open");
-            neighborsOf(id).forEach((other) => buttons[other]?.classList.add("is-related"));
-            edgesSvg.querySelectorAll(".edge, .edge-label").forEach((el) => {
-                if (el.dataset.a === id || el.dataset.b === id) el.classList.add("is-lit");
+            const path = lineage(id);
+            document.querySelectorAll(".node").forEach((button) => {
+                if (button.dataset.id === id) button.classList.add("is-open");
+                else if (path.has(button.dataset.id)) button.classList.add("is-related");
+            });
+            document.querySelectorAll(".twig").forEach((twig) => {
+                if (path.has(twig.dataset.id)) {
+                    twig.classList.add("is-on-path");
+                    twig.closest(".branch")?.classList.add("is-on-path");
+                }
             });
 
-            const links = connectionsOf(id).map((edge) => {
-                const other = edge.from === id ? edge.to : edge.from;
-                const verb = edge.from === id ? edge.via : `${edge.via} ←`;
-                return `<li>${verb} <button type="button" data-jump="${other}">${files[other].path}</button></li>`;
-            }).join("");
+            const links = relations(id).map((item) =>
+                `<li>${item.via} <button type="button" data-jump="${item.id}">${files[item.id].path}</button></li>`
+            ).join("");
 
             dossierTitle.textContent = entry.path;
             dossierBody.innerHTML = `
@@ -565,57 +642,10 @@
             });
             dossier.hidden = false;
             history.replaceState(null, "", `#${id}`);
-            requestAnimationFrame(drawEdges);
         }
-
-        function nodeCenter(id) {
-            const button = buttons[id];
-            const box = atlas.getBoundingClientRect();
-            const node = button.getBoundingClientRect();
-            return {
-                x: node.left + node.width / 2 - box.left,
-                y: node.top + node.height / 2 - box.top
-            };
-        }
-
-        function drawEdges() {
-            const box = atlas.getBoundingClientRect();
-            edgesSvg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
-            edgesSvg.replaceChildren();
-            const open = document.querySelector(".node.is-open");
-
-            edges.forEach((edge) => {
-                const from = nodeCenter(edge.from);
-                const to = nodeCenter(edge.to);
-                const midY = (from.y + to.y) / 2;
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("d", `M ${from.x} ${from.y} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${to.y}`);
-                path.setAttribute("class", "edge");
-                path.dataset.a = edge.from;
-                path.dataset.b = edge.to;
-                const lit = open && (open.dataset.id === edge.from || open.dataset.id === edge.to);
-                if (lit) path.classList.add("is-lit");
-
-                const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                label.setAttribute("x", (from.x + to.x) / 2);
-                label.setAttribute("y", midY - 6);
-                label.setAttribute("text-anchor", "middle");
-                label.setAttribute("class", "edge-label");
-                label.dataset.a = edge.from;
-                label.dataset.b = edge.to;
-                label.textContent = edge.via;
-                if (lit) label.classList.add("is-lit");
-
-                edgesSvg.append(path, label);
-            });
-        }
-
-        window.addEventListener("resize", drawEdges);
-        requestAnimationFrame(drawEdges);
 
         const start = aliases[location.hash.slice(1)] || location.hash.slice(1);
-        if (files[start]) openNode(start);
-        else openNode("index");
+        if (files[start] && location.hash) openNode(start);
     </script>
 </body>
 </html>
