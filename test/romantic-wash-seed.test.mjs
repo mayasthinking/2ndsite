@@ -95,13 +95,18 @@ test("an empty romantic wash view keeps the curated tray from mixing in other se
   assert.match(library, /!isCuratedGenre\(\)/);
 });
 
-test("the library opens on a romantic wash tray and stays unlinked from the studio", async () => {
-  const [library, studio] = await Promise.all([
+test("romantic wash stays an optional chip, not the default shelf, and stays unlinked from the studio", async () => {
+  const [library, libraryJs, studio] = await Promise.all([
     readFile(new URL("../compositions/library.html", import.meta.url), "utf8"),
+    readFile(new URL("../compositions/library.js", import.meta.url), "utf8"),
     readFile(new URL("../compositions/index.html", import.meta.url), "utf8"),
   ]);
-  assert.match(library, /data-genre="romantic-wash"/);
+  assert.match(library, /class="chip active" type="button" data-genre="">all</);
+  assert.match(library, /class="chip" type="button" data-genre="romantic-wash"/);
   assert.match(library, /romantic wash/);
-  assert.match(library, /curated tray/);
+  assert.doesNotMatch(library, /<h2 id="resultsTitle">romantic wash<\/h2>/);
+  assert.match(libraryJs, /let genreFilter = "";/);
+  assert.doesNotMatch(libraryJs, /DEFAULT_CURATED_GENRE/);
+  assert.doesNotMatch(libraryJs, /add a search or choose a genre/);
   assert.doesNotMatch(studio, /href=["'][^"']*library\.html/);
 });
