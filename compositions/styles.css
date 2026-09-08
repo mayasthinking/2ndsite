@@ -2152,10 +2152,11 @@ select.choice-native {
 
 .brush-arc-label {
   display: block;
-  font-family: var(--serif);
-  font-size: 9px;
-  font-style: italic;
-  letter-spacing: 0.02em;
+  font-family: var(--ui);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: -0.011em;
   line-height: 1;
   text-transform: lowercase;
   white-space: nowrap;
@@ -2178,7 +2179,7 @@ select.choice-native {
 }
 
 .brush-arc-tick.is-active .brush-arc-label {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .brush-arc-pointer {
@@ -2531,7 +2532,7 @@ body:has(.frame.is-carrying) {
 }
 
 .brush-dial-menu.is-stage .brush-arc-label {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .sheet-stage .expand {

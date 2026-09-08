@@ -937,8 +937,11 @@ function mountSheetEditor(sheet, item) {
     const painting = frame.getBoundingClientRect();
     const staged = sheet.classList.contains("is-expanded");
     brushMenu.classList.toggle("is-stage", staged);
-    const width = Math.round(Math.max(180, Math.min(painting.width * 0.62, painting.width - 48, 228)));
-    const height = staged ? 56 : 52;
+    const phone = isPhone();
+    const width = Math.round(
+      Math.max(phone ? 196 : 180, Math.min(painting.width * (phone ? 0.72 : 0.62), painting.width - (phone ? 28 : 48), phone ? 260 : 228))
+    );
+    const height = phone ? 56 : staged ? 56 : 52;
     const fit = (height * height + (width / 2) ** 2) / (2 * height);
     const radius = Math.round(Math.max(width * 1.08, fit * 1.85));
     const iconR = Math.round(radius - 22);
