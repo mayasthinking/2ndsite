@@ -2079,12 +2079,12 @@ select.choice-native {
 
 .brush-arc,
 .brush-arc-face {
-  position: relative;
   width: 100%;
   height: 100%;
 }
 
 .brush-arc-face {
+  position: relative;
   touch-action: none;
   cursor: grab;
   user-select: none;
