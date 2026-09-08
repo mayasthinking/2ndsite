@@ -1,7 +1,9 @@
 import { clampEffects } from "./effect-model.js?v=15";
+import { oklchToHex, hexToRgb } from "./color.js";
 
 export const PAPER = { r: 243, g: 238, b: 228 };
 export const CELLS = 96;
+export const PREVIEW_CELLS = 40;
 
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
@@ -64,8 +66,16 @@ function toHex(c) {
   return `#${hex(c.r)}${hex(c.g)}${hex(c.b)}`;
 }
 
-function pigmentize(c, wet) {
-  const hsl = rgbToHsl(c);
+function pigmentize(c, wet, tint = null, tintAmt = 0) {
+  let base = c;
+  if (tint && tintAmt > 0) {
+    base = {
+      r: c.r + (tint.r - c.r) * tintAmt,
+      g: c.g + (tint.g - c.g) * tintAmt,
+      b: c.b + (tint.b - c.b) * tintAmt,
+    };
+  }
+  const hsl = rgbToHsl(base);
   const sat = Math.min(1, hsl.s * (wet ? 1.16 : 1.06) + (hsl.s > 0.04 ? 0.03 : 0));
   const light = clamp(hsl.l * (wet ? 0.96 : 0.92), 0.06, 0.9);
   return hslToRgb(hsl.h, sat, light);
@@ -143,11 +153,11 @@ function regionStats(data, cells, x0, y0, x1, y1) {
   };
 }
 
-function collectDabs(data, cells) {
+function collectDabs(data, cells, { fast = false } = {}) {
   const dabs = [];
-  const minLeaf = 3;
-  const alwaysSplit = 8;
-  const washAt = 12;
+  const minLeaf = fast ? 5 : 3;
+  const alwaysSplit = fast ? 12 : 8;
+  const washAt = fast ? 16 : 12;
   function visit(x0, y0, x1, y1) {
     const w = x1 - x0;
     const h = y1 - y0;
@@ -230,30 +240,210 @@ function colorDelta(a, b) {
   return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b) / 255;
 }
 
-function planMarks(data, cells, size, rand, wet, brushType) {
-  const dabs = collectDabs(data, cells);
+/** Distinct canvas-preview profiles so each mobile brush tap looks different. */
+const BRUSH_PREVIEW = {
+  HB: {
+    wet: true,
+    opacityMul: 1,
+    dabKeep: 1,
+    wobble: 1,
+    tightBias: false,
+    lineBudget: 36,
+    lineWeight: 0.38,
+    darken: 1,
+    blur: 1.15,
+    fillAlpha: 0.58,
+    secondPass: 0.42,
+    lineAlpha: 0.48,
+    lineScale: 1.6,
+    lineCap: "round",
+    stipple: false,
+    hardEdge: false,
+  },
+  "2B": {
+    wet: true,
+    opacityMul: 1.28,
+    dabKeep: 1,
+    wobble: 1.25,
+    tightBias: false,
+    lineBudget: 30,
+    lineWeight: 0.7,
+    darken: 0.82,
+    blur: 1.55,
+    fillAlpha: 0.72,
+    secondPass: 0.55,
+    lineAlpha: 0.62,
+    lineScale: 2.2,
+    lineCap: "round",
+    stipple: false,
+    hardEdge: false,
+  },
+  "2H": {
+    wet: true,
+    opacityMul: 0.62,
+    dabKeep: 0.72,
+    wobble: 0.55,
+    tightBias: true,
+    lineBudget: 52,
+    lineWeight: 0.18,
+    darken: 1.12,
+    blur: 0.7,
+    fillAlpha: 0.34,
+    secondPass: 0.22,
+    lineAlpha: 0.4,
+    lineScale: 0.9,
+    lineCap: "round",
+    stipple: false,
+    hardEdge: false,
+  },
+  charcoal: {
+    wet: false,
+    opacityMul: 1.35,
+    dabKeep: 0.88,
+    wobble: 0.7,
+    tightBias: true,
+    lineBudget: 48,
+    lineWeight: 0.95,
+    darken: 0.55,
+    blur: 0.28,
+    fillAlpha: 0.84,
+    secondPass: 0.62,
+    lineAlpha: 0.78,
+    lineScale: 2.6,
+    lineCap: "square",
+    stipple: false,
+    hardEdge: true,
+  },
+  cpencil: {
+    wet: false,
+    opacityMul: 0.48,
+    dabKeep: 0.55,
+    wobble: 0.35,
+    tightBias: true,
+    lineBudget: 64,
+    lineWeight: 0.14,
+    darken: 0.9,
+    blur: 0.2,
+    fillAlpha: 0.28,
+    secondPass: 0.18,
+    lineAlpha: 0.66,
+    lineScale: 0.75,
+    lineCap: "round",
+    stipple: false,
+    hardEdge: true,
+  },
+  crayon: {
+    wet: false,
+    opacityMul: 1.08,
+    dabKeep: 0.8,
+    wobble: 1.7,
+    tightBias: false,
+    lineBudget: 28,
+    lineWeight: 1.15,
+    darken: 0.92,
+    warm: 18,
+    blur: 0.55,
+    fillAlpha: 0.7,
+    secondPass: 0.48,
+    lineAlpha: 0.58,
+    lineScale: 2.8,
+    lineCap: "round",
+    stipple: false,
+    hardEdge: false,
+  },
+  spray: {
+    wet: false,
+    opacityMul: 0.4,
+    dabKeep: 0.45,
+    wobble: 2.2,
+    tightBias: false,
+    lineBudget: 12,
+    lineWeight: 1.6,
+    darken: 1.05,
+    blur: 0.15,
+    fillAlpha: 0.22,
+    secondPass: 0.12,
+    lineAlpha: 0.28,
+    lineScale: 0.5,
+    lineCap: "round",
+    stipple: true,
+    hardEdge: true,
+  },
+  marker: {
+    wet: true,
+    opacityMul: 1.45,
+    dabKeep: 0.62,
+    wobble: 0.2,
+    tightBias: true,
+    lineBudget: 18,
+    lineWeight: 1.35,
+    darken: 0.88,
+    blur: 0.05,
+    fillAlpha: 0.88,
+    secondPass: 0.2,
+    lineAlpha: 0.82,
+    lineScale: 3.4,
+    lineCap: "square",
+    stipple: false,
+    hardEdge: true,
+  },
+};
+
+export function brushPreviewProfile(brushType) {
+  return BRUSH_PREVIEW[brushType] || BRUSH_PREVIEW.HB;
+}
+
+function planMarks(data, cells, size, rand, brushType, tint = null, tintAmt = 0, opts = {}) {
+  const profile = brushPreviewProfile(brushType);
+  const wet = profile.wet;
+  const fast = Boolean(opts.fast);
+  let dabs = collectDabs(data, cells, { fast });
   dabs.sort((a, b) => Number(b.wash) - Number(a.wash) || b.area - a.area || a.luma - b.luma);
+  if (opts.maxDabs && dabs.length > opts.maxDabs) dabs = dabs.slice(0, opts.maxDabs);
 
   const scale = size / cells;
   const marks = [];
   for (const dab of dabs) {
-    const pigment = pigmentize(dab.color, wet);
+    if (profile.dabKeep < 1 && rand() > profile.dabKeep) continue;
+    let pigment = pigmentize(dab.color, wet, tint, tintAmt);
+    pigment = {
+      r: pigment.r * profile.darken,
+      g: pigment.g * profile.darken,
+      b: pigment.b * profile.darken,
+    };
+    if (profile.warm) {
+      pigment = {
+        r: clamp(pigment.r + profile.warm, 0, 255),
+        g: clamp(pigment.g + profile.warm * 0.45, 0, 255),
+        b: clamp(pigment.b - profile.warm * 0.35, 0, 255),
+      };
+    }
     const wash = Boolean(dab.wash);
-    const tight = !wash && (dab.range > 22 || dab.area < 20);
+    const tight = profile.tightBias || (!wash && (dab.range > 22 || dab.area < 20));
+    let opacity = wash
+      ? clamp(72 + (1 - dab.luma) * 46, 58, 128)
+      : clamp((tight ? 150 : 124) + (1 - dab.luma) * 52, 108, 214);
+    opacity = clamp(opacity * profile.opacityMul, 28, 240);
+    const jScale = profile.wobble;
+    const pts = cellPoly(dab, scale, rand, tight).map(([x, y]) => [
+      x + wobble(rand, scale, 0.08 * (jScale - 1)),
+      y + wobble(rand, scale, 0.08 * (jScale - 1)),
+    ]);
     marks.push({
       kind: "poly",
-      pts: cellPoly(dab, scale, rand, tight),
+      pts,
       hex: toHex(pigment),
-      opacity: wash
-        ? clamp(72 + (1 - dab.luma) * 46, 58, 128)
-        : clamp((tight ? 150 : 124) + (1 - dab.luma) * 52, 108, 214),
-      bleed: wet ? (wash ? 0.3 : tight ? 0.12 : 0.2) : 0.08,
-      texture: wet ? (tight ? 0.38 : 0.3) : 0.34,
-      border: wet ? (tight ? 0.32 : 0.22) : 0.26,
+      opacity,
+      bleed: wet ? (wash ? 0.3 : tight ? 0.12 : 0.2) : profile.hardEdge ? 0.04 : 0.1,
+      texture: wet ? (tight ? 0.38 : 0.3) : profile.stipple ? 0.7 : 0.45,
+      border: wet ? (tight ? 0.32 : 0.22) : 0.35,
+      stipple: Boolean(profile.stipple),
     });
   }
 
-  const lineBudget = brushType === "2H" || brushType === "cpencil" ? 48 : 36;
+  if (opts.skipLines) return marks;
+
+  const lineBudget = Math.max(4, Math.round(profile.lineBudget * (opts.lineScale || 1)));
   const edges = [];
   for (let y = 1; y < cells - 1; y++) {
     for (let x = 1; x < cells - 1; x++) {
@@ -281,20 +471,21 @@ function planMarks(data, cells, size, rand, wet, brushType) {
   for (let i = 0; i < edges.length && drawn < lineBudget; i += step) {
     const edge = edges[i];
     const nlen = Math.hypot(-edge.gy, edge.gx) || 1;
-    const len = scale * (0.45 + edge.mag * 0.9);
-    const pigment = pigmentize(edge.color, wet);
+    const len = scale * (0.45 + edge.mag * 0.9) * (0.75 + profile.wobble * 0.25);
+    let pigment = pigmentize(edge.color, wet, tint, tintAmt);
+    pigment = {
+      r: pigment.r * profile.darken * 0.78,
+      g: pigment.g * profile.darken * 0.78,
+      b: pigment.b * profile.darken * 0.78,
+    };
     marks.push({
       kind: "line",
       x1: (edge.x + 0.5) * scale - (-edge.gy / nlen) * len,
       y1: (edge.y + 0.5) * scale - (edge.gx / nlen) * len,
       x2: (edge.x + 0.5) * scale + (-edge.gy / nlen) * len,
       y2: (edge.y + 0.5) * scale + (edge.gx / nlen) * len,
-      hex: toHex({
-        r: pigment.r * 0.78,
-        g: pigment.g * 0.78,
-        b: pigment.b * 0.78,
-      }),
-      weight: wet ? 0.38 : 0.5,
+      hex: toHex(pigment),
+      weight: profile.lineWeight,
     });
     drawn += 1;
   }
@@ -302,10 +493,22 @@ function planMarks(data, cells, size, rand, wet, brushType) {
   return marks;
 }
 
-export function planFromPixels(data, cells, size, seed, effects) {
+export function planFromPixels(data, cells, size, seed, effects, opts = {}) {
   const e = clampEffects(effects || {});
-  const wet = !["charcoal", "cpencil", "crayon", "spray"].includes(e.brushType);
-  return planMarks(data, cells, size, mulberry32(Number(seed) || 1), wet, e.brushType || "HB");
+  const tintHex = e.color ? oklchToHex(e.color) : null;
+  const tint = tintHex ? hexToRgb(tintHex) : null;
+  // Keep pigment mixes strong enough that mobile color taps read clearly in the fast preview.
+  const tintAmt = tint ? 0.28 + (Number(e.pigment) || 0.5) * 0.55 : 0;
+  return planMarks(
+    data,
+    cells,
+    size,
+    mulberry32(Number(seed) || 1),
+    e.brushType || "HB",
+    tint,
+    tintAmt,
+    opts
+  );
 }
 
 export function averageHex(source) {
