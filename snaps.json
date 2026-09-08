@@ -1,5 +1,22 @@
 [
   {
+    "label": "september 2026",
+    "preview": 2,
+    "groups": [
+      {
+        "city": "nyc",
+        "photos": [
+          {
+            "src": "photos/pulitzer-fountain.jpeg",
+            "alt": "Pomona statue at the Pulitzer Fountain, Plaza Hotel",
+            "caption": "pulitzer fountain, september 2026",
+            "ariaLabel": "Open Pulitzer Fountain photo"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "label": "july 2026",
     "preview": 2,
     "groups": [
