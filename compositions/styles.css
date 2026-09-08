@@ -2065,7 +2065,8 @@ select.choice-native {
   padding: 0;
   border: 0;
   background: transparent;
-  overflow: hidden;
+  overflow: clip;
+  clip-path: inset(0);
   --apex: 16px;
   --radius: 170px;
   --cy: 186px;

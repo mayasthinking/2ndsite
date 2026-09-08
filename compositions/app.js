@@ -968,7 +968,6 @@ function mountSheetEditor(sheet, item) {
     holdPopovers();
     placeBrushDial();
     if (isPhone()) setMobileTool("brush");
-    edit._brushDial?.focus();
   };
 
   brushMenu._place = placeBrushDial;
