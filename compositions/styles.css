@@ -2098,7 +2098,7 @@ select.choice-native {
   line-height: 1;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
-  transform: rotate(calc(var(--turn) + var(--tick) - 90deg));
+  transform: rotate(calc(var(--turn) + var(--tick)));
   opacity: clamp(0, calc(1.15 - var(--from) / 70), 1);
 }
 
@@ -2138,7 +2138,7 @@ select.choice-native {
   align-items: center;
   gap: 2px;
   width: 42px;
-  transform: translate(-50%, calc(-1 * var(--icon-r) - 4px)) rotate(calc(90deg - var(--turn) - var(--tick)));
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 4px)) rotate(calc(-1 * (var(--turn) + var(--tick))));
   pointer-events: none;
 }
 
