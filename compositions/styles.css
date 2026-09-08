@@ -3309,7 +3309,6 @@ body.is-sheet-open {
   }
 
   .mobile-sheet .mode-switch,
-  .mobile-sheet .sample-kit,
   .mobile-sheet-handle,
   .mobile-sheet .paint-kit {
     display: none !important;
@@ -3324,13 +3323,24 @@ body.is-sheet-open {
   }
 
   .mobile-sheet .sample-kit {
+    display: block;
     margin: 0;
-    padding: 0;
+    padding: 0 2px;
   }
 
   .mobile-sheet .chips {
-    padding: 0;
-    gap: 8px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 0 2px 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mobile-sheet .chips::-webkit-scrollbar {
+    display: none;
   }
 
   .mobile-sheet .stack > .field {
