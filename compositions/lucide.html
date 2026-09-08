@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#faf9f6" />
+    <title>lucide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #faf9f6;
+        --ink: #24211f;
+        --hover: #8b2f32;
+        --muted: rgba(36, 33, 31, 0.5);
+        --line: rgba(36, 33, 31, 0.08);
+        --ui: -apple-system, BlinkMacSystemFont, Inter, "Segoe UI", system-ui, sans-serif;
+        --serif: "Libre Baskerville", serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--ui);
+      }
+      a {
+        color: inherit;
+      }
+      a:hover {
+        color: var(--hover);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 22px 28px 16px;
+        background: color-mix(in srgb, var(--paper) 92%, transparent);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--line);
+      }
+      .back {
+        margin: 0 0 8px;
+        font-size: 13px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-family: var(--serif);
+        font-size: 28px;
+        font-weight: 400;
+      }
+      .lead,
+      #count {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      #count {
+        margin-top: 8px;
+      }
+      #search {
+        display: block;
+        width: min(420px, 100%);
+        margin-top: 14px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        font-size: 15px;
+      }
+      #search:focus {
+        outline: 1px solid color-mix(in srgb, var(--hover) 45%, transparent);
+        outline-offset: 2px;
+      }
+      main {
+        padding: 22px 28px 64px;
+      }
+      h2 {
+        margin: 8px 0 12px;
+        font-family: var(--serif);
+        font-size: 16px;
+        font-weight: 400;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        gap: 8px;
+      }
+      .icon {
+        appearance: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        padding: 14px 8px 10px;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+      }
+      .icon:hover,
+      .icon:focus-visible {
+        color: var(--hover);
+        border-color: color-mix(in srgb, var(--hover) 22%, transparent);
+        background: color-mix(in srgb, var(--hover) 6%, var(--paper));
+        outline: none;
+      }
+      .icon svg {
+        width: 28px;
+        height: 28px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.75;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .icon span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        letter-spacing: 0.01em;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        z-index: 3;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 13px;
+        transform: translateX(-50%) translateY(16px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+      .toast.is-on {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <p class="back"><a href="./">compositions</a></p>
+      <h1>lucide</h1>
+      <p class="lead">the full set. click an icon to copy its name.</p>
+      <input id="search" type="search" placeholder="search icons" autocomplete="off" />
+      <p id="count"></p>
+    </header>
+    <main>
+      <section id="picks" hidden>
+        <h2>drawing</h2>
+        <div class="grid" id="picksGrid"></div>
+      </section>
+      <section>
+        <h2 id="allTitle">all</h2>
+        <div class="grid" id="grid"></div>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script type="module">
+      const PICKS = [
+        "pencil",
+        "pencil-line",
+        "pen",
+        "pen-line",
+        "pen-tool",
+        "paintbrush",
+        "paintbrush-vertical",
+        "brush",
+        "highlighter",
+        "spray-can",
+        "eraser",
+        "paint-roller",
+        "paint-bucket",
+        "pencil-ruler",
+        "notebook-pen",
+      ];
+
+      const escapeAttr = (value) =>
+        String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("<", "&lt;");
+
+      const svgFor = (nodes) => {
+        const inner = nodes
+          .map(([tag, attrs]) => {
+            const bits = Object.entries(attrs || {})
+              .filter(([key]) => key !== "key")
+              .map(([key, value]) => `${key}="${escapeAttr(value)}"`)
+              .join(" ");
+            return `<${tag} ${bits}/>`;
+          })
+          .join("");
+        return `<svg viewBox="0 0 24 24" aria-hidden="true">${inner}</svg>`;
+      };
+
+      const buttonFor = (name, nodes) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "icon";
+        btn.dataset.name = name;
+        btn.title = name;
+        btn.innerHTML = `${svgFor(nodes)}<span>${name}</span>`;
+        return btn;
+      };
+
+      const toast = document.querySelector("#toast");
+      let toastTimer = 0;
+      const copyName = async (name) => {
+        try {
+          await navigator.clipboard.writeText(name);
+          toast.textContent = `copied ${name}`;
+        } catch {
+          toast.textContent = name;
+        }
+        toast.classList.add("is-on");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("is-on"), 1400);
+      };
+
+      const [nodes, tags] = await Promise.all([
+        fetch("./lucide-data/icon-nodes.json").then((res) => res.json()),
+        fetch("./lucide-data/tags.json").then((res) => res.json()),
+      ]);
+
+      const names = Object.keys(nodes).sort();
+      const grid = document.querySelector("#grid");
+      const picks = document.querySelector("#picks");
+      const picksGrid = document.querySelector("#picksGrid");
+      const count = document.querySelector("#count");
+      const search = document.querySelector("#search");
+      const allTitle = document.querySelector("#allTitle");
+      const cards = new Map();
+
+      for (const name of names) {
+        const btn = buttonFor(name, nodes[name]);
+        cards.set(name, btn);
+        grid.append(btn);
+      }
+
+      const shownPicks = PICKS.filter((name) => nodes[name]);
+      if (shownPicks.length) {
+        picks.hidden = false;
+        for (const name of shownPicks) picksGrid.append(buttonFor(name, nodes[name]));
+      }
+
+      document.body.addEventListener("click", (event) => {
+        const btn = event.target.closest(".icon");
+        if (!btn) return;
+        copyName(btn.dataset.name);
+      });
+
+      const hay = (name) => [name, ...(tags[name] || [])].join(" ").toLowerCase();
+      const apply = () => {
+        const q = search.value.trim().toLowerCase();
+        let n = 0;
+        for (const name of names) {
+          const on = !q || hay(name).includes(q);
+          cards.get(name).hidden = !on;
+          if (on) n += 1;
+        }
+        picks.hidden = Boolean(q) || !shownPicks.length;
+        allTitle.hidden = Boolean(q);
+        count.textContent = q ? `${n} of ${names.length}` : `${names.length} icons`;
+      };
+
+      search.addEventListener("input", apply);
+      apply();
+      search.focus();
+    </script>
+  </body>
+</html>
