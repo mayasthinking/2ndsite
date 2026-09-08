@@ -1757,6 +1757,22 @@
             return src || '';
         }
 
+        function samePhotoSrc(left, right) {
+            if (!left || !right) {
+                return false;
+            }
+
+            if (left === right) {
+                return true;
+            }
+
+            try {
+                return new URL(left, document.baseURI).href === new URL(right, document.baseURI).href;
+            } catch {
+                return false;
+            }
+        }
+
         function startRevealAnimation({ includeBackdrop = false } = {}) {
             requestAnimationFrame(() => {
                 if (includeBackdrop) {
@@ -2083,7 +2099,7 @@
 
             if (!canCrossfade) {
                 applyPhotoToLayer(frontLayer, thumb).then((readySrc) => {
-                    if (token !== photoTurnToken || frontLayer.getAttribute('src') !== readySrc) {
+                    if (token !== photoTurnToken || !samePhotoSrc(frontLayer.getAttribute('src'), readySrc)) {
                         return;
                     }
 
@@ -2095,15 +2111,15 @@
 
             const targetLayer = freeOverlayLayer();
             applyPhotoToLayer(targetLayer, thumb).then((readySrc) => {
-                if (token !== photoTurnToken || targetLayer.getAttribute('src') !== readySrc) {
+                if (token !== photoTurnToken || !samePhotoSrc(targetLayer.getAttribute('src'), readySrc)) {
                     return;
                 }
 
                 const outgoing = frontLayer;
+                frontLayer = targetLayer;
                 setStackSize(targetLayer, { animate: true });
                 targetLayer.classList.add('is-visible');
                 beginLayerExit(outgoing);
-                frontLayer = targetLayer;
             });
         }
 
@@ -2130,7 +2146,7 @@
             document.body.style.overflow = 'hidden';
 
             applyPhotoToLayer(frontLayer, thumb).then((readySrc) => {
-                if (token !== photoTurnToken || frontLayer.getAttribute('src') !== readySrc) {
+                if (token !== photoTurnToken || !samePhotoSrc(frontLayer.getAttribute('src'), readySrc)) {
                     return;
                 }
 
