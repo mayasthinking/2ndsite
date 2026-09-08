@@ -2042,7 +2042,7 @@ select.choice-native {
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: 50% 50% 0 0;
+  border-radius: var(--radius) var(--radius) 0 0;
   background: rgb(244, 241, 234);
   background: color-mix(in srgb, var(--paper) 82%, var(--ink) 10%);
   box-shadow:
