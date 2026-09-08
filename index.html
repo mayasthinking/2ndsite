@@ -36,6 +36,8 @@
             --stain-filter: none;
             --photo-reveal-duration: 780ms;
             --photo-reveal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --photo-turn-duration: 460ms;
+            --photo-turn-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
             --photo-frame-margin: 36px;
             --photo-controls-band: 48px;
         }
@@ -912,6 +914,7 @@
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
+            overscroll-behavior: none;
             transition:
                 opacity var(--photo-reveal-duration) var(--photo-reveal-ease),
                 visibility var(--photo-reveal-duration);
@@ -951,27 +954,44 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            width: max-content;
+            width: var(--stack-width, max-content);
             max-width: 100%;
             max-height: 100%;
             min-height: 0;
         }
 
-        .photo-overlay-image {
-            display: block;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            max-width: calc(100vw - (2 * var(--photo-frame-margin)));
+        .photo-overlay-stack {
+            position: relative;
+            flex: 0 0 auto;
+            align-self: flex-end;
+            width: var(--stack-width, 0px);
+            height: var(--stack-height, 0px);
+            max-width: 100%;
             max-height: calc(100dvh - (2 * var(--photo-frame-margin)) - var(--photo-controls-band));
-            flex: 0 1 auto;
-            min-height: 0;
+        }
+
+        .photo-overlay-frame.is-ready,
+        .photo-overlay-stack.is-ready {
+            transition:
+                width var(--photo-turn-duration) var(--photo-turn-ease),
+                height var(--photo-turn-duration) var(--photo-turn-ease);
+        }
+
+        .photo-overlay-image {
+            position: absolute;
+            inset: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
             opacity: 0;
-            transition: opacity var(--photo-reveal-duration) var(--photo-reveal-ease);
+            pointer-events: none;
+            transition: opacity var(--photo-turn-duration) var(--photo-turn-ease);
         }
 
         .photo-overlay-image.is-visible {
             opacity: 1;
+            pointer-events: auto;
         }
 
         .photo-overlay-controls {
@@ -992,7 +1012,7 @@
             pointer-events: none;
         }
 
-        .photo-overlay-dots,
+        .photo-overlay-scrub,
         .photo-overlay-actions {
             pointer-events: auto;
             flex-shrink: 0;
@@ -1006,40 +1026,88 @@
             flex-shrink: 0;
         }
 
-        .photo-overlay-dots {
+        .photo-overlay-scrub {
+            --slider-progress: 0%;
+            --slider-track: color-mix(in srgb, var(--overlay-ink) 22%, transparent);
+            --slider-fill: var(--hover);
             display: flex;
             align-items: center;
-            gap: 5px;
-            min-width: 0;
-            max-width: 220px;
-            overflow-x: auto;
-            scrollbar-width: none;
+            width: 156px;
+            max-width: min(156px, calc(100vw - 168px));
         }
 
-        .photo-overlay-dots::-webkit-scrollbar {
+        .photo-overlay-scrub[hidden] {
             display: none;
         }
 
-        .photo-overlay-dot {
-            flex: 0 0 auto;
-            width: 5px;
-            height: 5px;
-            padding: 0;
-            border: none;
-            border-radius: 0;
-            background: color-mix(in srgb, var(--overlay-ink) 34%, transparent);
+        .photo-overlay-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 28px;
+            margin: 0;
+            background: transparent;
+            accent-color: var(--hover);
             cursor: pointer;
-            transition: background-color 180ms ease, opacity 180ms ease, transform 180ms ease;
+            touch-action: none;
         }
 
-        .photo-overlay-dot:hover,
-        .photo-overlay-dot:focus-visible {
-            background: color-mix(in srgb, var(--overlay-ink) 58%, transparent);
+        .photo-overlay-slider:focus {
+            outline: none;
         }
 
-        .photo-overlay-dot.is-active {
+        .photo-overlay-slider::-webkit-slider-runnable-track {
+            height: 1px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(
+                to right,
+                var(--slider-fill) var(--slider-progress),
+                var(--slider-track) var(--slider-progress)
+            );
+        }
+
+        .photo-overlay-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 7px;
+            height: 7px;
+            margin-top: -3px;
+            border: none;
+            border-radius: 50%;
             background: var(--hover);
-            transform: scale(1.08);
+            transition: transform 160ms ease;
+        }
+
+        .photo-overlay-slider:hover::-webkit-slider-thumb,
+        .photo-overlay-slider:focus-visible::-webkit-slider-thumb {
+            transform: scale(1.12);
+        }
+
+        .photo-overlay-slider::-moz-range-track {
+            height: 1px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(
+                to right,
+                var(--slider-fill) var(--slider-progress),
+                var(--slider-track) var(--slider-progress)
+            );
+        }
+
+        .photo-overlay-slider::-moz-range-progress {
+            height: 1px;
+            background: var(--slider-fill);
+            border: none;
+            border-radius: 999px;
+        }
+
+        .photo-overlay-slider::-moz-range-thumb {
+            width: 7px;
+            height: 7px;
+            border: none;
+            border-radius: 50%;
+            background: var(--hover);
         }
 
         .photo-overlay-btn {
@@ -1257,8 +1325,8 @@
                 align-items: center;
             }
 
+            .photo-overlay-stack,
             .photo-overlay-image {
-                width: 100%;
                 max-width: 100%;
                 max-height: calc(100dvh - 24px);
             }
@@ -1375,9 +1443,14 @@
         <button type="button" class="photo-overlay-backdrop" aria-label="Close photo preview"></button>
         <div class="photo-overlay-stage" id="photo-overlay-stage">
             <div class="photo-overlay-frame">
-                <img class="photo-overlay-image" src="" alt="">
+                <div class="photo-overlay-stack" id="photo-overlay-stack">
+                    <img class="photo-overlay-image" alt="">
+                    <img class="photo-overlay-image" alt="">
+                </div>
                 <div class="photo-overlay-controls">
-                    <div class="photo-overlay-dots" id="photo-overlay-dots" role="tablist" aria-label="Photos in album"></div>
+                    <div class="photo-overlay-scrub" id="photo-overlay-scrub" hidden>
+                        <input type="range" class="photo-overlay-slider" id="photo-overlay-slider" min="0" max="0" value="0" step="any" aria-label="Scrub through album photos">
+                    </div>
                     <div class="photo-overlay-actions">
                         <button type="button" class="photo-overlay-btn" data-action="prev" aria-label="Previous photo">
                             <svg class="photo-overlay-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter">
@@ -1398,12 +1471,19 @@
     <script>
         const overlay = document.getElementById('photo-overlay');
         const overlayStage = document.getElementById('photo-overlay-stage');
-        const overlayImage = overlay.querySelector('.photo-overlay-image');
-        const overlayDots = document.getElementById('photo-overlay-dots');
+        const overlayFrame = overlay.querySelector('.photo-overlay-frame');
+        const overlayStack = document.getElementById('photo-overlay-stack');
+        const overlayLayers = [...overlay.querySelectorAll('.photo-overlay-image')];
+        const overlayScrub = document.getElementById('photo-overlay-scrub');
+        const overlaySlider = document.getElementById('photo-overlay-slider');
         const backdrop = overlay.querySelector('.photo-overlay-backdrop');
         const overlayButtons = [...overlay.querySelectorAll('.photo-overlay-btn')];
         let currentAlbumThumbs = [];
         let currentPhotoIndex = -1;
+        let sliderScrubbing = false;
+        let frontLayer = overlayLayers[0];
+        let backLayer = overlayLayers[1];
+        let photoTurnToken = 0;
         const photoRevealDurationMs = 780;
         let cabinetAudioContext = null;
         const toggleToneClasses = [
@@ -1677,43 +1757,192 @@
         }
 
         function startRevealAnimation({ includeBackdrop = false } = {}) {
-            const reveal = () => {
-                requestAnimationFrame(() => {
-                    if (includeBackdrop) {
-                        overlay.classList.add('is-open');
-                    }
-                    overlayImage.classList.add('is-visible');
-                });
-            };
+            requestAnimationFrame(() => {
+                if (includeBackdrop) {
+                    overlay.classList.add('is-open');
+                }
+                frontLayer.classList.add('is-visible');
+            });
+        }
 
-            if (overlayImage.complete && overlayImage.naturalWidth > 0) {
-                reveal();
-                return;
-            }
+        function whenImageReady(image, src) {
+            return new Promise((resolve) => {
+                const done = () => {
+                    image.onload = null;
+                    image.onerror = null;
+                    resolve(image);
+                };
 
-            overlayImage.onload = () => {
-                overlayImage.onload = null;
-                reveal();
+                if (image.getAttribute('src') === src && image.complete && image.naturalWidth > 0) {
+                    done();
+                    return;
+                }
+
+                image.onload = done;
+                image.onerror = done;
+
+                if (image.getAttribute('src') !== src) {
+                    image.src = src;
+                }
+            });
+        }
+
+        function photoStageLimits() {
+            const stageStyles = getComputedStyle(overlayStage);
+            const paddingX = Number.parseFloat(stageStyles.paddingLeft) + Number.parseFloat(stageStyles.paddingRight);
+            const paddingY = Number.parseFloat(stageStyles.paddingTop) + Number.parseFloat(stageStyles.paddingBottom);
+            const band = Number.parseFloat(
+                getComputedStyle(document.documentElement).getPropertyValue('--photo-controls-band')
+            ) || 48;
+
+            return {
+                maxWidth: Math.max(1, overlayStage.clientWidth - (Number.isFinite(paddingX) ? paddingX : 0)),
+                maxHeight: Math.max(
+                    1,
+                    overlayStage.clientHeight - (Number.isFinite(paddingY) ? paddingY : 0) - band
+                )
             };
         }
 
-        function renderDots() {
-            overlayDots.replaceChildren();
+        function photoDisplaySize(image) {
+            const { maxWidth, maxHeight } = photoStageLimits();
+            const naturalWidth = image.naturalWidth;
+            const naturalHeight = image.naturalHeight;
 
-            currentAlbumThumbs.forEach((thumb, index) => {
-                const dot = document.createElement('button');
-                dot.type = 'button';
-                dot.className = 'photo-overlay-dot';
-                dot.setAttribute('role', 'tab');
-                dot.setAttribute('aria-label', `Photo ${index + 1} of ${currentAlbumThumbs.length}`);
-                dot.setAttribute('aria-selected', String(index === currentPhotoIndex));
-                dot.classList.toggle('is-active', index === currentPhotoIndex);
-                dot.addEventListener('click', () => showPhotoAt(index));
-                overlayDots.appendChild(dot);
+            if (!naturalWidth || !naturalHeight) {
+                return { width: 0, height: 0 };
+            }
+
+            const scale = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight, 1);
+
+            return {
+                width: Math.max(1, Math.round(naturalWidth * scale)),
+                height: Math.max(1, Math.round(naturalHeight * scale))
+            };
+        }
+
+        function setStackSize(image, { animate = true } = {}) {
+            const size = photoDisplaySize(image);
+
+            if (!size.width || !size.height) {
+                return;
+            }
+
+            if (!animate) {
+                overlayFrame.classList.remove('is-ready');
+                overlayStack.classList.remove('is-ready');
+            }
+
+            overlayFrame.style.setProperty('--stack-width', `${size.width}px`);
+            overlayStack.style.setProperty('--stack-width', `${size.width}px`);
+            overlayStack.style.setProperty('--stack-height', `${size.height}px`);
+            overlayFrame.style.width = `${size.width}px`;
+            overlayStack.style.width = `${size.width}px`;
+            overlayStack.style.height = `${size.height}px`;
+
+            if (animate) {
+                overlayFrame.classList.add('is-ready');
+                overlayStack.classList.add('is-ready');
+                return;
+            }
+
+            requestAnimationFrame(() => {
+                overlayFrame.classList.add('is-ready');
+                overlayStack.classList.add('is-ready');
             });
+        }
 
-            const activeDot = overlayDots.querySelector('.photo-overlay-dot.is-active');
-            activeDot?.scrollIntoView({ block: 'nearest', inline: 'center' });
+        function applyPhotoToLayer(layer, thumb) {
+            const src = fullPhotoSrc(thumb.dataset.src);
+            layer.alt = thumb.querySelector('img')?.alt || '';
+            return whenImageReady(layer, src).then(() => src);
+        }
+
+        function swapLayers() {
+            const previous = frontLayer;
+            frontLayer = backLayer;
+            backLayer = previous;
+        }
+
+        function resetOverlayLayers() {
+            overlayLayers.forEach((layer) => {
+                layer.classList.remove('is-visible');
+                layer.removeAttribute('src');
+                layer.alt = '';
+                layer.onload = null;
+                layer.onerror = null;
+            });
+            overlayFrame.classList.remove('is-ready');
+            overlayStack.classList.remove('is-ready');
+            overlayFrame.style.removeProperty('--stack-width');
+            overlayStack.style.removeProperty('--stack-width');
+            overlayStack.style.removeProperty('--stack-height');
+            overlayFrame.style.removeProperty('width');
+            overlayStack.style.removeProperty('width');
+            overlayStack.style.removeProperty('height');
+            frontLayer = overlayLayers[0];
+            backLayer = overlayLayers[1];
+        }
+
+        function preloadNeighborPhotos() {
+            const count = currentAlbumThumbs.length;
+
+            if (count <= 1 || currentPhotoIndex < 0) {
+                return;
+            }
+
+            [1, -1].forEach((offset) => {
+                const thumb = currentAlbumThumbs[(currentPhotoIndex + offset + count) % count];
+                if (!thumb) {
+                    return;
+                }
+
+                const preload = new Image();
+                preload.src = fullPhotoSrc(thumb.dataset.src);
+            });
+        }
+
+        function sliderProgressPercent() {
+            const max = Number(overlaySlider.max);
+            const value = Number(overlaySlider.value);
+
+            if (!Number.isFinite(max) || max <= 0 || !Number.isFinite(value)) {
+                return 0;
+            }
+
+            return Math.min(100, Math.max(0, (value / max) * 100));
+        }
+
+        function syncSliderProgress() {
+            overlayScrub.style.setProperty('--slider-progress', `${sliderProgressPercent()}%`);
+        }
+
+        function syncSlider() {
+            const count = currentAlbumThumbs.length;
+            const hasRange = count > 1;
+
+            overlayScrub.hidden = !hasRange;
+            overlaySlider.disabled = !hasRange;
+
+            if (!hasRange) {
+                overlaySlider.max = '0';
+                overlaySlider.value = '0';
+                overlaySlider.removeAttribute('aria-valuetext');
+                overlayScrub.style.setProperty('--slider-progress', '0%');
+                return;
+            }
+
+            overlaySlider.max = String(count - 1);
+            overlaySlider.setAttribute(
+                'aria-valuetext',
+                `Photo ${currentPhotoIndex + 1} of ${count}`
+            );
+
+            if (!sliderScrubbing) {
+                overlaySlider.value = String(Math.max(0, currentPhotoIndex));
+            }
+
+            syncSliderProgress();
         }
 
         function updateNavButtons() {
@@ -1722,26 +1951,46 @@
             overlay.querySelector('[data-action="next"]').disabled = !hasMultiple;
         }
 
-        function showPhotoAt(index, { animate = false } = {}) {
+        function showPhotoAt(index, { animate = true } = {}) {
             const thumb = currentAlbumThumbs[index];
             if (!thumb) {
                 return;
             }
 
             currentPhotoIndex = index;
-
-            if (animate) {
-                overlayImage.classList.remove('is-visible');
-            }
-
-            overlayImage.src = fullPhotoSrc(thumb.dataset.src);
-            overlayImage.alt = thumb.querySelector('img')?.alt || '';
-            renderDots();
+            syncSlider();
             updateNavButtons();
 
-            if (animate) {
-                startRevealAnimation();
+            const token = (photoTurnToken += 1);
+            const src = fullPhotoSrc(thumb.dataset.src);
+            const canCrossfade = animate
+                && overlay.classList.contains('is-open')
+                && frontLayer.classList.contains('is-visible');
+
+            if (!canCrossfade) {
+                applyPhotoToLayer(frontLayer, thumb).then((readySrc) => {
+                    if (token !== photoTurnToken || frontLayer.getAttribute('src') !== readySrc) {
+                        return;
+                    }
+
+                    setStackSize(frontLayer, { animate: false });
+                    startRevealAnimation();
+                    preloadNeighborPhotos();
+                });
+                return;
             }
+
+            applyPhotoToLayer(backLayer, thumb).then((readySrc) => {
+                if (token !== photoTurnToken || backLayer.getAttribute('src') !== readySrc) {
+                    return;
+                }
+
+                setStackSize(backLayer, { animate: true });
+                backLayer.classList.add('is-visible');
+                frontLayer.classList.remove('is-visible');
+                swapLayers();
+                preloadNeighborPhotos();
+            });
         }
 
         function openPreviewAt(thumbs, index) {
@@ -1751,19 +2000,28 @@
             }
 
             currentAlbumThumbs = thumbs;
-            overlay.classList.remove('is-open');
-            overlayImage.classList.remove('is-visible');
-
             currentPhotoIndex = index;
-            overlayImage.src = fullPhotoSrc(thumb.dataset.src);
-            overlayImage.alt = thumb.querySelector('img')?.alt || '';
-            renderDots();
+            photoTurnToken += 1;
+            const token = photoTurnToken;
+
+            overlay.classList.remove('is-open');
+            resetOverlayLayers();
+            syncSlider();
             updateNavButtons();
 
             overlay.hidden = false;
             overlay.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
-            startRevealAnimation({ includeBackdrop: true });
+
+            applyPhotoToLayer(frontLayer, thumb).then((readySrc) => {
+                if (token !== photoTurnToken || frontLayer.getAttribute('src') !== readySrc) {
+                    return;
+                }
+
+                setStackSize(frontLayer, { animate: false });
+                startRevealAnimation({ includeBackdrop: true });
+                preloadNeighborPhotos();
+            });
         }
 
         function getAlbumThumbs(thumb) {
@@ -1787,18 +2045,26 @@
         }
 
         function closePreview() {
-            overlayImage.classList.remove('is-visible');
+            overlayLayers.forEach((layer) => layer.classList.remove('is-visible'));
             overlay.classList.remove('is-open');
             overlay.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
             currentAlbumThumbs = [];
             currentPhotoIndex = -1;
+            resetWheelGesture();
+            wheelNavLockedUntil = 0;
+            photoTurnToken += 1;
 
             window.setTimeout(() => {
                 if (!overlay.classList.contains('is-open')) {
                     overlay.hidden = true;
-                    overlayImage.removeAttribute('src');
-                    overlayDots.replaceChildren();
+                    resetOverlayLayers();
+                    sliderScrubbing = false;
+                    overlaySlider.max = '0';
+                    overlaySlider.value = '0';
+                    overlaySlider.removeAttribute('aria-valuetext');
+                    overlayScrub.hidden = true;
+                    overlayScrub.style.setProperty('--slider-progress', '0%');
                 }
             }, photoRevealDurationMs);
         }
@@ -1828,6 +2094,53 @@
             });
         });
 
+        function photoIndexFromSlider() {
+            const maxIndex = Math.max(0, currentAlbumThumbs.length - 1);
+            return Math.min(maxIndex, Math.max(0, Math.round(Number(overlaySlider.value))));
+        }
+
+        function endSliderScrub() {
+            if (!sliderScrubbing) {
+                return;
+            }
+
+            sliderScrubbing = false;
+            overlaySlider.value = String(Math.max(0, currentPhotoIndex));
+            syncSlider();
+        }
+
+        overlaySlider.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        overlaySlider.addEventListener('pointerdown', () => {
+            sliderScrubbing = true;
+        });
+
+        overlaySlider.addEventListener('pointerup', endSliderScrub);
+        overlaySlider.addEventListener('pointercancel', endSliderScrub);
+        overlaySlider.addEventListener('blur', endSliderScrub);
+
+        overlaySlider.addEventListener('input', () => {
+            sliderScrubbing = true;
+            syncSliderProgress();
+
+            const nextIndex = photoIndexFromSlider();
+            if (nextIndex === currentPhotoIndex) {
+                return;
+            }
+
+            showPhotoAt(nextIndex);
+        });
+
+        overlaySlider.addEventListener('change', () => {
+            const nextIndex = photoIndexFromSlider();
+            if (nextIndex !== currentPhotoIndex) {
+                showPhotoAt(nextIndex);
+            }
+            endSliderScrub();
+        });
+
         overlay.querySelector('.photo-overlay-controls')?.addEventListener('click', (event) => {
             event.stopPropagation();
         });
@@ -1838,6 +2151,14 @@
             }
 
             closePreview();
+        });
+
+        window.addEventListener('resize', () => {
+            if (!overlay.classList.contains('is-open') || !frontLayer?.naturalWidth) {
+                return;
+            }
+
+            setStackSize(frontLayer, { animate: false });
         });
 
         initCabinetToggles();
@@ -1978,6 +2299,67 @@
             navigatePhoto(deltaX < 0 ? 1 : -1);
         }, { passive: true });
 
+        let wheelNavLockedUntil = 0;
+        let wheelDeltaX = 0;
+        let wheelDeltaY = 0;
+        let wheelIdleTimer = 0;
+        const wheelThreshold = 48;
+        const wheelCooldownMs = 520;
+        const wheelIdleResetMs = 180;
+
+        function resetWheelGesture() {
+            wheelDeltaX = 0;
+            wheelDeltaY = 0;
+        }
+
+        function wheelDeltaPixels(event) {
+            if (event.deltaMode === 1) {
+                return 16;
+            }
+
+            if (event.deltaMode === 2) {
+                return overlayStage.clientWidth || 800;
+            }
+
+            return 1;
+        }
+
+        overlay.addEventListener('wheel', (event) => {
+            if (!overlay.classList.contains('is-open') || currentAlbumThumbs.length <= 1) {
+                return;
+            }
+
+            if (event.target.closest('.photo-overlay-slider')) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const now = performance.now();
+            if (now < wheelNavLockedUntil) {
+                return;
+            }
+
+            const scale = wheelDeltaPixels(event);
+            wheelDeltaX += event.deltaX * scale;
+            wheelDeltaY += event.deltaY * scale;
+
+            window.clearTimeout(wheelIdleTimer);
+            wheelIdleTimer = window.setTimeout(resetWheelGesture, wheelIdleResetMs);
+
+            const absX = Math.abs(wheelDeltaX);
+            const absY = Math.abs(wheelDeltaY);
+
+            if (absX < wheelThreshold && absY < wheelThreshold) {
+                return;
+            }
+
+            const delta = absX >= absY ? wheelDeltaX : wheelDeltaY;
+            resetWheelGesture();
+            wheelNavLockedUntil = now + wheelCooldownMs;
+            navigatePhoto(delta > 0 ? 1 : -1);
+        }, { passive: false });
+
         document.addEventListener('keydown', (event) => {
             if (!overlay.classList.contains('is-open')) {
                 return;
@@ -1985,6 +2367,10 @@
 
             if (event.key === 'Escape') {
                 closePreview();
+                return;
+            }
+
+            if (event.target === overlaySlider) {
                 return;
             }
 
