@@ -1,8 +1,8 @@
-import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
+import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects, variantLook } from "./effect-model.js?v=16";
 import { parseColor, oklchToHex } from "./color.js";
-import { mountColorSquare } from "./color-dial.js?v=14";
-import { imageWork } from "./image-work.js?v=4";
-import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
+import { mountColorSquare } from "./color-dial.js?v=15";
+import { imageWork } from "./image-work.js?v=5";
+import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=5";
 const sceneEl = document.querySelector("#scene");
 const sceneRow = document.querySelector(".scene-row");
 const sceneCaption = document.querySelector("#sceneCaption");
@@ -684,6 +684,19 @@ function persistSettings() {
 
 function sheetEffects(rec) {
   return clampEffects(rec?.item.effects || effects);
+}
+
+function paintingIndex(rec) {
+  const id = rec?.item?.id;
+  if (!id) return 0;
+  const fromList = paintings.findIndex((item) => item.id === id);
+  if (fromList >= 0) return fromList;
+  const fromGrid = [...cards.keys()].indexOf(id);
+  return Math.max(0, fromGrid);
+}
+
+function paintEffects(rec) {
+  return variantLook(sheetEffects(rec), paintingIndex(rec));
 }
 
 function applyEffectsToControls(fx) {
@@ -1577,7 +1590,7 @@ async function drainPhotoPreviews() {
       photo: rec.item.photo,
       seed: rec.item.seed,
       size: PAINT_SIZE,
-      effects: sheetEffects(rec),
+      effects: paintEffects(rec),
     });
     if (dataUrl && cards.get(id) === rec) applyPaintedData(rec, dataUrl, 1);
   } catch (err) {
@@ -1870,7 +1883,7 @@ function drainQueue() {
       seed: rec.item.seed,
       size: PAINT_SIZE,
       density: waitingDensity,
-      effects: sheetEffects(rec),
+      effects: paintEffects(rec),
     },
     "*"
   );

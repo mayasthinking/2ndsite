@@ -1,6 +1,6 @@
-import { imageWork } from "./image-work.js?v=4";
+import { imageWork } from "./image-work.js?v=5";
 
-const PAPER = "#f3eee4";
+const PAPER = "#faf9f6";
 
 let instance = null;
 let instanceSize = 0;

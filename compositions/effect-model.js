@@ -1,6 +1,6 @@
 import { hexToOklch, parseColor, formatOklch } from "./color.js";
 
-export const DEFAULT_COLOR = hexToOklch("#8b2f32");
+export const DEFAULT_COLOR = hexToOklch("#c45450");
 
 export const BRUSH_TYPES = ["HB", "2B", "2H", "charcoal", "cpencil", "crayon", "spray", "marker"];
 
@@ -101,7 +101,20 @@ export function defaultEffects() {
   effects.brushGrain = 0.64;
   effects.brushWeight = 0.58;
   effects.brushScatter = 0.56;
+  effects.transparency = 0.62;
+  effects.pigment = 0.58;
   return effects;
+}
+
+export function variantLook(effects, index) {
+  const next = clampEffects(effects);
+  if ((Number(index) || 0) % 6 !== 0) return next;
+  next.transparency = Math.min(1, next.transparency * 0.5 + 0.74 * 0.5);
+  next.pigment = Math.min(1, next.pigment + 0.1);
+  next.composition = Math.min(1, next.composition + 0.18);
+  next.psychologicalSpecificity = Math.min(1, next.psychologicalSpecificity + 0.12);
+  next.valence = Math.min(1, next.valence + 0.08);
+  return next;
 }
 
 export function clampEffects(raw = {}) {
