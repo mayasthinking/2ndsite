@@ -91,29 +91,50 @@
         }
 
         .dir-files {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+            gap: 10px;
         }
 
         .node {
             appearance: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
             border: 1px solid var(--line);
             background: color-mix(in srgb, var(--paper) 88%, var(--paper-highlight));
             color: var(--ink);
             font: inherit;
-            font-size: 0.88rem;
-            line-height: 1.3;
-            padding: 8px 14px;
-            border-radius: 999px;
+            text-align: left;
+            padding: 11px 14px 12px;
+            border-radius: 12px;
             cursor: pointer;
             transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+        }
+
+        .node-name {
+            font-size: 0.92rem;
+            line-height: 1.3;
+        }
+
+        .node-blurb {
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.4;
         }
 
         .node:hover,
         .node:focus-visible {
             color: var(--hover);
             border-color: color-mix(in srgb, var(--hover) 42%, transparent);
+        }
+
+        .node:hover .node-blurb,
+        .node:focus-visible .node-blurb,
+        .node.is-open .node-blurb,
+        .node.is-related .node-blurb {
+            color: color-mix(in srgb, var(--hover) 72%, var(--muted));
         }
 
         .node.is-open,
@@ -139,10 +160,15 @@
         }
 
         .dossier h2 {
-            margin: 0 0 10px;
+            margin: 0 0 6px;
             font-size: 1.05rem;
             font-weight: 400;
             word-break: break-word;
+        }
+
+        .dossier-blurb {
+            margin: 0 0 12px;
+            color: var(--muted);
         }
 
         .dossier p {
@@ -201,7 +227,7 @@
     <main>
         <a class="home phrase" href="index.html">filing cabinet</a>
         <h1 class="phrase">how this is built</h1>
-        <p class="lead">this is the repo. each pill is a real file or folder. click one.</p>
+        <p class="lead">this is the repo. each card is a real file or folder, with a line about what it does. click one for more.</p>
 
         <div class="atlas-wrap">
             <div class="atlas" id="atlas"></div>
@@ -262,6 +288,7 @@
             index: {
                 title: "index.html",
                 path: "index.html",
+                blurb: "the homepage — photos, bookmarks, the little map",
                 body: `
                     <p>the homepage. one html file with the photos carousel, bookmarks list, small footsteps map, and footer links. after load it fetches the json files next to it. the lightbox and slider live here too.</p>
                     <p>also in the root, not shown as pills: <code>main.html</code> and <code>mayas-cabinet.html</code> redirect here.</p>
@@ -272,8 +299,10 @@
             "paper-time": {
                 title: "paper-time.js",
                 path: "paper-time.js",
+                blurb: "shifts the paper color with the time of day",
                 body: `
-                    <p>sets css variables on <code>:root</code> from the local hour: <code>--paper</code>, <code>--ink</code>, <code>--hover</code>, and the rest. loaded by <code>index.html</code> and <code>footsteps.html</code>. remembers light/dark in <code>localStorage</code> as <code>cabinet-scheme</code>.</p>
+                    <p>this is why the site looks like morning paper at 8am and a warmer sheet at dusk. it reads your clock, fades the background between a few cream and brown colors, and sets the ink / hover / stain colors to match.</p>
+                    <p>the homepage and the footsteps map both load it. you can force an hour with <code>?hour=18</code> or a scheme with <code>?scheme=dark</code>. it remembers light vs dark as <code>cabinet-scheme</code>.</p>
                 `,
                 also: ["index.html", "footsteps.html"],
                 related: ["index", "footsteps"]
@@ -281,6 +310,7 @@
             vercel: {
                 title: "vercel.json",
                 path: "vercel.json",
+                blurb: "how vercel hosts the site",
                 body: `
                     <p>the deploy config. redirects <code>/compositions</code> to <code>/compositions/</code>. gives <code>api/generate.mjs</code> sixty seconds. everything else is just the files in this repo, served as-is. <code>package.json</code> only starts a local <code>http-server</code>.</p>
                 `,
@@ -290,6 +320,7 @@
             snaps: {
                 title: "snaps.json",
                 path: "snaps.json",
+                blurb: "the photo album list the homepage reads",
                 body: `
                     <p>photo albums. an array of months, each with city groups and photo objects: <code>src</code>, <code>alt</code>, <code>caption</code>. <code>index.html</code> fetches this with <code>cache: "no-store"</code> and builds the carousel. do not put album markup in the html.</p>
                 `,
@@ -299,6 +330,7 @@
             photos: {
                 title: "photos/",
                 path: "photos/",
+                blurb: "the actual jpeg files",
                 body: `
                     <p>the jpeg files. names look like <code>YYYYMMDD-HHMMSS-xxxx.jpeg</code>. <code>snaps.json</code> points at them. resized before commit by <code>scripts/add_photo.py</code>.</p>
                 `,
@@ -308,6 +340,7 @@
             bookmarks: {
                 title: "bookmarks.json",
                 path: "bookmarks.json",
+                blurb: "pinned links from safari",
                 body: `
                     <p>pinned links from the safari share sheet. <code>index.html</code> merges this with <code>readings.json</code> (bookmarks first, then readings, skip duplicate urls). these stay visible; readings paginate.</p>
                 `,
@@ -317,6 +350,7 @@
             readings: {
                 title: "readings.json",
                 path: "readings.json",
+                blurb: "the notion reading log, saved in the repo",
                 body: `
                     <p>the notion reading log, exported into the repo. same shape as bookmarks. the homepage shows ten at a time after the pinned list.</p>
                 `,
@@ -326,6 +360,7 @@
             places: {
                 title: "places.json",
                 path: "places.json",
+                blurb: "map pins and which photos belong to them",
                 body: `
                     <p>map pins: names, lat/lon, regions, and links back to photos. <code>index.html</code> draws the small svg. <code>footsteps.html</code> uses the same file for the full-page map.</p>
                 `,
@@ -335,6 +370,7 @@
             sketchbook: {
                 title: "sketchbook.html",
                 path: "sketchbook.html",
+                blurb: "notebook cover that opens the retro desktop",
                 body: `
                     <p>notebook-grid landing. “enter here” goes to <code>desktop.html</code>. styled by <code>styles.css</code>.</p>
                 `,
@@ -344,6 +380,7 @@
             desktop: {
                 title: "desktop.html",
                 path: "desktop.html",
+                blurb: "the windows-98 desktop with music and windows",
                 body: `
                     <p>the windows-98 desktop: about window, music player, moodboard. <code>mobile.js</code> turns it into a single-window phone layout when the viewport is small. playlist files are in <code>music/</code>.</p>
                 `,
@@ -353,6 +390,7 @@
             footsteps: {
                 title: "footsteps.html",
                 path: "footsteps.html",
+                blurb: "the full-page map",
                 body: `
                     <p>full-page map. reads <code>places.json</code>. click to drop a pin; openstreetmap nominatim reverse-geocodes it. also loads <code>paper-time.js</code>.</p>
                 `,
@@ -362,6 +400,7 @@
             "little-prince": {
                 title: "little-prince.html",
                 path: "little-prince.html",
+                blurb: "a page of moving stars",
                 body: `
                     <p>a canvas star-field page. sits in the repo root next to the other html files.</p>
                 `,
@@ -371,6 +410,7 @@
             stoccato: {
                 title: "stoccato.html",
                 path: "stoccato.html",
+                blurb: "shared notes (firebase)",
                 body: `
                     <p>shared notes. talks to firebase firestore. setup notes are in <code>FIREBASE_SETUP.md</code>.</p>
                 `,
@@ -380,6 +420,7 @@
             "text-editor": {
                 title: "text-editor.html",
                 path: "text-editor.html",
+                blurb: "a standalone writing page",
                 body: `
                     <p>a standalone rich-text page in the repo root.</p>
                 `,
@@ -389,6 +430,7 @@
             compositions: {
                 title: "index.html",
                 path: "compositions/index.html",
+                blurb: "the watercolor studio page",
                 body: `
                     <p>the studio page at <code>/compositions/</code>. loads <code>app.js</code> and <code>styles.css</code>, and embeds <code>renderer.html</code> in an iframe.</p>
                 `,
@@ -398,6 +440,7 @@
             app: {
                 title: "app.js",
                 path: "compositions/app.js",
+                blurb: "studio controls — prompt, chips, paint, upload",
                 body: `
                     <p>the studio controller. posts to <code>/api/generate</code>, loads chips from <code>/api/samples</code>, handles photo upload, and messages the renderer iframe. also uses <code>effect-model.js</code>, <code>color.js</code>, and <code>color-dial.js</code>.</p>
                 `,
@@ -412,6 +455,7 @@
             styles: {
                 title: "styles.css",
                 path: "compositions/styles.css",
+                blurb: "how the studio looks",
                 body: `
                     <p>studio layout: desk, wall, mobile bottom sheet. same paper / ink / hover colors as the cabinet, with inter on the controls.</p>
                 `,
@@ -421,6 +465,7 @@
             renderer: {
                 title: "renderer.html",
                 path: "compositions/renderer.html",
+                blurb: "the hidden page that draws each painting",
                 body: `
                     <p>hidden iframe. <code>renderer.js</code> compiles a <code>paint()</code> function, draws it with p5 and p5.brush, and posts a png back to <code>app.js</code>. vendor copies live in <code>compositions/vendor/</code>.</p>
                 `,
@@ -435,6 +480,7 @@
             "image-worker": {
                 title: "image-worker.js",
                 path: "compositions/image-worker.js",
+                blurb: "turns an uploaded photo into wash marks",
                 body: `
                     <p>web worker for photo washes. rasterize, plan marks, encode png. <code>image-work.js</code> is the promise wrapper. <code>photo-wash.js</code> and <code>photo-wash-plan.js</code> turn pixels into brush marks.</p>
                 `,
@@ -448,6 +494,7 @@
             generate: {
                 title: "generate.mjs",
                 path: "api/generate.mjs",
+                blurb: "the paint button’s server endpoint",
                 body: `
                     <p><code>POST /api/generate</code>. reads <code>{ scene, count, sampleId, effects }</code> and calls <code>generatePaintings()</code> in <code>lib/compositions/generate.js</code>.</p>
                 `,
@@ -457,6 +504,7 @@
             samples: {
                 title: "samples.mjs",
                 path: "api/samples.mjs",
+                blurb: "sends the preset chips (coffee, roses, …)",
                 body: `
                     <p><code>GET /api/samples</code>. returns the preset list from <code>lib/compositions/templates.js</code> (fingerprints, coffee, tree, roses, little prince).</p>
                 `,
@@ -466,6 +514,7 @@
             health: {
                 title: "health.mjs",
                 path: "api/health.mjs",
+                blurb: "a ping that the api is up",
                 body: `
                     <p><code>GET /api/health</code>. returns <code>{ ok: true }</code>.</p>
                 `,
@@ -475,6 +524,7 @@
             "lib-generate": {
                 title: "generate.js",
                 path: "lib/compositions/generate.js",
+                blurb: "asks a model for paint() code, or uses a preset",
                 body: `
                     <p>if the request has a <code>sampleId</code>, returns that template. otherwise calls grok, anthropic, or openai, then <code>extractPaintFunction()</code> and <code>assertSafeSketch()</code>.</p>
                 `,
@@ -484,6 +534,7 @@
             prompt: {
                 title: "prompt.js",
                 path: "lib/compositions/prompt.js",
+                blurb: "the instructions we send the model",
                 body: `
                     <p><code>SYSTEM_PROMPT</code>, <code>userPrompt()</code>, allowed brush names, and <code>CANVAS_SIZE = 800</code>.</p>
                 `,
@@ -493,6 +544,7 @@
             templates: {
                 title: "templates.js",
                 path: "lib/compositions/templates.js",
+                blurb: "saved paint() scenes for the chips",
                 body: `
                     <p>the preset scenes and their stored <code>paint()</code> functions. used by <code>api/samples.mjs</code> and by generate when you tap a chip.</p>
                 `,
@@ -502,6 +554,7 @@
             "add-photo": {
                 title: "add_photo.py",
                 path: "scripts/add_photo.py",
+                blurb: "add a photo from your mac",
                 body: `
                     <p>mac script: resize a jpeg with <code>sips</code>, prepend a row to <code>snaps.json</code>, commit with <code>gh</code>. <code>build_photo_app.py</code> and the install shells wrap it as a drop target.</p>
                 `,
@@ -516,6 +569,7 @@
             "add-bookmark": {
                 title: "add_bookmark.py",
                 path: "scripts/add_bookmark.py",
+                blurb: "add a bookmark from your mac",
                 body: `
                     <p>mac script: fetch the page title, prepend to <code>bookmarks.json</code>, commit with <code>gh</code>. the share-sheet builder is <code>build_share_shortcut.py</code>.</p>
                 `,
@@ -529,6 +583,7 @@
             "ios-photo": {
                 title: "ios-merge-photo.js",
                 path: "shortcuts/ios-merge-photo.js",
+                blurb: "add a photo from your iphone",
                 body: `
                     <p>the “run javascript” step in the iphone shortcut. merges a new photo into <code>snaps.json</code> through the github contents api, because the mac python script is not on the phone.</p>
                 `,
@@ -538,6 +593,7 @@
             "ios-bookmark": {
                 title: "ios-merge-bookmark.js",
                 path: "shortcuts/ios-merge-bookmark.js",
+                blurb: "add a bookmark from your iphone",
                 body: `
                     <p>same as the photo merge, for <code>bookmarks.json</code>.</p>
                 `,
@@ -547,6 +603,7 @@
             "docs-photos": {
                 title: "add-photos.md",
                 path: "docs/add-photos.md",
+                blurb: "how to add a photo",
                 body: `
                     <p>how to add a photo: the mac app, the iphone shortcut, and the shape of a <code>snaps.json</code> entry.</p>
                 `,
@@ -556,6 +613,7 @@
             "docs-bookmarks": {
                 title: "add-bookmarks.md",
                 path: "docs/add-bookmarks.md",
+                blurb: "how to add a bookmark",
                 body: `
                     <p>how to add a bookmark from safari, plus the <code>bookmarks.json</code> fields.</p>
                 `,
@@ -584,7 +642,13 @@
                 button.className = "node";
                 button.id = `node-${id}`;
                 button.dataset.id = id;
-                button.textContent = files[id].title;
+                const name = document.createElement("span");
+                name.className = "node-name";
+                name.textContent = files[id].title;
+                const blurb = document.createElement("span");
+                blurb.className = "node-blurb";
+                blurb.textContent = files[id].blurb;
+                button.append(name, blurb);
                 button.addEventListener("click", () => openNode(id));
                 buttons[id] = button;
                 row.append(button);
@@ -616,7 +680,7 @@
             const links = `<div class="related">${entry.related.map((other) =>
                 `<button type="button" data-jump="${other}">${files[other].path}</button>`
             ).join("")}</div>`;
-            dossierBody.innerHTML = `${entry.body}${also}${links}`;
+            dossierBody.innerHTML = `<p class="dossier-blurb">${entry.blurb}</p>${entry.body}${also}${links}`;
             dossierBody.querySelectorAll("[data-jump]").forEach((button) => {
                 button.addEventListener("click", () => openNode(button.dataset.jump));
             });
