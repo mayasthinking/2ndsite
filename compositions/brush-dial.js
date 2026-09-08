@@ -2,7 +2,7 @@ import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
 const STEP = 360 / BRUSH_TYPES.length;
 const DEG_PER_PX = 0.48;
-const VISIBLE = 78;
+const VISIBLE = 64;
 
 const ICONS = {
   HB: "icon-brush-hb",
@@ -92,12 +92,6 @@ export function mountBrushDial({ host, value, onChange }) {
   pointer.className = "brush-arc-pointer";
   pointer.setAttribute("aria-hidden", "true");
 
-  const readout = document.createElement("div");
-  readout.className = "brush-arc-readout";
-  const readName = document.createElement("span");
-  readName.className = "brush-arc-readout-name";
-  readout.append(readName);
-
   for (const [index, name] of BRUSH_TYPES.entries()) {
     const tick = document.createElement("button");
     tick.type = "button";
@@ -112,18 +106,21 @@ export function mountBrushDial({ host, value, onChange }) {
     const mark = document.createElement("span");
     mark.className = "brush-arc-mark";
     paintBrushMark(mark, name);
-    spoke.append(mark);
+    const label = document.createElement("span");
+    label.className = "brush-arc-label";
+    label.textContent = name.toLowerCase();
+    spoke.append(mark, label);
     tick.append(spoke);
     track.append(tick);
   }
 
-  face.append(ring, hashes, track, pointer, readout);
+  face.append(ring, hashes, track, pointer);
   host.append(face);
 
   function angleAt(event) {
     const box = face.getBoundingClientRect();
     const cx = box.left + box.width / 2;
-    const cy = box.top + box.height;
+    const cy = box.top + (Number.parseFloat(getComputedStyle(host).getPropertyValue("--cy")) || box.height);
     return {
       deg: (Math.atan2(event.clientY - cy, event.clientX - cx) * 180) / Math.PI,
       dist: Math.hypot(event.clientX - cx, event.clientY - cy),
@@ -137,7 +134,6 @@ export function mountBrushDial({ host, value, onChange }) {
     hashes.style.setProperty("--turn", `${turn}deg`);
     face.setAttribute("aria-valuenow", String(index));
     face.setAttribute("aria-valuetext", name.toLowerCase());
-    readName.textContent = name.toLowerCase();
     for (const tick of track.querySelectorAll(".brush-arc-tick")) {
       const on = tick.dataset.brush === name;
       const ang = Number(tick.dataset.index) * STEP + turn;
