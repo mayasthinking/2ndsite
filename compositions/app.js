@@ -1,7 +1,7 @@
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial } from "./brush-dial.js?v=15";
+import { mountBrushDial } from "./brush-dial.js?v=16";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -938,10 +938,10 @@ function mountSheetEditor(sheet, item) {
     const view = viewSize();
     const staged = sheet.classList.contains("is-expanded");
     brushMenu.classList.toggle("is-stage", staged);
-    const radius = Math.round(Math.max(104, Math.min(painting.width * 0.34, painting.height * 0.36, staged ? 148 : 128)));
+    const radius = Math.round(Math.max(64, Math.min(painting.width * 0.2, painting.height * 0.18, staged ? 88 : 72)));
     const width = radius * 2;
     const height = radius;
-    const apex = 14;
+    const apex = 6;
     const iconR = Math.round(radius * 0.76);
     brushMenu.style.width = `${width}px`;
     brushMenu.style.height = `${height}px`;
