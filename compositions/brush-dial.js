@@ -3,24 +3,24 @@ import { BRUSH_TYPES } from "./effect-model.js?v=15";
 const STEP = 20;
 const DEG_PER_PX = 0.55;
 
-const TEXTURE = {
-  HB: "dot",
-  "2B": "soft",
-  "2H": "pin",
-  charcoal: "grain",
-  cpencil: "ring",
-  crayon: "blob",
-  spray: "mist",
-  marker: "nib",
+const ICONS = {
+  HB: "icon-brush-hb",
+  "2B": "icon-brush-2b",
+  "2H": "icon-brush-2h",
+  charcoal: "icon-brush-charcoal",
+  cpencil: "icon-brush-cpencil",
+  crayon: "icon-brush-crayon",
+  spray: "icon-brush-spray",
+  marker: "icon-brush-marker",
 };
 
 export function textureName(name) {
-  return TEXTURE[name] || "dot";
+  return ICONS[name] || ICONS.HB;
 }
 
 export function strokeSvg(name) {
   const type = BRUSH_TYPES.includes(name) ? name : "HB";
-  return `<span class="brush-dot" data-texture="${TEXTURE[type]}" aria-hidden="true"></span>`;
+  return `<svg class="brush-ico" viewBox="0 0 24 24" aria-hidden="true"><use href="#${ICONS[type]}"></use></svg>`;
 }
 
 export function paintBrushMark(el, name) {
