@@ -941,8 +941,8 @@ function mountSheetEditor(sheet, item) {
     const radius = Math.round(Math.max(104, Math.min(painting.width * 0.34, painting.height * 0.36, staged ? 148 : 128)));
     const width = radius * 2;
     const height = radius;
-    const apex = 12;
-    const iconR = Math.round(radius * 0.78);
+    const apex = 14;
+    const iconR = Math.round(radius * 0.76);
     brushMenu.style.width = `${width}px`;
     brushMenu.style.height = `${height}px`;
     brushMenu.style.setProperty("--apex", `${apex}px`);
