@@ -462,6 +462,7 @@
         .photo-carousel-wrap {
             position: relative;
             --photo-grid-col-gap: 8px;
+            --photo-peek: 10px;
         }
 
         .photo-carousel {
@@ -489,11 +490,15 @@
         }
 
         .photo-page {
-            flex: 0 0 100%;
+            flex: 0 0 calc(100% - var(--photo-peek) - var(--photo-grid-col-gap));
             min-width: 0;
             padding: 0;
             scroll-snap-align: start;
             scroll-snap-stop: always;
+        }
+
+        .photo-page:last-child {
+            flex-basis: 100%;
         }
 
         .photo-page .photo-item:last-child:nth-child(odd):not(:only-child) {
@@ -1255,6 +1260,7 @@
 
             .photo-carousel-wrap {
                 --photo-grid-col-gap: 10px;
+                --photo-peek: 10px;
             }
 
             .photo-carousel {
@@ -2172,6 +2178,16 @@
         let placeByPhotoSrc = new Map();
         let highlightedPlacePin = null;
 
+        function carouselPageStep(scroller) {
+            const page = scroller?.querySelector('.photo-page');
+            if (!scroller || !page) {
+                return scroller?.clientWidth || 0;
+            }
+
+            const gap = Number.parseFloat(getComputedStyle(scroller).columnGap) || 0;
+            return page.getBoundingClientRect().width + gap;
+        }
+
         function carouselAtEnd(scroller) {
             if (!scroller) {
                 return true;
@@ -2216,7 +2232,7 @@
 
                 event.preventDefault();
                 carousel.scrollBy({
-                    left: carousel.clientWidth * (event.key === 'ArrowRight' ? 1 : -1),
+                    left: carouselPageStep(carousel) * (event.key === 'ArrowRight' ? 1 : -1),
                     behavior: 'smooth'
                 });
             });
