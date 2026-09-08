@@ -185,7 +185,8 @@ export function mountBrushDial({ host, value, onChange }) {
     const dx = event.clientX - dragStartX;
     const dAngle = next.deg - dragStartAngle;
     if (Math.abs(dx) > 6 || Math.abs(dAngle) > 4) dragged = true;
-    const byArc = next.dist > 40 ? dAngle : dx * DEG_PER_PX;
+    const bySwipe = dx * DEG_PER_PX;
+    const byArc = Math.abs(dAngle) > Math.abs(bySwipe) ? dAngle : bySwipe;
     applyTurn(dragStartTurn + byArc, true);
   });
   const endDrag = (event) => {
