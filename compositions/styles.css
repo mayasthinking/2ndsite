@@ -2019,9 +2019,10 @@ select.choice-native {
   overflow: clip;
   contain: layout paint;
   clip-path: inset(0);
-  --apex: 4px;
-  --radius: 150px;
-  --cy: 174px;
+  --apex: 10px;
+  --radius: 102px;
+  --icon-r: 71px;
+  --cy: 102px;
   --turn: 0deg;
 }
 
@@ -2041,8 +2042,8 @@ select.choice-native {
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: 20px 20px 0 0;
-  background: color-mix(in srgb, var(--paper) 78%, transparent);
+  border-radius: 50% 50% 0 0;
+  background: color-mix(in srgb, var(--paper) 58%, transparent);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
@@ -2084,7 +2085,7 @@ select.choice-native {
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   transform: rotate(calc(var(--turn) + var(--tick) - 90deg));
-  opacity: clamp(0, calc(1.2 - var(--from) / 36), 1);
+  opacity: clamp(0, calc(1.15 - var(--from) / 70), 1);
 }
 
 .brush-arc-tick::after {
@@ -2092,9 +2093,9 @@ select.choice-native {
   position: absolute;
   left: 0;
   top: 0;
-  width: 34px;
-  height: 40px;
-  transform: translate(-50%, calc(-1 * var(--radius) - 8px));
+  width: 40px;
+  height: 46px;
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 10px));
 }
 
 .brush-arc-tick.is-far {
@@ -2103,7 +2104,15 @@ select.choice-native {
 }
 
 .brush-arc-stem {
-  display: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.5px;
+  height: 10px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: translate(-50%, calc(-1 * var(--icon-r) + 14px));
+  pointer-events: none;
 }
 
 .brush-arc-spoke {
@@ -2114,8 +2123,8 @@ select.choice-native {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  width: 36px;
-  transform: translate(-50%, calc(-1 * var(--radius) - 2px)) rotate(calc(90deg - var(--turn) - var(--tick)));
+  width: 42px;
+  transform: translate(-50%, calc(-1 * var(--icon-r) - 4px)) rotate(calc(90deg - var(--turn) - var(--tick)));
   pointer-events: none;
 }
 
@@ -2141,6 +2150,11 @@ select.choice-native {
   color: var(--hover);
 }
 
+.brush-arc-tick.is-active .brush-arc-stem {
+  height: 13px;
+  background: var(--hover);
+}
+
 .brush-arc-tick.is-active .brush-arc-label {
   opacity: 0;
 }
@@ -2161,12 +2175,12 @@ select.choice-native {
 .brush-arc-readout {
   position: absolute;
   left: 50%;
-  top: calc(var(--apex) + 6px);
+  top: calc(var(--apex) + 12px);
   z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
   color: var(--hover);
   transform: translateX(-50%);
   pointer-events: none;
@@ -2180,7 +2194,7 @@ select.choice-native {
 }
 
 .brush-arc-readout-name {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.03em;
 }
 
