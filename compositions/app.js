@@ -2177,7 +2177,7 @@ function mountDeskResize() {
   };
 
   const stored = Number(localStorage.getItem("wash.deskWidth"));
-  apply(Number.isFinite(stored) ? stored : 400);
+  apply(stored >= minW ? stored : 400);
 
   let dragging = false;
   let startX = 0;
@@ -2224,14 +2224,16 @@ function mountDeskScroll() {
   const thumb = document.querySelector(".desk-scroll");
   if (!desk || !rail || !thumb) return;
 
-  const thumbH = 64;
   let dragging = false;
+  let thumbH = 64;
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
   const metrics = () => {
     const max = Math.max(0, desk.scrollHeight - desk.clientHeight);
-    const travel = Math.max(1, rail.clientHeight - thumbH);
+    const railH = rail.clientHeight;
+    thumbH = max <= 4 ? railH : Math.max(28, Math.round((desk.clientHeight / desk.scrollHeight) * railH));
+    const travel = Math.max(1, railH - thumbH);
     return { max, travel };
   };
 
@@ -2242,8 +2244,9 @@ function mountDeskScroll() {
       return;
     }
     rail.hidden = false;
+    thumb.style.height = `${thumbH}px`;
     const ratio = clamp(desk.scrollTop / max, 0, 1);
-    thumb.style.top = `${ratio * travel}px`;
+    thumb.style.transform = `translateY(${ratio * travel}px)`;
     rail.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
     rail.setAttribute("aria-valuemin", "0");
     rail.setAttribute("aria-valuemax", "100");
@@ -2254,7 +2257,7 @@ function mountDeskScroll() {
     if (max <= 4) return;
     const y = clamp(clientY - rail.getBoundingClientRect().top - thumbH / 2, 0, travel);
     desk.scrollTop = (y / travel) * max;
-    thumb.style.top = `${y}px`;
+    thumb.style.transform = `translateY(${y}px)`;
   };
 
   rail.addEventListener("pointerdown", (event) => {
