@@ -83,7 +83,7 @@ export function mountBrushDial({ host, value, onChange }) {
     tick.setAttribute("role", "option");
     tick.setAttribute("aria-label", name.toLowerCase());
     tick.tabIndex = -1;
-    tick.style.setProperty("--tick", String(index * STEP));
+    tick.style.setProperty("--tick", `${index * STEP}deg`);
     const mark = document.createElement("span");
     mark.className = "brush-dial-tick-mark";
     mark.setAttribute("aria-hidden", "true");
