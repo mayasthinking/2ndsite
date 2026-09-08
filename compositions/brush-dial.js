@@ -127,13 +127,10 @@ export function mountBrushDial({ host, value, onChange }) {
     tick.tabIndex = -1;
     const spoke = document.createElement("span");
     spoke.className = "brush-arc-spoke";
-    const mark = document.createElement("span");
-    mark.className = "brush-arc-mark";
-    paintBrushMark(mark, name);
     const label = document.createElement("span");
     label.className = "brush-arc-label";
     label.textContent = name.toLowerCase();
-    spoke.append(mark, label);
+    spoke.append(label);
     tick.append(spoke);
     track.append(tick);
   }

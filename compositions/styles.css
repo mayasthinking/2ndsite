@@ -2214,12 +2214,7 @@ select.choice-native {
 }
 
 .brush-arc-mark {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: transparent;
+  display: none;
 }
 
 .brush-arc-label {
@@ -2237,17 +2232,6 @@ select.choice-native {
 .brush-arc-tick.is-active,
 .brush-arc-tick:hover {
   color: var(--hover);
-}
-
-.brush-arc-tick.is-active .brush-arc-mark {
-  width: 18px;
-  height: 18px;
-  background: transparent;
-}
-
-.brush-arc-tick.is-active .brush-ico {
-  width: 15px;
-  height: 15px;
 }
 
 .brush-arc-tick.is-active .brush-arc-label {
