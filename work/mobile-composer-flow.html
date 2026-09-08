@@ -60,6 +60,16 @@
       justify-content: space-between;
     }
     #mobile-composer-study .mc-title { font-weight: 500; }
+    #mobile-composer-study .lucide-icon,
+    #mobile-composer-study [data-lucide] {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     #mobile-composer-study .mc-icon {
       width: 44px;
       height: 44px;
@@ -109,6 +119,11 @@
       background: color-mix(in srgb, var(--mc-surface) 82%, transparent);
       display: grid;
       place-items: center;
+    }
+    #mobile-composer-study .mc-empty-icon .lucide-icon,
+    #mobile-composer-study .mc-empty-icon [data-lucide] {
+      width: 28px;
+      height: 28px;
     }
     #mobile-composer-study .mc-composer {
       position: absolute;
@@ -355,4 +370,5 @@
       }
     })();
   </script>
+  <script type="module" src="../icons/lucide/loader.js"></script>
 </div>
