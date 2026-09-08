@@ -111,6 +111,7 @@ test("dataset export contains caption and complete provenance", () => {
 
   assert.equal(record.caption_long, "An edited detailed caption.");
   assert.equal(record.caption_short, "edited caption");
+  assert.equal(record.artist, "Maya Example");
   assert.deepEqual(Object.keys(record), [
     "id",
     "source",
@@ -118,6 +119,7 @@ test("dataset export contains caption and complete provenance", () => {
     "image_url",
     "thumbnail_url",
     "title",
+    "artist",
     "credit",
     "license",
     "license_url",

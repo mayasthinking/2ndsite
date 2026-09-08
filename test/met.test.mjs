@@ -89,6 +89,7 @@ test("Met records use the shared item shape and preserve Open Access provenance"
 
   const record = toDatasetRecord(item);
   assert.equal(record.source, "met open access");
+  assert.equal(record.artist, "Example Painter");
   assert.equal(record.license_note, "The Met Open Access API marks this object as public domain.");
   assert.equal(record.provenance.accessionNumber, "12.34");
   assert.equal(record.source_url, item.sourceUrl);
@@ -113,4 +114,28 @@ test("Met genre ranking filters broad API matches using normalized object fields
   );
   const ranked = rankMetItems([unrelated, stillLife], "still-life", "citrus");
   assert.deepEqual(ranked.map((item) => item.id), ["met:201"]);
+});
+
+test("Met ranking keeps artist and title matches even when they miss the genre medium", () => {
+  const monet = normalizeMetObject(
+    metObject({
+      objectID: 300,
+      title: "Impression, Sunrise",
+      artistDisplayName: "Claude Monet",
+      medium: "Oil on canvas",
+      tags: [{ term: "Harbors" }, { term: "Sun" }],
+    }),
+  );
+  const wash = normalizeMetObject(
+    metObject({
+      objectID: 301,
+      title: "Lake Study",
+      artistDisplayName: "Example Painter",
+      medium: "Watercolor",
+      tags: [{ term: "Lakes" }],
+    }),
+  );
+  const ranked = rankMetItems([wash, monet], "romantic-wash", "Monet");
+  assert.equal(ranked[0].id, "met:300");
+  assert.ok(ranked.some((item) => item.id === "met:300"));
 });
