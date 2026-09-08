@@ -2051,8 +2051,7 @@
             document.body.style.overflow = '';
             currentAlbumThumbs = [];
             currentPhotoIndex = -1;
-            resetWheelGesture();
-            wheelNavLockedUntil = 0;
+            resetSwipeSession();
             photoTurnToken += 1;
 
             window.setTimeout(() => {
@@ -2272,6 +2271,52 @@
 
         let touchStartX = 0;
         let touchStartY = 0;
+        let swipeLocked = false;
+        let swipeIdleTimer = 0;
+        let lastSwipeAt = 0;
+        let wheelDeltaX = 0;
+        let wheelDeltaY = 0;
+        const swipeThreshold = 48;
+        const swipeIdleUnlockMs = 280;
+
+        function resetWheelAccumulation() {
+            wheelDeltaX = 0;
+            wheelDeltaY = 0;
+        }
+
+        function resetSwipeSession() {
+            swipeLocked = false;
+            lastSwipeAt = 0;
+            resetWheelAccumulation();
+            window.clearTimeout(swipeIdleTimer);
+        }
+
+        function unlockSwipeAfterIdle() {
+            window.clearTimeout(swipeIdleTimer);
+            swipeIdleTimer = window.setTimeout(() => {
+                swipeLocked = false;
+                resetWheelAccumulation();
+            }, swipeIdleUnlockMs);
+        }
+
+        function lockSwipeTurn() {
+            swipeLocked = true;
+            lastSwipeAt = performance.now();
+            resetWheelAccumulation();
+            unlockSwipeAfterIdle();
+        }
+
+        function wheelDeltaPixels(event) {
+            if (event.deltaMode === 1) {
+                return 16;
+            }
+
+            if (event.deltaMode === 2) {
+                return overlayStage.clientWidth || 800;
+            }
+
+            return 1;
+        }
 
         overlayStage.addEventListener('touchstart', (event) => {
             if (!overlay.classList.contains('is-open') || event.touches.length !== 1) {
@@ -2287,42 +2332,21 @@
                 return;
             }
 
-            const touch = event.changedTouches[0];
-            const deltaX = touch.clientX - touchStartX;
-            const deltaY = touch.clientY - touchStartY;
-            const minSwipeDistance = 48;
-
-            if (Math.abs(deltaX) < minSwipeDistance || Math.abs(deltaX) < Math.abs(deltaY)) {
+            if (swipeLocked || performance.now() - lastSwipeAt < swipeIdleUnlockMs) {
                 return;
             }
 
+            const touch = event.changedTouches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+
+            if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaX) < Math.abs(deltaY)) {
+                return;
+            }
+
+            lockSwipeTurn();
             navigatePhoto(deltaX < 0 ? 1 : -1);
         }, { passive: true });
-
-        let wheelNavLockedUntil = 0;
-        let wheelDeltaX = 0;
-        let wheelDeltaY = 0;
-        let wheelIdleTimer = 0;
-        const wheelThreshold = 48;
-        const wheelCooldownMs = 520;
-        const wheelIdleResetMs = 180;
-
-        function resetWheelGesture() {
-            wheelDeltaX = 0;
-            wheelDeltaY = 0;
-        }
-
-        function wheelDeltaPixels(event) {
-            if (event.deltaMode === 1) {
-                return 16;
-            }
-
-            if (event.deltaMode === 2) {
-                return overlayStage.clientWidth || 800;
-            }
-
-            return 1;
-        }
 
         overlay.addEventListener('wheel', (event) => {
             if (!overlay.classList.contains('is-open') || currentAlbumThumbs.length <= 1) {
@@ -2334,9 +2358,9 @@
             }
 
             event.preventDefault();
+            unlockSwipeAfterIdle();
 
-            const now = performance.now();
-            if (now < wheelNavLockedUntil) {
+            if (swipeLocked) {
                 return;
             }
 
@@ -2344,19 +2368,15 @@
             wheelDeltaX += event.deltaX * scale;
             wheelDeltaY += event.deltaY * scale;
 
-            window.clearTimeout(wheelIdleTimer);
-            wheelIdleTimer = window.setTimeout(resetWheelGesture, wheelIdleResetMs);
-
             const absX = Math.abs(wheelDeltaX);
             const absY = Math.abs(wheelDeltaY);
 
-            if (absX < wheelThreshold && absY < wheelThreshold) {
+            if (absX < swipeThreshold && absY < swipeThreshold) {
                 return;
             }
 
             const delta = absX >= absY ? wheelDeltaX : wheelDeltaY;
-            resetWheelGesture();
-            wheelNavLockedUntil = now + wheelCooldownMs;
+            lockSwipeTurn();
             navigatePhoto(delta > 0 ? 1 : -1);
         }, { passive: false });
 
