@@ -1971,7 +1971,9 @@ select.choice-native {
   transform: rotate(calc(-1 * var(--angle)));
 }
 
-.sheet-edit-brush-mark svg {
+.sheet-edit-brush-mark svg,
+.brush-dial-tick-mark svg,
+.brush-dial-hub-mark svg {
   display: block;
   width: 100%;
   height: 100%;

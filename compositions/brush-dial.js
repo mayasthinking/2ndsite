@@ -2,19 +2,20 @@ import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
 const STEP = 360 / BRUSH_TYPES.length;
 
+const BRUSH_ICONS = {
+  HB: "icon-pencil",
+  "2B": "icon-pencil-line",
+  "2H": "icon-pen-line",
+  charcoal: "icon-brush",
+  cpencil: "icon-pen",
+  crayon: "icon-paintbrush-tool",
+  spray: "icon-spray-can",
+  marker: "icon-highlighter",
+};
+
 export function strokeSvg(name) {
-  const box = 'xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" aria-hidden="true"';
-  const strokes = {
-    HB: `<svg ${box}><path d="M5 23c6-6 10-4 22-16" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg>`,
-    "2B": `<svg ${box}><path d="M4 23c7-8 11-3 24-16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity=".9"/></svg>`,
-    "2H": `<svg ${box}><path d="M6 22 26 10" stroke="currentColor" stroke-width=".75" stroke-linecap="round" opacity=".72"/></svg>`,
-    charcoal: `<svg ${box}><path d="M5 22c5-5 8-2 14-9 3-3 6-5 9-7" stroke="currentColor" stroke-width="2.45" stroke-linecap="round" opacity=".52"/><path d="M7 24c5-6 9-3 16-11" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" opacity=".38"/><circle cx="11" cy="18" r=".65" fill="currentColor" opacity=".34"/><circle cx="17" cy="13" r=".5" fill="currentColor" opacity=".3"/><circle cx="22" cy="10" r=".55" fill="currentColor" opacity=".28"/></svg>`,
-    cpencil: `<svg ${box}><path d="M6 22 26 10" stroke="currentColor" stroke-width=".95" stroke-linecap="round"/><path d="M8 21.15 24.2 11.1" stroke="currentColor" stroke-width=".35" opacity=".32"/></svg>`,
-    crayon: `<svg ${box}><path d="M4 22c4-3 7-8 12-9 5-1 7 2 13-6" stroke="currentColor" stroke-width="3.05" stroke-linecap="round" opacity=".84"/></svg>`,
-    spray: `<svg ${box}><circle cx="8" cy="21" r="1.15" fill="currentColor" opacity=".32"/><circle cx="12.2" cy="16.4" r=".7" fill="currentColor" opacity=".5"/><circle cx="15.6" cy="18.8" r="1.05" fill="currentColor" opacity=".28"/><circle cx="18" cy="13.2" r=".85" fill="currentColor" opacity=".42"/><circle cx="21.4" cy="16" r=".55" fill="currentColor" opacity=".36"/><circle cx="23.8" cy="10.6" r="1.2" fill="currentColor" opacity=".3"/><circle cx="26.2" cy="13.8" r=".5" fill="currentColor" opacity=".4"/><circle cx="14.4" cy="12.4" r=".4" fill="currentColor" opacity=".26"/></svg>`,
-    marker: `<svg ${box}><path d="M7 21 25 11" stroke="currentColor" stroke-width="3.55" stroke-linecap="round"/></svg>`,
-  };
-  return strokes[name] || strokes.HB;
+  const icon = BRUSH_ICONS[name] || BRUSH_ICONS.HB;
+  return `<svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#${icon}"></use></svg>`;
 }
 
 export function paintBrushMark(el, name) {
