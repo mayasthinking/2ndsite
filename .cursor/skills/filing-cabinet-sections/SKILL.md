@@ -144,7 +144,7 @@ Pinned bookmarks from `bookmarks.json` stay visible. Readings show **10 at a tim
 </section>
 ```
 
-Add share-sheet bookmarks to `bookmarks.json` and reading-log entries to `readings.json`:
+Add bookmarks to `bookmarks.json` and reading-log entries to `readings.json`:
 
 ```json
 {
@@ -157,7 +157,7 @@ Add share-sheet bookmarks to `bookmarks.json` and reading-log entries to `readin
 
 Every entry needs a `url`. Keep titles, publications, and authors lowercase. If the publication and author would repeat the same name, keep one and use the venue instead (e.g. `kevin kelly` / `substack`).
 
-See `docs/add-bookmarks.md` for Safari Share Shortcut setup. Run `./scripts/install_share_shortcut.sh` on Mac to import the signed shortcut.
+See `docs/add-bookmarks.md` to add bookmarks in `bookmarks.json` or with `scripts/add_bookmark.py`.
 
 ## Footer link pattern
 
