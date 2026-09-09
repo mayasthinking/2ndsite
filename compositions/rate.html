@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#faf9f6" />
+    <title>rate · compositions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=274" />
+  </head>
+  <body class="rate-body">
+    <main class="rate-app">
+      <header class="rate-top">
+        <div class="rate-masthead">
+          <h1>rate</h1>
+          <p class="rate-progress" id="rateProgress" aria-live="polite">loading the shelf…</p>
+        </div>
+        <div class="rate-tools">
+          <button class="rate-text-btn" id="rateUndo" type="button" disabled>undo</button>
+          <button class="rate-text-btn" id="rateExport" type="button" disabled>export</button>
+        </div>
+      </header>
+
+      <div class="rate-piles chips" role="tablist" aria-label="rating pile">
+        <button class="chip active" type="button" role="tab" aria-selected="true" data-pile="unrated">
+          unrated
+        </button>
+        <button class="chip" type="button" role="tab" aria-selected="false" data-pile="love">love</button>
+        <button class="chip" type="button" role="tab" aria-selected="false" data-pile="okay">okay</button>
+        <button class="chip" type="button" role="tab" aria-selected="false" data-pile="nope">nope</button>
+      </div>
+
+      <section class="rate-stage" aria-live="polite">
+        <div class="rate-deck" id="rateDeck"></div>
+        <p class="rate-empty" id="rateEmpty" hidden>this pile is empty.</p>
+      </section>
+
+      <p class="rate-status" id="rateStatus" role="status"></p>
+
+      <div class="rate-actions" role="group" aria-label="rate this painting">
+        <button class="rate-pill rate-pill-nope" id="rateNope" type="button" disabled>
+          <span aria-hidden="true">×</span>
+          nope
+        </button>
+        <button class="rate-pill rate-pill-okay" id="rateOkay" type="button" disabled>okay</button>
+        <button class="rate-pill rate-pill-love" id="rateLove" type="button" disabled>
+          love
+          <span aria-hidden="true">♡</span>
+        </button>
+      </div>
+
+      <p class="rate-hint">swipe or ← nope · ↓ / space okay · → love</p>
+    </main>
+    <script type="module" src="rate.js?v=1"></script>
+  </body>
+</html>
