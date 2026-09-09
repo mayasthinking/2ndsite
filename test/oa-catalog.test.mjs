@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { commonsSearchUrl, normalizeCommonsResponse } from "../lib/compositions/commons.mjs";
 import { metObjectUrl, metSearchUrl, normalizeMetObject } from "../lib/compositions/met-oa.mjs";
 import {
+  cleanArtist,
   fetchCommonsShelf,
   interleaveSources,
   loadSeedCatalog,
@@ -89,6 +90,16 @@ test("loadSeedCatalog skips missing files and keeps valid rows", async () => {
   const works = await loadSeedCatalog(fetcher, ["data/seed/missing.jsonl", "data/seed/commons-seed.jsonl"]);
   assert.equal(works.length, 1);
   assert.equal(works[0].artist, "Maya");
+});
+
+test("cleanArtist drops catalog credit dumps but keeps painter names", () => {
+  assert.equal(cleanArtist("J.M.W. Turner"), "J.M.W. Turner");
+  assert.equal(
+    cleanArtist(
+      "1. The Yorck Project (2002) 10.000 Meisterwerke der Malerei (DVD-ROM), distributed by DIRECTMEDIA Publishing GmbH. ISBN : 3936122202",
+    ),
+    "",
+  );
 });
 
 test("fetchCommonsShelf pages four bitmap batches like the library", async () => {

@@ -4471,9 +4471,12 @@ html:has(.rate-body),
 .rate-artist,
 .rate-caption {
   margin: 0;
+  overflow: hidden;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rate-artist {
@@ -4496,6 +4499,8 @@ html:has(.rate-body),
   display: -webkit-box;
   margin-top: 6px;
   overflow: hidden;
+  white-space: normal;
+  text-overflow: unset;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }

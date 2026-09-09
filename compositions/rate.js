@@ -1,4 +1,4 @@
-import { fetchCommonsShelf, fetchMetShelf, loadSeedCatalog, mergeWorks } from "../lib/compositions/oa-catalog.mjs";
+import { cleanArtist, fetchCommonsShelf, fetchMetShelf, loadSeedCatalog, mergeWorks } from "../lib/compositions/oa-catalog.mjs";
 import { createRatingStore, DEFAULT_PILE, filterWorks, PILES, progressCounts } from "../lib/compositions/ratings.mjs";
 
 const deckEl = document.querySelector("#rateDeck");
@@ -90,6 +90,10 @@ function updateChrome() {
   }
 }
 
+function displayArtist(work) {
+  return cleanArtist(work.artist) || cleanArtist(work.credit) || "";
+}
+
 function captionFor(work) {
   const caption = work.captionShort || work.caption || "";
   if (!caption || caption === work.title) return "";
@@ -129,7 +133,8 @@ function createCard(work, layer) {
   meta.className = "rate-meta";
   const artist = document.createElement("p");
   artist.className = "rate-artist";
-  artist.textContent = work.artist;
+  artist.textContent = displayArtist(work);
+  if (!artist.textContent) artist.hidden = true;
   const title = document.createElement("h2");
   title.className = "rate-title";
   title.textContent = work.title;
@@ -253,7 +258,13 @@ async function rateCurrent(rating, card = deckEl.querySelector(".rate-card-front
   if (!work || busy) return;
   busy = true;
   updateChrome();
-  store.rate(work, rating);
+  store.rate(
+    {
+      ...work,
+      artist: displayArtist(work),
+    },
+    rating,
+  );
   await flyCard(card, rating);
   const remaining = visibleWorks().filter((item) => item.id !== work.id);
   if (pile !== "unrated") index = Math.min(index, Math.max(remaining.length - 1, 0));
