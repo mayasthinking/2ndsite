@@ -2,9 +2,12 @@
 
 ## Lucide icons
 
+Vendored locally as `lucide-static` 1.43.0 in `/icons/lucide`.
+Browse them at `/icons.html`.
+
 Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part
 of Feather (MIT). All other copyright (c) for Lucide are held by Lucide
-Contributors 2022.
+Contributors 2022–2026.
 
 ISC License
 

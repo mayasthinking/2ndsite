@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>lucide icons</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #faf9f6;
+      --ink: #24211f;
+      --hover: #8b2f32;
+      --line: rgba(139, 47, 50, 0.2);
+      --muted: rgba(36, 33, 31, 0.58);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, system-ui, sans-serif;
+      font-size: 14px;
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 36px 0 64px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-family: "Libre Baskerville", serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .lede {
+      margin: 0 0 24px;
+      color: var(--muted);
+      max-width: 42rem;
+      line-height: 1.5;
+    }
+
+    .lede a {
+      color: inherit;
+    }
+
+    .lede a:hover {
+      color: var(--hover);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    #search {
+      flex: 1 1 280px;
+      height: 42px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    #search:focus {
+      outline: 1px solid var(--hover);
+      border-color: var(--hover);
+    }
+
+    #status {
+      color: var(--muted);
+      min-width: 8rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+      gap: 10px;
+    }
+
+    .card {
+      appearance: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 112px;
+      padding: 16px 10px 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      border-color: var(--line);
+      color: var(--hover);
+      outline: none;
+    }
+
+    .lucide-icon {
+      width: 28px;
+      height: 28px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .card-name {
+      text-align: center;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      background: var(--ink);
+      color: var(--paper);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .toast.is-on {
+      opacity: 1;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 40px 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1 class="phrase">lucide icons</h1>
+    <p class="lede">
+      Local copy of Lucide <code>1.43.0</code> (ISC).
+      Search, then click an icon to copy its SVG.
+      Use <code>&lt;i data-lucide="name"&gt;</code> with <code>icons/lucide/loader.js</code>,
+      or <code>&lt;use href="/icons/lucide/sprite.svg#name"&gt;</code>.
+    </p>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="search icons" autocomplete="off" autofocus>
+      <div id="status">loading…</div>
+    </div>
+    <div id="grid" class="grid"></div>
+    <p id="empty" class="empty" hidden>no icons match.</p>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module">
+    import { loadSprite } from "./icons/lucide/loader.js";
+
+    const search = document.getElementById("search");
+    const status = document.getElementById("status");
+    const grid = document.getElementById("grid");
+    const empty = document.getElementById("empty");
+    const toast = document.getElementById("toast");
+
+    const [sprite, tags] = await Promise.all([
+      loadSprite(),
+      fetch("./icons/lucide/tags.json").then((response) => {
+        if (!response.ok) throw new Error("Could not load Lucide tags");
+        return response.json();
+      }),
+    ]);
+
+    const icons = [...sprite.querySelectorAll("symbol")].map((symbol) => {
+      const name = symbol.dataset.lucideName || symbol.id.replace(/^lucide-/, "");
+      const mark = [
+        name,
+        ...(tags[name] || []),
+        ...name.split("-"),
+      ].join(" ").toLowerCase();
+      return { name, mark, html: symbol.innerHTML.trim() };
+    });
+
+    function svgMarkup(icon) {
+      return [
+        `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">`,
+        icon.html,
+        `</svg>`,
+      ].join("");
+    }
+
+    let toastTimer = 0;
+    function say(message) {
+      toast.textContent = message;
+      toast.classList.add("is-on");
+      clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("is-on"), 1400);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.cssText = "position:fixed;left:-9999px;top:0";
+        document.body.append(area);
+        area.select();
+        const ok = document.execCommand("copy");
+        area.remove();
+        return ok;
+      }
+    }
+
+    async function copyIcon(icon) {
+      const markup = svgMarkup(icon);
+      const ok = await copyText(markup);
+      say(ok ? `copied ${icon.name}` : `could not copy ${icon.name}`);
+    }
+
+    const cardFor = (() => {
+      const cache = new Map();
+      return (icon) => {
+        let button = cache.get(icon.name);
+        if (button) return button;
+        button = document.createElement("button");
+        button.type = "button";
+        button.className = "card";
+        button.dataset.name = icon.name;
+        button.innerHTML = `
+          <svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <use href="#lucide-${icon.name}"></use>
+          </svg>
+          <span class="card-name">${icon.name}</span>
+        `;
+        button.addEventListener("click", () => copyIcon(icon));
+        cache.set(icon.name, button);
+        return button;
+      };
+    })();
+
+    function render(query) {
+      const needle = query.trim().toLowerCase();
+      const words = needle.split(/\s+/).filter(Boolean);
+      const matches = words.length
+        ? icons.filter((icon) => words.every((word) => icon.mark.includes(word)))
+        : icons;
+
+      grid.replaceChildren(...matches.map(cardFor));
+      empty.hidden = matches.length > 0;
+      status.textContent = needle
+        ? `${matches.length} of ${icons.length}`
+        : `${icons.length} icons`;
+    }
+
+    let renderTimer = 0;
+    search.addEventListener("input", () => {
+      clearTimeout(renderTimer);
+      renderTimer = window.setTimeout(() => render(search.value), 40);
+    });
+
+    render("");
+  </script>
+</body>
+</html>
