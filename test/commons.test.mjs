@@ -3,6 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   classifyLicense,
+  COMMONS_BATCH_SIZE,
+  COMMONS_PAGE_BATCHES,
+  COMMONS_PAGE_SIZE,
+  commonsPageOffsets,
   commonsSearchUrl,
   normalizeCommonsResponse,
   plainText,
@@ -93,8 +97,16 @@ test("Commons query is image-only, paginated, and safely encoded", () => {
   const url = new URL(commonsSearchUrl("cats & gardens", 48));
   assert.equal(url.searchParams.get("gsrsearch"), "cats & gardens filetype:bitmap");
   assert.equal(url.searchParams.get("gsrnamespace"), "6");
+  assert.equal(url.searchParams.get("gsrlimit"), String(COMMONS_BATCH_SIZE));
   assert.equal(url.searchParams.get("gsroffset"), "48");
   assert.equal(url.searchParams.get("origin"), "*");
+});
+
+test("Commons shelf pages walk four 50-result offsets", () => {
+  assert.equal(COMMONS_PAGE_SIZE, 200);
+  assert.deepEqual(commonsPageOffsets(0), [0, 50, 100, 150]);
+  assert.deepEqual(commonsPageOffsets(200), [200, 250, 300, 350]);
+  assert.equal(commonsPageOffsets().length, COMMONS_PAGE_BATCHES);
 });
 
 test("dataset export contains caption and complete provenance", () => {

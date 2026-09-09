@@ -1,9 +1,14 @@
 import {
+  COMMONS_BATCH_SIZE,
+  COMMONS_PAGE_SIZE,
+  commonsPageOffsets,
   commonsSearchUrl,
   normalizeCommonsResponse,
   toDatasetRecord,
 } from "../lib/compositions/commons.mjs";
 import {
+  MET_CONCURRENCY,
+  MET_PAGE_SIZE,
   metObjectUrl,
   metSearchUrl,
   normalizeMetObjects,
@@ -249,10 +254,9 @@ async function fetchCommons(search, offset, signal) {
     return await response.json();
   } catch (error) {
     if (error.name === "AbortError") throw error;
-    const batchSize = 50;
     const responses = await Promise.all(
-      [offset || 0, (offset || 0) + batchSize].map((batchOffset) =>
-        fetch(commonsSearchUrl(search, batchOffset, batchSize), { signal }),
+      commonsPageOffsets(offset).map((batchOffset) =>
+        fetch(commonsSearchUrl(search, batchOffset, COMMONS_BATCH_SIZE), { signal }),
       ),
     );
     if (responses.some((response) => !response.ok)) {
@@ -265,7 +269,9 @@ async function fetchCommons(search, offset, signal) {
     );
     return {
       items: batches.flatMap((batch) => batch.items),
-      continue: batches.some((batch) => batch.continue !== null) ? (offset || 0) + 100 : null,
+      continue: batches.some((batch) => batch.continue !== null)
+        ? (offset || 0) + COMMONS_PAGE_SIZE
+        : null,
     };
   }
 }
@@ -286,14 +292,12 @@ async function fetchMet(search, keyword, offset = 0, signal) {
     const searchResponse = await fetch(metSearchUrl(search), { signal });
     if (!searchResponse.ok) throw new Error(`met returned ${searchResponse.status}`);
     const objectIds = (await searchResponse.json()).objectIDs || [];
-    const pageSize = 60;
-    const concurrency = 12;
-    const pageIds = objectIds.slice(offset, offset + pageSize);
+    const pageIds = objectIds.slice(offset, offset + MET_PAGE_SIZE);
     const objects = [];
-    for (let index = 0; index < pageIds.length; index += concurrency) {
+    for (let index = 0; index < pageIds.length; index += MET_CONCURRENCY) {
       const responses = await Promise.all(
         pageIds
-          .slice(index, index + concurrency)
+          .slice(index, index + MET_CONCURRENCY)
           .map((objectId) => fetch(metObjectUrl(objectId), { signal })),
       );
       objects.push(
@@ -304,7 +308,7 @@ async function fetchMet(search, keyword, offset = 0, signal) {
     }
     return {
       items: rankMetItems(normalizeMetObjects(objects), genreFilter, keyword),
-      continue: offset + pageSize < objectIds.length ? offset + pageSize : null,
+      continue: offset + MET_PAGE_SIZE < objectIds.length ? offset + MET_PAGE_SIZE : null,
     };
   }
 }

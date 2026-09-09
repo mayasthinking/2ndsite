@@ -1,12 +1,11 @@
 import {
+  MET_CONCURRENCY,
+  MET_PAGE_SIZE,
   metObjectUrl,
   metSearchUrl,
   normalizeMetObjects,
   rankMetItems,
 } from "../lib/compositions/met.mjs";
-
-const PAGE_SIZE = 60;
-const CONCURRENCY = 12;
 const REQUEST_HEADERS = {
   Accept: "application/json",
   "User-Agent": "mayasthinking-compositions/1.0 (private open-access image curator)",
@@ -14,8 +13,8 @@ const REQUEST_HEADERS = {
 
 async function fetchObjectBatch(objectIds) {
   const objects = [];
-  for (let index = 0; index < objectIds.length; index += CONCURRENCY) {
-    const batch = objectIds.slice(index, index + CONCURRENCY);
+  for (let index = 0; index < objectIds.length; index += MET_CONCURRENCY) {
+    const batch = objectIds.slice(index, index + MET_CONCURRENCY);
     const responses = await Promise.allSettled(
       batch.map(async (objectId) => {
         const response = await fetch(metObjectUrl(objectId), { headers: REQUEST_HEADERS });
@@ -53,13 +52,13 @@ export default async function handler(req, res) {
     if (!searchResponse.ok) throw new Error(`met search returned ${searchResponse.status}`);
 
     const objectIds = (await searchResponse.json()).objectIDs || [];
-    const pageIds = objectIds.slice(offset, offset + PAGE_SIZE);
+    const pageIds = objectIds.slice(offset, offset + MET_PAGE_SIZE);
     const objects = await fetchObjectBatch(pageIds);
 
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=900");
     res.status(200).json({
       items: rankMetItems(normalizeMetObjects(objects), genre, keyword),
-      continue: offset + PAGE_SIZE < objectIds.length ? offset + PAGE_SIZE : null,
+      continue: offset + MET_PAGE_SIZE < objectIds.length ? offset + MET_PAGE_SIZE : null,
     });
   } catch (error) {
     console.error("met search failed", error);

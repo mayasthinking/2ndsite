@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import { toDatasetRecord } from "../lib/compositions/commons.mjs";
 import {
+  MET_CONCURRENCY,
   MET_OPEN_ACCESS_URL,
+  MET_PAGE_SIZE,
   metObjectUrl,
   metSearchUrl,
   normalizeMetObject,
@@ -138,4 +140,9 @@ test("Met ranking keeps artist and title matches even when they miss the genre m
   const ranked = rankMetItems([wash, monet], "romantic-wash", "Monet");
   assert.equal(ranked[0].id, "met:300");
   assert.ok(ranked.some((item) => item.id === "met:300"));
+});
+
+test("Met shelf pages resolve 120 objects with bounded concurrency", () => {
+  assert.equal(MET_PAGE_SIZE, 120);
+  assert.equal(MET_CONCURRENCY, 16);
 });
