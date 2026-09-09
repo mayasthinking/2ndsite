@@ -36,10 +36,34 @@ export function brushIndex(name) {
   return index >= 0 ? index : 0;
 }
 
+export function snapTurn(turn) {
+  return Math.round(turn / STEP) * STEP;
+}
+
 export function brushFromTurn(turn, types = BRUSH_TYPES) {
   const n = types.length;
   const snapped = ((Math.round(-turn / STEP) % n) + n) % n;
   return types[snapped];
+}
+
+export function nearestTurn(name, from = 0) {
+  const base = -brushIndex(name) * STEP;
+  let best = base;
+  let bestDist = Infinity;
+  for (let k = -2; k <= 2; k++) {
+    const cand = base + k * 360;
+    const dist = Math.abs(cand - from);
+    if (dist < bestDist) {
+      best = cand;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
+function signedDeg(deg) {
+  const a = ((deg % 360) + 360) % 360;
+  return a > 180 ? a - 360 : a;
 }
 
 function norm360(deg) {
@@ -128,15 +152,15 @@ export function mountBrushDial({ host, value, onChange }) {
   }
 
   function applyTurn(nextTurn, emit) {
-    turn = nextTurn;
-    const name = brushFromTurn(turn);
+    const name = brushFromTurn(nextTurn);
+    turn = nearestTurn(name, nextTurn);
     const index = brushIndex(name);
     hashes.style.setProperty("--turn", `${turn}deg`);
     face.setAttribute("aria-valuenow", String(index));
     face.setAttribute("aria-valuetext", name.toLowerCase());
     for (const tick of track.querySelectorAll(".brush-arc-tick")) {
       const on = tick.dataset.brush === name;
-      const ang = Number(tick.dataset.index) * STEP + turn;
+      const ang = signedDeg(Number(tick.dataset.index) * STEP + turn);
       const away = fromApex(ang);
       tick.classList.toggle("is-active", on);
       tick.classList.toggle("is-far", away > VISIBLE);
@@ -154,7 +178,7 @@ export function mountBrushDial({ host, value, onChange }) {
 
   function commit(name, emit) {
     const next = BRUSH_TYPES.includes(name) ? name : "HB";
-    applyTurn(-brushIndex(next) * STEP, emit);
+    applyTurn(nearestTurn(next, turn), emit);
   }
 
   let dragging = false;
@@ -187,7 +211,7 @@ export function mountBrushDial({ host, value, onChange }) {
     if (Math.abs(dx) > 6 || Math.abs(dAngle) > 4) dragged = true;
     const bySwipe = dx * DEG_PER_PX;
     const byArc = Math.abs(dAngle) > Math.abs(bySwipe) ? dAngle : bySwipe;
-    applyTurn(dragStartTurn + byArc, true);
+    applyTurn(snapTurn(dragStartTurn + byArc), true);
   });
   const endDrag = (event) => {
     if (!dragging) return;
