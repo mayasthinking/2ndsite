@@ -1474,8 +1474,8 @@
         <div class="photo-overlay-stage" id="photo-overlay-stage">
             <div class="photo-overlay-frame">
                 <div class="photo-overlay-stack" id="photo-overlay-stack">
-                    <img class="photo-overlay-image" alt="">
-                    <img class="photo-overlay-image" alt="">
+                    <img class="photo-overlay-image" alt="" decoding="async">
+                    <img class="photo-overlay-image" alt="" decoding="async">
                 </div>
                 <div class="photo-overlay-controls">
                     <div class="photo-overlay-scrub" id="photo-overlay-scrub" hidden>
@@ -1778,12 +1778,82 @@
             platen.stop(strikeAt + 0.032);
         }
 
+        function photoSrcParts(src) {
+            if (!src) {
+                return { path: '', query: '' };
+            }
+
+            const queryIndex = src.indexOf('?');
+            if (queryIndex === -1) {
+                return { path: src, query: '' };
+            }
+
+            return {
+                path: src.slice(0, queryIndex),
+                query: src.slice(queryIndex)
+            };
+        }
+
+        function derivedPhotoSrc(src, folder) {
+            const { path, query } = photoSrcParts(src);
+            const slash = path.lastIndexOf('/');
+            const filename = slash === -1 ? path : path.slice(slash + 1);
+
+            if (!filename) {
+                return src;
+            }
+
+            return `photos/${folder}/${filename}${query}`;
+        }
+
+        function thumbPhotoSrc(src) {
+            return derivedPhotoSrc(src, 'thumbs');
+        }
+
         function fullPhotoSrc(src) {
             if (!src) {
                 return src;
             }
 
-            return `${src}${src.includes('?') ? '&' : '?'}view=full`;
+            return derivedPhotoSrc(src, 'display');
+        }
+
+        function loadImageSrc(image, src, fallbackSrc) {
+            return new Promise((resolve) => {
+                const finish = (usedSrc) => {
+                    image.onload = null;
+                    image.onerror = null;
+                    resolve(usedSrc);
+                };
+
+                const trySrc = (nextSrc, nextFallback) => {
+                    if (!nextSrc) {
+                        finish(nextSrc);
+                        return;
+                    }
+
+                    if (image.getAttribute('src') === nextSrc && image.complete && image.naturalWidth > 0) {
+                        finish(nextSrc);
+                        return;
+                    }
+
+                    image.onload = () => finish(nextSrc);
+                    image.onerror = () => {
+                        if (nextFallback && nextFallback !== nextSrc) {
+                            trySrc(nextFallback, null);
+                            return;
+                        }
+
+                        finish(nextSrc);
+                    };
+
+                    if (image.getAttribute('src') !== nextSrc) {
+                        image.src = nextSrc;
+                    }
+                };
+
+                trySrc(src, fallbackSrc && fallbackSrc !== src ? fallbackSrc : null);
+            });
         }
 
         function startRevealAnimation({ includeBackdrop = false } = {}) {
@@ -1792,28 +1862,6 @@
                     overlay.classList.add('is-open');
                 }
                 frontLayer.classList.add('is-visible');
-            });
-        }
-
-        function whenImageReady(image, src) {
-            return new Promise((resolve) => {
-                const done = () => {
-                    image.onload = null;
-                    image.onerror = null;
-                    resolve(image);
-                };
-
-                if (image.getAttribute('src') === src && image.complete && image.naturalWidth > 0) {
-                    done();
-                    return;
-                }
-
-                image.onload = done;
-                image.onerror = done;
-
-                if (image.getAttribute('src') !== src) {
-                    image.src = src;
-                }
             });
         }
 
@@ -1883,9 +1931,9 @@
         }
 
         function applyPhotoToLayer(layer, thumb) {
-            const src = fullPhotoSrc(thumb.dataset.src);
+            const originalSrc = thumb.dataset.src;
             layer.alt = thumb.querySelector('img')?.alt || '';
-            return whenImageReady(layer, src).then(() => src);
+            return loadImageSrc(layer, fullPhotoSrc(originalSrc), originalSrc);
         }
 
         function swapLayers() {
@@ -1927,8 +1975,8 @@
                     return;
                 }
 
-                const preload = new Image();
-                preload.src = fullPhotoSrc(thumb.dataset.src);
+                const originalSrc = thumb.dataset.src;
+                loadImageSrc(new Image(), fullPhotoSrc(originalSrc), originalSrc);
             });
         }
 
@@ -1992,7 +2040,6 @@
             updateNavButtons();
 
             const token = (photoTurnToken += 1);
-            const src = fullPhotoSrc(thumb.dataset.src);
             const canCrossfade = animate
                 && overlay.classList.contains('is-open')
                 && frontLayer.classList.contains('is-visible');
@@ -2621,8 +2668,20 @@
             );
 
             const image = document.createElement('img');
-            image.src = photo.src;
             image.alt = photo.alt || '';
+            image.decoding = 'async';
+            image.loading = captionToggleIndex < PHOTO_PAGE_SIZE ? 'eager' : 'lazy';
+            if (captionToggleIndex < 2) {
+                image.fetchPriority = 'high';
+            }
+            const thumbSrc = thumbPhotoSrc(photo.src);
+            image.src = thumbSrc;
+            image.addEventListener('error', function onThumbError() {
+                image.removeEventListener('error', onThumbError);
+                if (image.getAttribute('src') !== photo.src) {
+                    image.src = photo.src;
+                }
+            });
             if (photo.objectPosition) {
                 image.style.objectPosition = photo.objectPosition;
             }

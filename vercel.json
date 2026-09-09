@@ -2,6 +2,14 @@
   "redirects": [
     { "source": "/compositions", "destination": "/compositions/", "permanent": false }
   ],
+  "headers": [
+    {
+      "source": "/photos/(thumbs|display)/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
   "functions": {
     "api/generate.mjs": {
       "maxDuration": 60
