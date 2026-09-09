@@ -165,7 +165,7 @@
         "city": "nyc",
         "photos": [
           {
-            "src": "photos/pulitzer-fountain.jpeg",
+            "src": "photos/pulitzer-fountain.jpeg?v=2",
             "alt": "Pomona statue on the Pulitzer Fountain, with the Plaza Hotel behind it",
             "caption": "pulitzer fountain, september 2026",
             "ariaLabel": "Open Pulitzer Fountain photo",
