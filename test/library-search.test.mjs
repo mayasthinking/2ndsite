@@ -103,6 +103,12 @@ test("library copy and search path cover artist, title, and meaning", async () =
   assert.match(js, /currentQuery \? \[\] : curatedShelfItems/);
   assert.match(js, /identityScore\(query, record\) >= 0\.5/);
   assert.match(js, /browsingOpenAccess/);
+  assert.match(js, /COMMONS_PAGE_SIZE/);
+  assert.match(js, /commonsPageOffsets/);
+  assert.match(js, /MET_PAGE_SIZE/);
+  assert.match(js, /MET_CONCURRENCY/);
+  assert.doesNotMatch(js, /const pageSize = 60/);
+  assert.doesNotMatch(js, /const batchSize = 50/);
   assert.match(html, /<h2 id="resultsTitle">open access<\/h2>/);
   assert.doesNotMatch(js, /ranking captions by meaning/);
 });

@@ -6,7 +6,8 @@
     "compositions:caption": "node scripts/caption-compositions.mjs",
     "compositions:index": "node scripts/build-compositions-index.mjs",
     "test": "node --test",
-    "start": "http-server -p 4321 -c-1"
+    "start": "node scripts/preview.mjs",
+    "preview": "node scripts/preview.mjs"
   },
   "keywords": [],
   "author": "",

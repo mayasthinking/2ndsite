@@ -5,6 +5,12 @@
   "functions": {
     "api/generate.mjs": {
       "maxDuration": 60
+    },
+    "api/commons.mjs": {
+      "maxDuration": 60
+    },
+    "api/met.mjs": {
+      "maxDuration": 60
     }
   }
 }
