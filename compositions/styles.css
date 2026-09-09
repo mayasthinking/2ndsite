@@ -2277,7 +2277,8 @@ select.choice-native {
 }
 
 .sheet.active .frame:has(img),
-.sheet.is-expanded .frame:has(img) {
+.sheet.is-expanded .frame:has(img),
+.frame.is-pinching {
   cursor: grab;
   touch-action: none;
 }
@@ -2286,13 +2287,18 @@ select.choice-native {
 .frame.is-nudging img,
 .frame.is-carrying,
 .frame.is-carrying img,
-body:has(.frame.is-carrying) {
+.frame.is-pinching,
+.frame.is-pinching img,
+body:has(.frame.is-carrying),
+body:has(.frame.is-pinching) {
   cursor: grabbing;
 }
 
 .frame.is-nudging .wash-lift,
-.frame.is-carrying .wash-lift {
+.frame.is-carrying .wash-lift,
+.frame.is-pinching .wash-lift {
   will-change: transform;
+  transform-origin: center center;
 }
 
 .frame-tools {
@@ -2424,7 +2430,8 @@ body:has(.frame.is-carrying) {
 }
 
 .frame.is-nudging .wash-lift,
-.frame.is-carrying .wash-lift {
+.frame.is-carrying .wash-lift,
+.frame.is-pinching .wash-lift {
   filter: drop-shadow(0 6px 14px rgba(36, 33, 31, 0.14));
 }
 
@@ -3486,7 +3493,8 @@ body.is-sheet-open {
 
   .sheet.active .frame,
   .sheet.active .frame:has(img),
-  .sheet.is-expanded .frame:has(img) {
+  .sheet.is-expanded .frame:has(img),
+  .frame.is-pinching {
     outline: none;
     cursor: grab;
     touch-action: none;

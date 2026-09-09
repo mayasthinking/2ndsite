@@ -1,4 +1,4 @@
-import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
+import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects, pinchComposition, compositionPreviewScale, wheelComposition } from "./effect-model.js?v=16";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
 import { mountBrushDial } from "./brush-dial.js?v=29";
@@ -1116,15 +1116,45 @@ function mountSubjectDrag(sheet, item) {
   if (!frame) return;
   let holding = false;
   let carrying = false;
+  let pinching = false;
   let moved = false;
+  let pickGen = 0;
+  let baselineArmed = false;
   let startX = 0;
   let startY = 0;
   let startPlaceX = 0.5;
   let startPlaceY = 0.5;
+  let startComposition = 0.5;
+  let pinchStartDistance = 0;
+  let pinchStartComposition = 0.5;
+  let pinchOriginX = 0;
+  let pinchOriginY = 0;
+  let pinchOriginPlaceX = 0.5;
+  let pinchOriginPlaceY = 0.5;
+  let wheelTimer = 0;
+  const pointers = new Map();
 
   const img = () => frame.querySelector("img:not(.wash-lift)");
 
   const liftEl = () => frame.querySelector(".wash-lift");
+
+  const chrome = (event) => event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .veil, .save");
+
+  const canEditFrame = () => {
+    if (!img()) return false;
+    if (isCompact() && !sheet.classList.contains("active") && !sheet.classList.contains("is-expanded")) return false;
+    return Boolean(cards.get(item.id)?.dataUrl);
+  };
+
+  const pairMetrics = () => {
+    if (pointers.size < 2) return null;
+    const [a, b] = [...pointers.values()];
+    return {
+      dist: Math.hypot(b.x - a.x, b.y - a.y),
+      midX: (a.x + b.x) / 2,
+      midY: (a.y + b.y) / 2,
+    };
+  };
 
   const placementFrom = (clientX, clientY) => {
     const box = frame.getBoundingClientRect();
@@ -1134,18 +1164,27 @@ function mountSubjectDrag(sheet, item) {
     };
   };
 
-  const preview = (placeX, placeY) => {
+  const preview = (placeX, placeY, composition = startComposition) => {
     const lift = liftEl();
     if (!lift) return;
     const box = frame.getBoundingClientRect();
-    lift.style.transform = `translate(${(placeX - startPlaceX) * box.width}px, ${(startPlaceY - placeY) * box.height}px)`;
+    const scale = compositionPreviewScale(startComposition, composition);
+    lift.style.transform = `translate(${(placeX - startPlaceX) * box.width}px, ${(startPlaceY - placeY) * box.height}px) scale(${scale})`;
   };
 
-  const write = (placeX, placeY) => {
+  const write = (placeX, placeY, composition) => {
     const rec = cards.get(item.id);
     if (!rec) return;
-    rec.item.effects = clampEffects({ ...sheetEffects(rec), placeX, placeY });
-    if (selectedId === item.id) applyEffectsToControls(rec.item.effects);
+    rec.item.effects = clampEffects({
+      ...sheetEffects(rec),
+      placeX,
+      placeY,
+      ...(composition != null ? { composition } : {}),
+    });
+    if (selectedId === item.id) {
+      applyEffectsToControls(rec.item.effects);
+      syncMobileEditor(rec);
+    }
   };
 
   const follow = (clientX, clientY) => {
@@ -1174,50 +1213,119 @@ function mountSubjectDrag(sheet, item) {
     return true;
   };
 
+  const armBaseline = (fx) => {
+    if (baselineArmed) return;
+    startPlaceX = fx.placeX ?? 0.5;
+    startPlaceY = fx.placeY ?? 0.5;
+    startComposition = fx.composition ?? 0.5;
+    baselineArmed = true;
+  };
+
   const clearPreview = (restore) => {
     const rec = cards.get(item.id);
     const picture = img();
     if (restore && picture && rec?.dataUrl) picture.src = rec.dataUrl;
     liftEl()?.remove();
     if (picture) picture.style.transform = "";
-    frame.classList.remove("is-nudging", "is-carrying");
+    baselineArmed = false;
+    frame.classList.remove("is-nudging", "is-carrying", "is-pinching");
+  };
+
+  const markPinchLock = () => {
+    sheet.dataset.pinchLock = "1";
+    clearTimeout(markPinchLock.timer);
+    markPinchLock.timer = setTimeout(() => {
+      delete sheet.dataset.pinchLock;
+    }, 400);
+  };
+
+  const commitPlacement = (placeX, placeY, composition) => {
+    write(placeX, placeY, composition);
+    persistSettings();
+    scheduleSheetRender(item.id);
   };
 
   const drop = (clientX, clientY) => {
     const next = follow(clientX, clientY);
     holding = false;
     carrying = false;
+    pinching = false;
     moved = true;
     unbindCarry();
-    frame.classList.remove("is-nudging", "is-carrying");
-    write(next.placeX, next.placeY);
-    persistSettings();
-    scheduleSheetRender(item.id);
+    frame.classList.remove("is-nudging", "is-carrying", "is-pinching");
+    commitPlacement(next.placeX, next.placeY);
   };
 
   const cancel = () => {
+    pickGen += 1;
     holding = false;
     carrying = false;
+    pinching = false;
     unbindCarry();
-    write(startPlaceX, startPlaceY);
+    write(startPlaceX, startPlaceY, startComposition);
     clearPreview(true);
   };
 
+  const beginPinch = () => {
+    const rec = cards.get(item.id);
+    const pair = pairMetrics();
+    if (!rec || !pair || pair.dist < 8 || !liftEl()) return false;
+    holding = false;
+    carrying = false;
+    unbindCarry();
+    const fx = sheetEffects(rec);
+    pinching = true;
+    moved = true;
+    pinchStartDistance = pair.dist;
+    pinchStartComposition = fx.composition ?? 0.5;
+    pinchOriginX = pair.midX;
+    pinchOriginY = pair.midY;
+    pinchOriginPlaceX = fx.placeX ?? 0.5;
+    pinchOriginPlaceY = fx.placeY ?? 0.5;
+    frame.classList.add("is-pinching", "is-carrying");
+    frame.classList.remove("is-nudging");
+    markPinchLock();
+    return true;
+  };
+
+  const applyPinch = () => {
+    const pair = pairMetrics();
+    if (!pair) return null;
+    const box = frame.getBoundingClientRect();
+    const next = {
+      placeX: Math.min(1, Math.max(0, pinchOriginPlaceX + (pair.midX - pinchOriginX) / box.width)),
+      placeY: Math.min(1, Math.max(0, pinchOriginPlaceY - (pair.midY - pinchOriginY) / box.height)),
+      composition: pinchComposition(pinchStartComposition, pinchStartDistance, pair.dist),
+    };
+    write(next.placeX, next.placeY, next.composition);
+    preview(next.placeX, next.placeY, next.composition);
+    moved = true;
+    return next;
+  };
+
+  const endPinch = () => {
+    if (!pinching) return;
+    const rec = cards.get(item.id);
+    const fx = rec ? sheetEffects(rec) : null;
+    pinching = false;
+    holding = false;
+    carrying = false;
+    unbindCarry();
+    markPinchLock();
+    if (pointers.size === 0) frame.classList.remove("is-nudging", "is-carrying", "is-pinching");
+    if (fx) commitPlacement(fx.placeX, fx.placeY, fx.composition);
+  };
+
   const onDocMove = (event) => {
-    if (!carrying) return;
+    if (!carrying || pinching) return;
     follow(event.clientX, event.clientY);
   };
 
   const onDocDown = (event) => {
-    if (!carrying) return;
+    if (!carrying || pinching) return;
+    if (frame.contains(event.target)) return;
     if (event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .save")) {
       cancel();
-      return;
-    }
-    if (frame.contains(event.target)) {
-      event.preventDefault();
-      event.stopPropagation();
-      drop(event.clientX, event.clientY);
       return;
     }
     cancel();
@@ -1239,42 +1347,54 @@ function mountSubjectDrag(sheet, item) {
     document.removeEventListener("keydown", onKey);
   }
 
-  frame.addEventListener("pointerdown", (event) => {
-    void startPick(event);
-  });
-
-  async function startPick(event) {
-    if (carrying) return;
-    if (event.button != null && event.button !== 0) return;
-    if (event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .veil")) return;
-    if (!img()) return;
-    if (isCompact() && !sheet.classList.contains("active") && !sheet.classList.contains("is-expanded")) return;
+  async function prepareLift({ force = false, clientX = 0, clientY = 0 } = {}) {
     const rec = cards.get(item.id);
-    if (!rec?.dataUrl) return;
-    event.preventDefault();
-    selectPainting(item.id);
+    if (!rec?.dataUrl) return null;
     const waited = !rec.split?.baseUrl;
     if (waited) frame.classList.add("is-nudging");
     try {
       await ensureSplit(rec);
     } catch {
       frame.classList.remove("is-nudging");
-      return;
+      return null;
     }
-    if (!hitSubject(frame, rec, event.clientX, event.clientY)) {
+    if (!force && !hitSubject(frame, rec, clientX, clientY)) {
       frame.classList.remove("is-nudging");
-      return;
+      return null;
     }
     if (!showLift(rec)) {
       frame.classList.remove("is-nudging");
+      return null;
+    }
+    armBaseline(sheetEffects(rec));
+    return { rec, waited };
+  }
+
+  async function startPick(event, { forcePinch = false } = {}) {
+    if (carrying && !forcePinch && pointers.size < 2) return;
+    if (event.button != null && event.button !== 0 && !forcePinch) return;
+    if (chrome(event) && !forcePinch) return;
+    if (!canEditFrame()) return;
+    const gen = ++pickGen;
+    event.preventDefault();
+    selectPainting(item.id);
+    const prepared = await prepareLift({
+      force: forcePinch || pointers.size >= 2,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+    if (gen !== pickGen || !prepared) return;
+    const { rec, waited } = prepared;
+    if (pointers.size >= 2) {
+      beginPinch();
       return;
     }
+    if (pinching) return;
     const fx = sheetEffects(rec);
     moved = false;
     startX = event.clientX;
     startY = event.clientY;
-    startPlaceX = fx.placeX ?? 0.5;
-    startPlaceY = fx.placeY ?? 0.5;
+    if (!baselineArmed) armBaseline(fx);
     if (waited) {
       carrying = true;
       frame.classList.add("is-carrying");
@@ -1289,13 +1409,60 @@ function mountSubjectDrag(sheet, item) {
       /* ignore */
     }
   }
+
+  const finishWheel = () => {
+    const rec = cards.get(item.id);
+    const fx = rec ? sheetEffects(rec) : null;
+    frame.classList.remove("is-pinching");
+    if (fx) commitPlacement(fx.placeX, fx.placeY, fx.composition);
+  };
+
+  frame.addEventListener("pointerdown", (event) => {
+    if (chrome(event) && pointers.size === 0) return;
+    if (event.button != null && event.button !== 0 && pointers.size === 0) return;
+    if (!canEditFrame() && pointers.size === 0) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size >= 2) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (liftEl()) beginPinch();
+      else void startPick(event, { forcePinch: true });
+      return;
+    }
+    if (carrying) {
+      event.preventDefault();
+      startX = event.clientX;
+      startY = event.clientY;
+      return;
+    }
+    void startPick(event);
+  });
   frame.addEventListener("pointermove", (event) => {
+    if (pointers.has(event.pointerId)) {
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+    if (pinching) {
+      applyPinch();
+      return;
+    }
     if (!holding || carrying) return;
     follow(event.clientX, event.clientY);
     if (Math.hypot(event.clientX - startX, event.clientY - startY) > 4) moved = true;
   });
-  frame.addEventListener("pointerup", (event) => {
-    if (!holding || carrying) return;
+  const onPointerEnd = (event) => {
+    pointers.delete(event.pointerId);
+    if (pinching) {
+      if (pointers.size < 2) endPinch();
+      return;
+    }
+    if (carrying && !holding && pointers.size === 0) {
+      drop(event.clientX, event.clientY);
+      return;
+    }
+    if (!holding || carrying) {
+      if (pointers.size === 0) frame.classList.remove("is-pinching");
+      return;
+    }
     holding = false;
     try {
       frame.releasePointerCapture(event.pointerId);
@@ -1309,12 +1476,40 @@ function mountSubjectDrag(sheet, item) {
     carrying = true;
     frame.classList.add("is-carrying");
     bindCarry();
+  };
+  frame.addEventListener("pointerup", onPointerEnd);
+  frame.addEventListener("pointercancel", (event) => {
+    pointers.delete(event.pointerId);
+    if (pinching || (holding && !carrying)) cancel();
   });
-  frame.addEventListener("pointercancel", () => {
-    if (holding && !carrying) cancel();
-  });
+  frame.addEventListener("touchmove", (event) => {
+    if (event.touches.length >= 2 || holding || carrying || pinching) event.preventDefault();
+  }, { passive: false });
+  frame.addEventListener("wheel", (event) => {
+    if (!(event.ctrlKey || event.metaKey)) return;
+    if (!canEditFrame()) return;
+    event.preventDefault();
+    selectPainting(item.id);
+    const applyWheel = async () => {
+      if (!liftEl()) {
+        const rec = await prepareLift({ force: true, clientX: event.clientX, clientY: event.clientY });
+        if (!rec) return;
+      }
+      const rec = cards.get(item.id);
+      if (!rec) return;
+      const fx = sheetEffects(rec);
+      const composition = wheelComposition(fx.composition, event.deltaY);
+      write(fx.placeX, fx.placeY, composition);
+      preview(fx.placeX, fx.placeY, composition);
+      frame.classList.add("is-pinching");
+      markPinchLock();
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(finishWheel, 220);
+    };
+    void applyWheel();
+  }, { passive: false });
   sheet.addEventListener("click", (event) => {
-    if (!moved && !carrying) return;
+    if (!moved && !carrying && !pinching) return;
     event.preventDefault();
     event.stopPropagation();
     moved = false;
@@ -2091,7 +2286,7 @@ function mountMobileVariationSwipe() {
     if (!tracking) return;
     tracking = false;
     if (!isPhone()) return;
-    if (wallEl.querySelector(".frame.is-carrying, .frame.is-nudging")) return;
+    if (wallEl.querySelector(".frame.is-carrying, .frame.is-nudging, .frame.is-pinching, [data-pinch-lock]")) return;
     const dx = event.clientX - startX;
     const dy = event.clientY - startY;
     if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.35) return;

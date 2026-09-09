@@ -18,6 +18,51 @@ export const PLACEMENT_SLIDERS = [
   { id: "composition", label: "size" },
 ];
 
+// Keep in sync with brush-effects.js point() — amp(composition, 0.58, 1.48).
+export const COMPOSITION_SCALE_MIN = 0.58;
+export const COMPOSITION_SCALE_MAX = 1.48;
+
+function clamp01(value, fallback = 0.5) {
+  const next = Number(value);
+  if (!Number.isFinite(next)) return fallback;
+  return Math.min(1, Math.max(0, next));
+}
+
+export function compositionVisualScale(value) {
+  const t = clamp01(value);
+  return COMPOSITION_SCALE_MIN + (COMPOSITION_SCALE_MAX - COMPOSITION_SCALE_MIN) * t;
+}
+
+export function compositionFromScale(scale) {
+  const span = COMPOSITION_SCALE_MAX - COMPOSITION_SCALE_MIN;
+  const next = Number(scale);
+  if (!Number.isFinite(next) || !(span > 0)) return 0.5;
+  return clamp01((next - COMPOSITION_SCALE_MIN) / span);
+}
+
+export function pinchComposition(startComposition, startDistance, currentDistance) {
+  if (!(startDistance > 0) || !(currentDistance > 0)) return clamp01(startComposition);
+  const nextScale = compositionVisualScale(startComposition) * (currentDistance / startDistance);
+  return compositionFromScale(
+    Math.min(COMPOSITION_SCALE_MAX, Math.max(COMPOSITION_SCALE_MIN, nextScale))
+  );
+}
+
+export function compositionPreviewScale(startComposition, nextComposition) {
+  const startScale = compositionVisualScale(startComposition);
+  if (!(startScale > 0)) return 1;
+  return compositionVisualScale(nextComposition) / startScale;
+}
+
+export function wheelComposition(startComposition, deltaY) {
+  const dy = Number(deltaY);
+  if (!Number.isFinite(dy) || dy === 0) return clamp01(startComposition);
+  const nextScale = compositionVisualScale(startComposition) * Math.exp(-dy * 0.0024);
+  return compositionFromScale(
+    Math.min(COMPOSITION_SCALE_MAX, Math.max(COMPOSITION_SCALE_MIN, nextScale))
+  );
+}
+
 export const EFFECT_KEYS = [
   "composition",
   "placeX",
