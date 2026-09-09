@@ -1,6 +1,10 @@
 # Node.js dependencies
 node_modules/
 
+# Python
+__pycache__/
+*.py[cod]
+
 # macOS system files
 .DS_Store
 .AppleDouble
