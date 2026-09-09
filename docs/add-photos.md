@@ -25,9 +25,9 @@ python3 scripts/add_photo.py
 python3 scripts/add_photo.py --path ~/Desktop/DSCF1234.JPG --caption "municipal building"
 ```
 
-Omit `--path` to get a file picker. The script resizes the image (~3120px on the long edge), writes a new JPEG, updates `snaps.json`, and uses `gh` to commit to GitHub.
+Omit `--path` to get a file picker. The script resizes the image (~3120px on the long edge), writes the JPEG plus smaller `photos/thumbs/` and `photos/display/` copies, updates `snaps.json`, and uses `gh` to commit to GitHub.
 
-You can still add the file to `photos/` and edit `snaps.json` directly, then commit and push.
+You can still add the file to `photos/` and edit `snaps.json` directly, then commit and push. After a manual add, run `python3 scripts/optimize_photos.py` so the homepage can serve the smaller files.
 
 ## iPhone setup
 
@@ -86,8 +86,11 @@ New months are created automatically as `august 2026` (lowercase month + year) w
 | File | Purpose |
 |------|---------|
 | `snaps.json` | Month albums and photo metadata |
-| `photos/` | JPEG files |
+| `photos/` | Full JPEG files |
+| `photos/thumbs/` | Grid thumbnails (~880px) |
+| `photos/display/` | Lightbox JPEGs (~2048px) |
 | `scripts/add_photo.py` | Mac/terminal add script |
+| `scripts/optimize_photos.py` | Rebuild thumbs and display sizes |
 | `scripts/build_photo_app.py` | Builds the Mac drop-target app |
 | `scripts/install_photo_shortcut.sh` | Installs the Mac app into `~/Applications` |
 | `shortcuts/ios-merge-photo.js` | JavaScript for the later iOS merge step |

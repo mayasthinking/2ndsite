@@ -96,7 +96,7 @@ Add entries to `snaps.json`:
 - **`city`** — internal label for aria/accessibility (e.g. `nyc`, `paris`)
 - **`photos`** — ordered list; lightbox swipes within the full month album (across cities)
 
-Thumbnails always fill the square grid cell with `object-fit: cover`, regardless of aspect ratio.
+Thumbnails always fill the square grid cell with `object-fit: cover`, regardless of aspect ratio. The homepage loads `photos/thumbs/` for the grid and `photos/display/` in the lightbox, derived from each photo's `src` filename. After adding a JPEG by hand, run `python3 scripts/optimize_photos.py`.
 
 ## Photos section with expandable albums (legacy reference)
 
@@ -117,7 +117,7 @@ Thumbnails always fill the square grid cell with `object-fit: cover`, regardless
 ```html
 <div class="photo-item">
     <button type="button" class="photo-slot photo-thumb" data-src="photos/example.jpeg" aria-label="Open photo">
-        <img src="photos/example.jpeg" alt="Description">
+        <img src="photos/thumbs/example.jpeg" alt="Description" loading="lazy" decoding="async">
     </button>
     <div class="photo-meta">
         <button type="button" class="caption-toggle" aria-expanded="false" aria-label="Show caption">+</button>

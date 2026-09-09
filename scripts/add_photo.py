@@ -15,10 +15,23 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from photo_images import (
+    FULL_LONG_EDGE,
+    DISPLAY_LONG_EDGE,
+    THUMB_LONG_EDGE,
+    display_repo_path,
+    export_web_jpeg,
+    thumb_repo_path,
+)
+
 REPO = "mayasthinking/2ndsite"
 SNAPS_PATH = "snaps.json"
 PHOTOS_DIR = "photos"
-LONG_EDGE = 3120
+LONG_EDGE = FULL_LONG_EDGE
 MONTHS = (
     "january",
     "february",
@@ -123,53 +136,6 @@ def resolve_caption(args: argparse.Namespace) -> str:
     return prompt_caption_gui().lower()
 
 
-def export_web_jpeg(source: Path, dest: Path, long_edge: int = LONG_EDGE) -> None:
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if not source.is_file() or source.stat().st_size == 0:
-        raise RuntimeError("That photo file was empty or missing.")
-
-    sips = subprocess.run(
-        [
-            "sips",
-            "-s",
-            "format",
-            "jpeg",
-            "-s",
-            "formatOptions",
-            "80",
-            "-Z",
-            str(long_edge),
-            str(source),
-            "--out",
-            str(dest),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if sips.returncode == 0 and dest.is_file() and dest.stat().st_size > 0:
-        return
-
-    try:
-        from PIL import Image
-    except ImportError as error:
-        detail = (sips.stderr or sips.stdout or "").strip()
-        raise RuntimeError(
-            detail or "Could not convert the photo. On a Mac, sips should be available."
-        ) from error
-
-    with Image.open(source) as image:
-        image = image.convert("RGB")
-        width, height = image.size
-        longest = max(width, height)
-        if longest > long_edge:
-            scale = long_edge / longest
-            image = image.resize(
-                (max(1, round(width * scale)), max(1, round(height * scale))),
-                Image.Resampling.LANCZOS,
-            )
-        image.save(dest, "JPEG", quality=80, optimize=True)
-
-
 def load_snaps() -> tuple[list[dict], str]:
     payload = json.loads(run_gh([f"repos/{REPO}/contents/{SNAPS_PATH}"]))
     sha = payload["sha"]
@@ -261,8 +227,14 @@ def main() -> int:
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             exported = Path(temp_dir) / filename
-            export_web_jpeg(source, exported)
+            thumb_file = Path(temp_dir) / f"thumb-{filename}"
+            display_file = Path(temp_dir) / f"display-{filename}"
+            export_web_jpeg(source, exported, long_edge=LONG_EDGE)
+            export_web_jpeg(exported, thumb_file, long_edge=THUMB_LONG_EDGE)
+            export_web_jpeg(exported, display_file, long_edge=DISPLAY_LONG_EDGE)
             jpeg_bytes = exported.read_bytes()
+            thumb_bytes = thumb_file.read_bytes()
+            display_bytes = display_file.read_bytes()
     except (RuntimeError, OSError, subprocess.CalledProcessError) as error:
         print(str(error), file=sys.stderr)
         return 1
@@ -272,6 +244,8 @@ def main() -> int:
 
     try:
         put_repo_file(repo_path, jpeg_bytes, message)
+        put_repo_file(thumb_repo_path(repo_path), thumb_bytes, message)
+        put_repo_file(display_repo_path(repo_path), display_bytes, message)
         albums, sha = load_snaps()
         albums = prepend_photo(albums, photo, month_label, city)
         put_repo_file(
