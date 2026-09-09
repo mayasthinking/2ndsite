@@ -1015,6 +1015,8 @@
             object-fit: contain;
             opacity: 0;
             pointer-events: none;
+            backface-visibility: hidden;
+            transform: translateZ(0);
             transition: opacity var(--photo-turn-duration) var(--photo-turn-ease);
         }
 
@@ -1474,8 +1476,9 @@
         <div class="photo-overlay-stage" id="photo-overlay-stage">
             <div class="photo-overlay-frame">
                 <div class="photo-overlay-stack" id="photo-overlay-stack">
-                    <img class="photo-overlay-image" alt="">
-                    <img class="photo-overlay-image" alt="">
+                    <img class="photo-overlay-image" alt="" decoding="async">
+                    <img class="photo-overlay-image" alt="" decoding="async">
+                    <img class="photo-overlay-image" alt="" decoding="async">
                 </div>
                 <div class="photo-overlay-controls">
                     <div class="photo-overlay-scrub" id="photo-overlay-scrub" hidden>
@@ -1512,9 +1515,11 @@
         let currentPhotoIndex = -1;
         let sliderScrubbing = false;
         let frontLayer = overlayLayers[0];
-        let backLayer = overlayLayers[1];
+        const exitingLayers = new Set();
         let photoTurnToken = 0;
         const photoRevealDurationMs = 780;
+        const photoTurnDurationMs = 460;
+        const photoReadyCache = new Map();
         let cabinetAudioContext = null;
         const toggleToneClasses = [
             'toggle-mark--tone-a',
@@ -1778,12 +1783,24 @@
             platen.stop(strikeAt + 0.032);
         }
 
-        function fullPhotoSrc(src) {
-            if (!src) {
-                return src;
+        function photoSrc(src) {
+            return src || '';
+        }
+
+        function samePhotoSrc(left, right) {
+            if (!left || !right) {
+                return false;
             }
 
-            return `${src}${src.includes('?') ? '&' : '?'}view=full`;
+            if (left === right) {
+                return true;
+            }
+
+            try {
+                return new URL(left, document.baseURI).href === new URL(right, document.baseURI).href;
+            } catch {
+                return false;
+            }
         }
 
         function startRevealAnimation({ includeBackdrop = false } = {}) {
@@ -1793,6 +1810,14 @@
                 }
                 frontLayer.classList.add('is-visible');
             });
+        }
+
+        function whenImageDecoded(image) {
+            if (typeof image.decode !== 'function') {
+                return Promise.resolve(image);
+            }
+
+            return image.decode().then(() => image).catch(() => image);
         }
 
         function whenImageReady(image, src) {
@@ -1814,7 +1839,48 @@
                 if (image.getAttribute('src') !== src) {
                     image.src = src;
                 }
-            });
+            }).then(whenImageDecoded);
+        }
+
+        function cacheReadyPhoto(src, ready) {
+            const url = photoSrc(src);
+            if (!url) {
+                return Promise.resolve(null);
+            }
+
+            photoReadyCache.set(url, ready);
+            return ready;
+        }
+
+        function preloadPhoto(src) {
+            const url = photoSrc(src);
+            if (!url) {
+                return Promise.resolve(null);
+            }
+
+            const cached = photoReadyCache.get(url);
+            if (cached) {
+                return cached;
+            }
+
+            const image = new Image();
+            image.decoding = 'async';
+            return cacheReadyPhoto(url, whenImageReady(image, url));
+        }
+
+        function primePhotoFromThumb(thumb) {
+            const url = photoSrc(thumb?.dataset?.src);
+            const thumbImage = thumb?.querySelector('img');
+
+            if (!url || photoReadyCache.has(url)) {
+                return photoReadyCache.get(url) || Promise.resolve(null);
+            }
+
+            if (thumbImage?.complete && thumbImage.naturalWidth > 0) {
+                return cacheReadyPhoto(url, whenImageDecoded(thumbImage));
+            }
+
+            return preloadPhoto(url);
         }
 
         function photoStageLimits() {
@@ -1883,15 +1949,62 @@
         }
 
         function applyPhotoToLayer(layer, thumb) {
-            const src = fullPhotoSrc(thumb.dataset.src);
+            const src = photoSrc(thumb.dataset.src);
             layer.alt = thumb.querySelector('img')?.alt || '';
-            return whenImageReady(layer, src).then(() => src);
+            return primePhotoFromThumb(thumb)
+                .then(() => whenImageReady(layer, src))
+                .then(() => src);
         }
 
-        function swapLayers() {
-            const previous = frontLayer;
-            frontLayer = backLayer;
-            backLayer = previous;
+        function hideOverlayLayer(layer) {
+            if (!layer) {
+                return;
+            }
+
+            layer.style.transition = 'none';
+            layer.classList.remove('is-visible');
+            void layer.offsetWidth;
+            layer.style.removeProperty('transition');
+            exitingLayers.delete(layer);
+        }
+
+        function freeOverlayLayer() {
+            const idle = overlayLayers.find((layer) => layer !== frontLayer && !exitingLayers.has(layer));
+            if (idle) {
+                return idle;
+            }
+
+            const exiting = overlayLayers.find((layer) => layer !== frontLayer && exitingLayers.has(layer));
+            if (exiting) {
+                hideOverlayLayer(exiting);
+                return exiting;
+            }
+
+            return overlayLayers.find((layer) => layer !== frontLayer) || overlayLayers[0];
+        }
+
+        function beginLayerExit(layer) {
+            if (!layer || layer === frontLayer) {
+                return;
+            }
+
+            exitingLayers.add(layer);
+            layer.classList.remove('is-visible');
+
+            const finish = () => {
+                layer.removeEventListener('transitionend', onEnd);
+                window.clearTimeout(fallback);
+                exitingLayers.delete(layer);
+            };
+
+            const onEnd = (event) => {
+                if (event.target === layer && event.propertyName === 'opacity') {
+                    finish();
+                }
+            };
+
+            layer.addEventListener('transitionend', onEnd);
+            const fallback = window.setTimeout(finish, photoTurnDurationMs + 80);
         }
 
         function resetOverlayLayers() {
@@ -1901,6 +2014,7 @@
                 layer.alt = '';
                 layer.onload = null;
                 layer.onerror = null;
+                layer.style.removeProperty('transition');
             });
             overlayFrame.classList.remove('is-ready');
             overlayStack.classList.remove('is-ready');
@@ -1911,24 +2025,39 @@
             overlayStack.style.removeProperty('width');
             overlayStack.style.removeProperty('height');
             frontLayer = overlayLayers[0];
-            backLayer = overlayLayers[1];
+            exitingLayers.clear();
         }
 
         function preloadNeighborPhotos() {
             const count = currentAlbumThumbs.length;
 
-            if (count <= 1 || currentPhotoIndex < 0) {
+            if (count === 0 || currentPhotoIndex < 0) {
                 return;
             }
 
-            [1, -1].forEach((offset) => {
-                const thumb = currentAlbumThumbs[(currentPhotoIndex + offset + count) % count];
-                if (!thumb) {
+            const order = [];
+            for (let distance = 1; distance < count; distance += 1) {
+                order.push((currentPhotoIndex + distance) % count);
+                if (distance !== count - distance) {
+                    order.push((currentPhotoIndex - distance + count) % count);
+                }
+            }
+
+            order.forEach((index, offset) => {
+                const thumb = currentAlbumThumbs[index];
+                const url = photoSrc(thumb?.dataset?.src);
+                if (!url || photoReadyCache.has(url)) {
                     return;
                 }
 
-                const preload = new Image();
-                preload.src = fullPhotoSrc(thumb.dataset.src);
+                if (offset < 4) {
+                    primePhotoFromThumb(thumb);
+                    return;
+                }
+
+                window.setTimeout(() => {
+                    primePhotoFromThumb(thumb);
+                }, 80 * (offset - 3));
             });
         }
 
@@ -1990,36 +2119,37 @@
             currentPhotoIndex = index;
             syncSlider();
             updateNavButtons();
+            primePhotoFromThumb(thumb);
+            preloadNeighborPhotos();
 
             const token = (photoTurnToken += 1);
-            const src = fullPhotoSrc(thumb.dataset.src);
             const canCrossfade = animate
                 && overlay.classList.contains('is-open')
                 && frontLayer.classList.contains('is-visible');
 
             if (!canCrossfade) {
                 applyPhotoToLayer(frontLayer, thumb).then((readySrc) => {
-                    if (token !== photoTurnToken || frontLayer.getAttribute('src') !== readySrc) {
+                    if (token !== photoTurnToken || !samePhotoSrc(frontLayer.getAttribute('src'), readySrc)) {
                         return;
                     }
 
                     setStackSize(frontLayer, { animate: false });
                     startRevealAnimation();
-                    preloadNeighborPhotos();
                 });
                 return;
             }
 
-            applyPhotoToLayer(backLayer, thumb).then((readySrc) => {
-                if (token !== photoTurnToken || backLayer.getAttribute('src') !== readySrc) {
+            const targetLayer = freeOverlayLayer();
+            applyPhotoToLayer(targetLayer, thumb).then((readySrc) => {
+                if (token !== photoTurnToken || !samePhotoSrc(targetLayer.getAttribute('src'), readySrc)) {
                     return;
                 }
 
-                setStackSize(backLayer, { animate: true });
-                backLayer.classList.add('is-visible');
-                frontLayer.classList.remove('is-visible');
-                swapLayers();
-                preloadNeighborPhotos();
+                const outgoing = frontLayer;
+                frontLayer = targetLayer;
+                setStackSize(targetLayer, { animate: true });
+                targetLayer.classList.add('is-visible');
+                beginLayerExit(outgoing);
             });
         }
 
@@ -2038,19 +2168,20 @@
             resetOverlayLayers();
             syncSlider();
             updateNavButtons();
+            primePhotoFromThumb(thumb);
+            preloadNeighborPhotos();
 
             overlay.hidden = false;
             overlay.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
 
             applyPhotoToLayer(frontLayer, thumb).then((readySrc) => {
-                if (token !== photoTurnToken || frontLayer.getAttribute('src') !== readySrc) {
+                if (token !== photoTurnToken || !samePhotoSrc(frontLayer.getAttribute('src'), readySrc)) {
                     return;
                 }
 
                 setStackSize(frontLayer, { animate: false });
                 startRevealAnimation({ includeBackdrop: true });
-                preloadNeighborPhotos();
             });
         }
 
@@ -2721,6 +2852,15 @@
             }
 
             root.querySelectorAll('.photo-thumb').forEach((thumb) => {
+                const thumbImage = thumb.querySelector('img');
+                if (thumbImage?.complete) {
+                    primePhotoFromThumb(thumb);
+                } else {
+                    thumbImage?.addEventListener('load', () => {
+                        primePhotoFromThumb(thumb);
+                    }, { once: true });
+                }
+
                 thumb.addEventListener('click', () => {
                     openPreview(thumb);
                     thumb.blur();
