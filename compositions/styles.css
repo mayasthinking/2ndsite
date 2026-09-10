@@ -2293,6 +2293,7 @@ body:has(.frame.is-carrying) {
 .frame.is-nudging .wash-lift,
 .frame.is-carrying .wash-lift {
   will-change: transform;
+  transform-origin: center center;
 }
 
 .frame-tools {
@@ -2602,6 +2603,19 @@ body:has(.frame.is-carrying) {
 
 .brush-dial-menu.is-stage .brush-arc-label {
   font-size: 11px;
+}
+
+.size-dial-menu.is-size-arc .brush-arc-mark {
+  display: none;
+}
+
+.size-dial-menu .brush-arc-spoke {
+  gap: 0;
+}
+
+.size-dial-menu .brush-arc-label {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .sheet-stage .expand {

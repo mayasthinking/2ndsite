@@ -1,7 +1,8 @@
-import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
+import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects, compositionPreviewScale, compositionFromSizeScale, sizeScaleFromComposition } from "./effect-model.js?v=17";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial } from "./brush-dial.js?v=29";
+import { mountBrushDial } from "./brush-dial.js?v=30";
+import { mountSizeDial } from "./size-dial.js?v=1";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -743,6 +744,7 @@ function syncSheetEditor(rec) {
   const swatch = edit.querySelector(".sheet-edit-swatch");
   const sat = edit.querySelector(".sheet-edit-sat input");
   const brushBtn = edit.querySelector(".sheet-edit-brush");
+  edit._sizeDial?.setValue(String(sizeScaleFromComposition(fx.composition)));
   const hex = oklchToHex(fx.color || DEFAULT_COLOR);
   if (swatch) swatch.style.background = hex;
   if (sat) {
@@ -871,6 +873,30 @@ function mountSheetEditor(sheet, item) {
     host: brushMenu,
     value: sheetEffects({ item }).brushType || "HB",
     onChange: (brushType) => apply({ brushType }),
+  });
+
+  const sizeMenu = document.createElement("div");
+  sizeMenu.className = "brush-dial-menu size-dial-menu";
+  sizeMenu.setAttribute("role", "dialog");
+  sizeMenu.setAttribute("aria-label", "size");
+  sizeMenu.id = `sheet-size-${item.id}`;
+  sizeMenu.dataset.sheet = item.id;
+  sizeMenu.hidden = true;
+  sizeMenu._host = edit;
+  edit._sizeMenu = sizeMenu;
+  edit.append(sizeMenu);
+  edit._sizeDial = mountSizeDial({
+    host: sizeMenu,
+    value: sizeScaleFromComposition(sheetEffects({ item }).composition),
+    onChange: (scale) => {
+      const rec = cards.get(item.id);
+      const fx = rec ? sheetEffects(rec) : sheetEffects({ item });
+      const composition = compositionFromSizeScale(scale);
+      apply({ composition });
+      const lift = frame.querySelector(".wash-lift");
+      if (!lift || rec?.paintedComposition == null) return;
+      lift.style.transform = `scale(${compositionPreviewScale(rec.paintedComposition, composition)})`;
+    },
   });
 
   const placeColorMenu = () => {
@@ -1003,6 +1029,54 @@ function mountSheetEditor(sheet, item) {
     }
   });
 
+  const placeSizeDial = () => {
+    const painting = frame.getBoundingClientRect();
+    const staged = sheet.classList.contains("is-expanded");
+    sizeMenu.classList.toggle("is-stage", staged);
+    const phone = isPhone();
+    const width = Math.round(
+      Math.max(phone ? 196 : 180, Math.min(painting.width * (phone ? 0.72 : 0.62), painting.width - (phone ? 28 : 48), phone ? 260 : 228))
+    );
+    const height = phone ? 56 : staged ? 56 : 52;
+    const fit = (height * height + (width / 2) ** 2) / (2 * height);
+    const radius = Math.round(Math.max(width * 1.08, fit * 1.85));
+    const iconR = Math.round(radius - 22);
+    const hashR = Math.max(iconR + 12, radius - 4);
+    const bar = staged ? 48 : 8;
+    sizeMenu.style.width = `${width}px`;
+    sizeMenu.style.height = `${height}px`;
+    sizeMenu.style.setProperty("--apex", "5px");
+    sizeMenu.style.setProperty("--radius", `${radius}px`);
+    sizeMenu.style.setProperty("--icon-r", `${iconR}px`);
+    sizeMenu.style.setProperty("--hash-r", `${hashR}px`);
+    sizeMenu.style.setProperty("--cy", `${radius}px`);
+    if (sizeMenu.parentElement !== frame) frame.append(sizeMenu);
+    sizeMenu.style.left = `${Math.round((painting.width - width) / 2)}px`;
+    sizeMenu.style.top = `${Math.round(painting.height - height - bar)}px`;
+  };
+
+  const openSizeDial = () => {
+    closeChoiceMenus();
+    closeSheetColorMenus();
+    closeBrushDials();
+    frame.append(sizeMenu);
+    sizeMenu.hidden = false;
+    holdPopovers();
+    placeSizeDial();
+    edit._sizeDial?.setValue(String(sizeScaleFromComposition(sheetEffects(cards.get(item.id) || { item }).composition)));
+    edit._sizeDial?.focus();
+  };
+
+  sizeMenu._place = placeSizeDial;
+  edit._openSizeDial = openSizeDial;
+  sizeMenu.addEventListener("pointerdown", (event) => event.stopPropagation());
+  sizeMenu.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeBrushDials();
+    }
+  });
+
   let dragging = false;
   const follow = (event) => {
     const box = frame.getBoundingClientRect();
@@ -1117,14 +1191,29 @@ function mountSubjectDrag(sheet, item) {
   let holding = false;
   let carrying = false;
   let moved = false;
+  let pickGen = 0;
   let startX = 0;
   let startY = 0;
   let startPlaceX = 0.5;
   let startPlaceY = 0.5;
+  let lastTapAt = 0;
+  let lastTapX = 0;
+  let lastTapY = 0;
+  let twoFinger = false;
+  let twoFingerMoved = false;
+  const pointers = new Map();
 
   const img = () => frame.querySelector("img:not(.wash-lift)");
 
   const liftEl = () => frame.querySelector(".wash-lift");
+
+  const chrome = (event) => event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .veil, .save, .brush-dial-menu");
+
+  const canEditFrame = () => {
+    if (!img()) return false;
+    if (isCompact() && !sheet.classList.contains("active") && !sheet.classList.contains("is-expanded")) return false;
+    return Boolean(cards.get(item.id)?.dataUrl);
+  };
 
   const placementFrom = (clientX, clientY) => {
     const box = frame.getBoundingClientRect();
@@ -1196,11 +1285,32 @@ function mountSubjectDrag(sheet, item) {
   };
 
   const cancel = () => {
+    pickGen += 1;
     holding = false;
     carrying = false;
     unbindCarry();
     write(startPlaceX, startPlaceY);
     clearPreview(true);
+  };
+
+  const openSize = async (clientX, clientY) => {
+    pickGen += 1;
+    holding = false;
+    carrying = false;
+    moved = true;
+    twoFinger = false;
+    unbindCarry();
+    frame.classList.remove("is-nudging", "is-carrying");
+    selectPainting(item.id);
+    const rec = cards.get(item.id);
+    let prepared = null;
+    try {
+      prepared = await prepareLift({ clientX, clientY });
+    } catch {
+      prepared = null;
+    }
+    if (!prepared && rec?.split?.hits) return;
+    sheet.querySelector(".sheet-edit")?._openSizeDial?.();
   };
 
   const onDocMove = (event) => {
@@ -1210,14 +1320,9 @@ function mountSubjectDrag(sheet, item) {
 
   const onDocDown = (event) => {
     if (!carrying) return;
-    if (event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .save")) {
+    if (frame.contains(event.target)) return;
+    if (event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .save, .brush-dial-menu")) {
       cancel();
-      return;
-    }
-    if (frame.contains(event.target)) {
-      event.preventDefault();
-      event.stopPropagation();
-      drop(event.clientX, event.clientY);
       return;
     }
     cancel();
@@ -1239,36 +1344,39 @@ function mountSubjectDrag(sheet, item) {
     document.removeEventListener("keydown", onKey);
   }
 
-  frame.addEventListener("pointerdown", (event) => {
-    void startPick(event);
-  });
-
-  async function startPick(event) {
-    if (carrying) return;
-    if (event.button != null && event.button !== 0) return;
-    if (event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .veil")) return;
-    if (!img()) return;
-    if (isCompact() && !sheet.classList.contains("active") && !sheet.classList.contains("is-expanded")) return;
+  async function prepareLift({ clientX = 0, clientY = 0 } = {}) {
     const rec = cards.get(item.id);
-    if (!rec?.dataUrl) return;
-    event.preventDefault();
-    selectPainting(item.id);
+    if (!rec?.dataUrl) return null;
     const waited = !rec.split?.baseUrl;
     if (waited) frame.classList.add("is-nudging");
     try {
       await ensureSplit(rec);
     } catch {
       frame.classList.remove("is-nudging");
-      return;
+      return null;
     }
-    if (!hitSubject(frame, rec, event.clientX, event.clientY)) {
+    if (!hitSubject(frame, rec, clientX, clientY)) {
       frame.classList.remove("is-nudging");
-      return;
+      return null;
     }
     if (!showLift(rec)) {
       frame.classList.remove("is-nudging");
-      return;
+      return null;
     }
+    return { rec, waited };
+  }
+
+  async function startPick(event) {
+    if (carrying) return;
+    if (event.button != null && event.button !== 0) return;
+    if (chrome(event)) return;
+    if (!canEditFrame()) return;
+    const gen = ++pickGen;
+    event.preventDefault();
+    selectPainting(item.id);
+    const prepared = await prepareLift({ clientX: event.clientX, clientY: event.clientY });
+    if (gen !== pickGen || !prepared) return;
+    const { rec, waited } = prepared;
     const fx = sheetEffects(rec);
     moved = false;
     startX = event.clientX;
@@ -1289,20 +1397,67 @@ function mountSubjectDrag(sheet, item) {
       /* ignore */
     }
   }
+
+  frame.addEventListener("pointerdown", (event) => {
+    if (chrome(event)) return;
+    if (event.button != null && event.button !== 0) return;
+    if (!canEditFrame()) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size >= 2) {
+      event.preventDefault();
+      event.stopPropagation();
+      twoFinger = true;
+      twoFingerMoved = false;
+      pickGen += 1;
+      holding = false;
+      return;
+    }
+    void startPick(event);
+  });
   frame.addEventListener("pointermove", (event) => {
+    if (pointers.has(event.pointerId)) {
+      const prev = pointers.get(event.pointerId);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (twoFinger && Math.hypot(event.clientX - prev.x, event.clientY - prev.y) > 10) twoFingerMoved = true;
+    }
     if (!holding || carrying) return;
     follow(event.clientX, event.clientY);
     if (Math.hypot(event.clientX - startX, event.clientY - startY) > 4) moved = true;
   });
   frame.addEventListener("pointerup", (event) => {
-    if (!holding || carrying) return;
-    holding = false;
-    try {
-      frame.releasePointerCapture(event.pointerId);
-    } catch {
-      /* ignore */
+    pointers.delete(event.pointerId);
+    if (twoFinger) {
+      if (pointers.size > 0) return;
+      const tap = twoFinger && !twoFingerMoved;
+      twoFinger = false;
+      twoFingerMoved = false;
+      if (tap) void openSize(event.clientX, event.clientY);
+      return;
     }
-    if (moved) {
+    if (holding) {
+      holding = false;
+      try {
+        frame.releasePointerCapture(event.pointerId);
+      } catch {
+        /* ignore */
+      }
+      if (moved) {
+        drop(event.clientX, event.clientY);
+        return;
+      }
+    } else if (carrying && moved) {
+      return;
+    }
+    const now = Date.now();
+    const again = now - lastTapAt < 340 && Math.hypot(event.clientX - lastTapX, event.clientY - lastTapY) < 28;
+    lastTapAt = now;
+    lastTapX = event.clientX;
+    lastTapY = event.clientY;
+    if (again) {
+      void openSize(event.clientX, event.clientY);
+      return;
+    }
+    if (carrying) {
       drop(event.clientX, event.clientY);
       return;
     }
@@ -1311,7 +1466,14 @@ function mountSubjectDrag(sheet, item) {
     bindCarry();
   });
   frame.addEventListener("pointercancel", () => {
+    pointers.clear();
+    twoFinger = false;
     if (holding && !carrying) cancel();
+  });
+  frame.addEventListener("dblclick", (event) => {
+    if (chrome(event) || !canEditFrame()) return;
+    event.preventDefault();
+    void openSize(event.clientX, event.clientY);
   });
   sheet.addEventListener("click", (event) => {
     if (!moved && !carrying) return;
@@ -1631,6 +1793,7 @@ function requestHighRes(id) {
 function applyPaintedData(rec, dataUrl, density = 1) {
   rec.dataUrl = dataUrl;
   rec.item.dataUrl = dataUrl;
+  rec.paintedComposition = sheetEffects(rec).composition;
   rec.paintDensity = density;
   rec.wantDensity = null;
   const frame = rec.sheet.querySelector(".frame");
@@ -2091,7 +2254,7 @@ function mountMobileVariationSwipe() {
     if (!tracking) return;
     tracking = false;
     if (!isPhone()) return;
-    if (wallEl.querySelector(".frame.is-carrying, .frame.is-nudging")) return;
+    if (wallEl.querySelector(".frame.is-carrying, .frame.is-nudging, .size-dial-menu:not([hidden])")) return;
     const dx = event.clientX - startX;
     const dy = event.clientY - startY;
     if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.35) return;

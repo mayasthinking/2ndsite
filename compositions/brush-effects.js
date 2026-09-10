@@ -1,4 +1,5 @@
 import { parseColor, oklchToHex, mixOklch } from "./color.js";
+import { compositionVisualScale } from "./effect-model.js?v=17";
 
 const PAPER = parseColor("#f3eee4");
 const SHADE = parseColor("#302822");
@@ -262,7 +263,7 @@ function point(x, y, e) {
   const cx = typeof window.width === "number" ? window.width / 2 : 400;
   const cy = typeof window.height === "number" ? window.height / 2 : 400;
   let scale = 1;
-  scale *= amp(e.composition, 0.58, 1.48);
+  scale *= compositionVisualScale(e.composition);
   scale *= amp(e.openness, 1.16, 0.78);
   scale *= amp(e.intimacy, 0.86, 1.2);
   scale *= amp(e.grandeur, 0.88, 1.24);
