@@ -9,7 +9,7 @@ Apply patterns from `index.html` (the filing cabinet homepage). Match existing h
 
 ## Page hierarchy
 
-1. `h1.phrase` — page title (`filing cabinet`)
+1. `h1.phrase` — page title (`hello`)
 2. `section[aria-labelledby]` — content blocks
 3. `h4.phrase` — section header (lowercase label)
 4. Section body — content or expandable entries
