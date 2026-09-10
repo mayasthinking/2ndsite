@@ -2277,8 +2277,7 @@ select.choice-native {
 }
 
 .sheet.active .frame:has(img),
-.sheet.is-expanded .frame:has(img),
-.frame.is-pinching {
+.sheet.is-expanded .frame:has(img) {
   cursor: grab;
   touch-action: none;
 }
@@ -2287,16 +2286,12 @@ select.choice-native {
 .frame.is-nudging img,
 .frame.is-carrying,
 .frame.is-carrying img,
-.frame.is-pinching,
-.frame.is-pinching img,
-body:has(.frame.is-carrying),
-body:has(.frame.is-pinching) {
+body:has(.frame.is-carrying) {
   cursor: grabbing;
 }
 
 .frame.is-nudging .wash-lift,
-.frame.is-carrying .wash-lift,
-.frame.is-pinching .wash-lift {
+.frame.is-carrying .wash-lift {
   will-change: transform;
   transform-origin: center center;
 }
@@ -2430,8 +2425,7 @@ body:has(.frame.is-pinching) {
 }
 
 .frame.is-nudging .wash-lift,
-.frame.is-carrying .wash-lift,
-.frame.is-pinching .wash-lift {
+.frame.is-carrying .wash-lift {
   filter: drop-shadow(0 6px 14px rgba(36, 33, 31, 0.14));
 }
 
@@ -2609,6 +2603,19 @@ body:has(.frame.is-pinching) {
 
 .brush-dial-menu.is-stage .brush-arc-label {
   font-size: 11px;
+}
+
+.size-dial-menu.is-size-arc .brush-arc-mark {
+  display: none;
+}
+
+.size-dial-menu .brush-arc-spoke {
+  gap: 0;
+}
+
+.size-dial-menu .brush-arc-label {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .sheet-stage .expand {
@@ -3493,8 +3500,7 @@ body.is-sheet-open {
 
   .sheet.active .frame,
   .sheet.active .frame:has(img),
-  .sheet.is-expanded .frame:has(img),
-  .frame.is-pinching {
+  .sheet.is-expanded .frame:has(img) {
     outline: none;
     cursor: grab;
     touch-action: none;

@@ -18,9 +18,10 @@ export const PLACEMENT_SLIDERS = [
   { id: "composition", label: "size" },
 ];
 
-// Keep in sync with brush-effects.js point() — amp(composition, 0.58, 1.48).
+export const SIZE_SCALES = [1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 export const COMPOSITION_SCALE_MIN = 0.58;
-export const COMPOSITION_SCALE_MAX = 1.48;
+export const COMPOSITION_SCALE_MID = 1;
+export const COMPOSITION_SCALE_MAX = 4;
 
 function clamp01(value, fallback = 0.5) {
   const next = Number(value);
@@ -30,37 +31,51 @@ function clamp01(value, fallback = 0.5) {
 
 export function compositionVisualScale(value) {
   const t = clamp01(value);
-  return COMPOSITION_SCALE_MIN + (COMPOSITION_SCALE_MAX - COMPOSITION_SCALE_MIN) * t;
+  if (t <= 0.5) {
+    return COMPOSITION_SCALE_MIN + (COMPOSITION_SCALE_MID - COMPOSITION_SCALE_MIN) * (t / 0.5);
+  }
+  return COMPOSITION_SCALE_MID + (COMPOSITION_SCALE_MAX - COMPOSITION_SCALE_MID) * ((t - 0.5) / 0.5);
 }
 
 export function compositionFromScale(scale) {
-  const span = COMPOSITION_SCALE_MAX - COMPOSITION_SCALE_MIN;
   const next = Number(scale);
-  if (!Number.isFinite(next) || !(span > 0)) return 0.5;
-  return clamp01((next - COMPOSITION_SCALE_MIN) / span);
+  if (!Number.isFinite(next)) return 0.5;
+  if (next <= COMPOSITION_SCALE_MID) {
+    const span = COMPOSITION_SCALE_MID - COMPOSITION_SCALE_MIN;
+    if (!(span > 0)) return 0.5;
+    return clamp01(0.5 * (next - COMPOSITION_SCALE_MIN) / span);
+  }
+  const span = COMPOSITION_SCALE_MAX - COMPOSITION_SCALE_MID;
+  if (!(span > 0)) return 1;
+  return clamp01(0.5 + 0.5 * (next - COMPOSITION_SCALE_MID) / span);
 }
 
-export function pinchComposition(startComposition, startDistance, currentDistance) {
-  if (!(startDistance > 0) || !(currentDistance > 0)) return clamp01(startComposition);
-  const nextScale = compositionVisualScale(startComposition) * (currentDistance / startDistance);
-  return compositionFromScale(
-    Math.min(COMPOSITION_SCALE_MAX, Math.max(COMPOSITION_SCALE_MIN, nextScale))
-  );
+export function formatSizeScale(scale) {
+  const next = Number(scale);
+  if (!Number.isFinite(next)) return "1x";
+  return `${next}x`;
+}
+
+export function nearestSizeScale(scale) {
+  const next = Number(scale);
+  if (!Number.isFinite(next)) return SIZE_SCALES[0];
+  return SIZE_SCALES.reduce((best, step) => (
+    Math.abs(step - next) < Math.abs(best - next) ? step : best
+  ));
+}
+
+export function sizeScaleFromComposition(value) {
+  return nearestSizeScale(Math.max(SIZE_SCALES[0], compositionVisualScale(value)));
+}
+
+export function compositionFromSizeScale(scale) {
+  return compositionFromScale(nearestSizeScale(scale));
 }
 
 export function compositionPreviewScale(startComposition, nextComposition) {
   const startScale = compositionVisualScale(startComposition);
   if (!(startScale > 0)) return 1;
   return compositionVisualScale(nextComposition) / startScale;
-}
-
-export function wheelComposition(startComposition, deltaY) {
-  const dy = Number(deltaY);
-  if (!Number.isFinite(dy) || dy === 0) return clamp01(startComposition);
-  const nextScale = compositionVisualScale(startComposition) * Math.exp(-dy * 0.0024);
-  return compositionFromScale(
-    Math.min(COMPOSITION_SCALE_MAX, Math.max(COMPOSITION_SCALE_MIN, nextScale))
-  );
 }
 
 export const EFFECT_KEYS = [
@@ -172,7 +187,7 @@ export function describeEffects(raw) {
   return [
     `Pigment color: ${formatOklch(e.color)}.`,
     `BRUSH — type ${e.brushType}; weight ${e.brushWeight.toFixed(2)} (${tone(e.brushWeight, "fine", "even", "heavy")}); scatter ${e.brushScatter.toFixed(2)} (${tone(e.brushScatter, "held", "some spread", "broken")}); grain ${e.brushGrain.toFixed(2)} (${tone(e.brushGrain, "smooth", "toothy", "gritty")}); spacing ${e.brushSpacing.toFixed(2)} (${tone(e.brushSpacing, "dense", "even", "open")}); sharpness ${e.brushSharpness.toFixed(2)} (${tone(e.brushSharpness, "soft tip", "firm", "crisp")}).`,
-    `PLACEMENT — across ${e.placeX.toFixed(2)} (${tone(e.placeX, "left of center", "centered", "right of center")}); up ${e.placeY.toFixed(2)} (${tone(e.placeY, "low on the page", "mid", "high on the page")}); size ${e.composition.toFixed(2)} (${tone(e.composition, "airy and small", "balanced", "large on the page")}).`,
+    `PLACEMENT — across ${e.placeX.toFixed(2)} (${tone(e.placeX, "left of center", "centered", "right of center")}); up ${e.placeY.toFixed(2)} (${tone(e.placeY, "low on the page", "mid", "high on the page")}); size ${formatSizeScale(sizeScaleFromComposition(e.composition))} (${tone(e.composition, "airy and small", "1x", "large on the page")}).`,
     `FORM — depth ${e.spatialDepth.toFixed(2)} (${tone(e.spatialDepth, "flat and frontal", "some overlap", "receding space")}).`,
     `TEXTURE — grain ${e.granulation.toFixed(2)} (${tone(e.granulation, "smooth wash", "some tooth", "heavy granulation")}); edge ${e.edgeSoftness.toFixed(2)} (${tone(e.edgeSoftness, "held, dry", "soft", "lost")}).`,
     `LIGHT — luminosity ${e.luminosity.toFixed(2)} (${tone(e.luminosity, "dim", "even", "bright")}); warmth ${e.warmth.toFixed(2)} (${tone(e.warmth, "cool", "neutral", "warm")}).`,

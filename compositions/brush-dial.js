@@ -1,6 +1,5 @@
-import { BRUSH_TYPES } from "./effect-model.js?v=15";
+import { BRUSH_TYPES } from "./effect-model.js?v=17";
 
-const STEP = 360 / BRUSH_TYPES.length;
 const DEG_PER_PX = 0.72;
 const VISIBLE = 34;
 
@@ -38,7 +37,8 @@ export function brushIndex(name) {
 
 export function brushFromTurn(turn, types = BRUSH_TYPES) {
   const n = types.length;
-  const snapped = ((Math.round(-turn / STEP) % n) + n) % n;
+  const step = 360 / n;
+  const snapped = ((Math.round(-turn / step) % n) + n) % n;
   return types[snapped];
 }
 
@@ -53,11 +53,23 @@ function fromApex(deg) {
   return Math.min(a, 360 - a);
 }
 
-export function mountBrushDial({ host, value, onChange }) {
-  if (!host) return null;
+export function mountArcDial({ host, items, value, onChange, ariaLabel = "dial" }) {
+  if (!host || !items?.length) return null;
 
-  let current = BRUSH_TYPES.includes(value) ? value : "HB";
-  let turn = -brushIndex(current) * STEP;
+  const ids = items.map((item) => String(item.id));
+  const step = 360 / ids.length;
+  const indexOf = (id) => {
+    const index = ids.indexOf(String(id));
+    return index >= 0 ? index : 0;
+  };
+  const fromTurn = (turn) => {
+    const n = ids.length;
+    const snapped = ((Math.round(-turn / step) % n) + n) % n;
+    return ids[snapped];
+  };
+
+  let current = ids.includes(String(value)) ? String(value) : ids[0];
+  let turn = -indexOf(current) * step;
   host.classList.add("brush-arc");
   host.replaceChildren();
 
@@ -65,9 +77,9 @@ export function mountBrushDial({ host, value, onChange }) {
   face.className = "brush-arc-face";
   face.tabIndex = 0;
   face.setAttribute("role", "slider");
-  face.setAttribute("aria-label", "brush");
+  face.setAttribute("aria-label", ariaLabel);
   face.setAttribute("aria-valuemin", "0");
-  face.setAttribute("aria-valuemax", String(BRUSH_TYPES.length - 1));
+  face.setAttribute("aria-valuemax", String(ids.length - 1));
 
   const ring = document.createElement("div");
   ring.className = "brush-arc-ring";
@@ -86,29 +98,32 @@ export function mountBrushDial({ host, value, onChange }) {
   const track = document.createElement("div");
   track.className = "brush-arc-track";
   track.setAttribute("role", "listbox");
-  track.setAttribute("aria-label", "brushes");
+  track.setAttribute("aria-label", ariaLabel);
 
   const pointer = document.createElement("div");
   pointer.className = "brush-arc-pointer";
   pointer.setAttribute("aria-hidden", "true");
 
-  for (const [index, name] of BRUSH_TYPES.entries()) {
+  for (const [index, item] of items.entries()) {
     const tick = document.createElement("button");
     tick.type = "button";
     tick.className = "brush-arc-tick";
-    tick.dataset.brush = name;
+    tick.dataset.choice = String(item.id);
+    tick.dataset.brush = String(item.id);
     tick.dataset.index = String(index);
     tick.setAttribute("role", "option");
-    tick.setAttribute("aria-label", name.toLowerCase());
+    tick.setAttribute("aria-label", item.label);
     tick.tabIndex = -1;
     const spoke = document.createElement("span");
     spoke.className = "brush-arc-spoke";
     const mark = document.createElement("span");
     mark.className = "brush-arc-mark";
-    paintBrushMark(mark, name);
+    if (item.icon) {
+      mark.innerHTML = `<svg class="brush-ico" viewBox="0 0 24 24" aria-hidden="true"><use href="#${item.icon}"></use></svg>`;
+    }
     const label = document.createElement("span");
     label.className = "brush-arc-label";
-    label.textContent = name.toLowerCase();
+    label.textContent = item.label;
     spoke.append(mark, label);
     tick.append(spoke);
     track.append(tick);
@@ -129,14 +144,15 @@ export function mountBrushDial({ host, value, onChange }) {
 
   function applyTurn(nextTurn, emit) {
     turn = nextTurn;
-    const name = brushFromTurn(turn);
-    const index = brushIndex(name);
+    const id = fromTurn(turn);
+    const index = indexOf(id);
+    const label = items[index]?.label || id;
     hashes.style.setProperty("--turn", `${turn}deg`);
     face.setAttribute("aria-valuenow", String(index));
-    face.setAttribute("aria-valuetext", name.toLowerCase());
+    face.setAttribute("aria-valuetext", label);
     for (const tick of track.querySelectorAll(".brush-arc-tick")) {
-      const on = tick.dataset.brush === name;
-      const ang = Number(tick.dataset.index) * STEP + turn;
+      const on = tick.dataset.choice === id;
+      const ang = Number(tick.dataset.index) * step + turn;
       const away = fromApex(ang);
       tick.classList.toggle("is-active", on);
       tick.classList.toggle("is-far", away > VISIBLE);
@@ -144,17 +160,17 @@ export function mountBrushDial({ host, value, onChange }) {
       tick.style.setProperty("--ang", `${ang}deg`);
       tick.style.setProperty("--from", String(away));
     }
-    if (emit && name !== current) {
-      current = name;
+    if (emit && id !== current) {
+      current = id;
       onChange?.(current);
     } else {
-      current = name;
+      current = id;
     }
   }
 
-  function commit(name, emit) {
-    const next = BRUSH_TYPES.includes(name) ? name : "HB";
-    applyTurn(-brushIndex(next) * STEP, emit);
+  function commit(id, emit) {
+    const next = ids.includes(String(id)) ? String(id) : ids[0];
+    applyTurn(-indexOf(next) * step, emit);
   }
 
   let dragging = false;
@@ -195,30 +211,30 @@ export function mountBrushDial({ host, value, onChange }) {
     face.classList.remove("is-dragging");
     if (!dragged) {
       const tick = event.target instanceof Element ? event.target.closest(".brush-arc-tick") : null;
-      if (tick?.dataset.brush) {
-        commit(tick.dataset.brush, true);
+      if (tick?.dataset.choice) {
+        commit(tick.dataset.choice, true);
         return;
       }
     }
-    commit(brushFromTurn(turn), true);
+    commit(fromTurn(turn), true);
   };
   face.addEventListener("pointerup", endDrag);
   face.addEventListener("pointercancel", endDrag);
 
   face.addEventListener("keydown", (event) => {
-    const index = brushIndex(current);
+    const index = indexOf(current);
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
-      commit(BRUSH_TYPES[(index + 1) % BRUSH_TYPES.length], true);
+      commit(ids[(index + 1) % ids.length], true);
     } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
-      commit(BRUSH_TYPES[(index - 1 + BRUSH_TYPES.length) % BRUSH_TYPES.length], true);
+      commit(ids[(index - 1 + ids.length) % ids.length], true);
     } else if (event.key === "Home") {
       event.preventDefault();
-      commit(BRUSH_TYPES[0], true);
+      commit(ids[0], true);
     } else if (event.key === "End") {
       event.preventDefault();
-      commit(BRUSH_TYPES[BRUSH_TYPES.length - 1], true);
+      commit(ids[ids.length - 1], true);
     }
   });
 
@@ -226,8 +242,9 @@ export function mountBrushDial({ host, value, onChange }) {
 
   return {
     setValue(nextValue) {
-      if (!BRUSH_TYPES.includes(nextValue) || nextValue === current) return;
-      commit(nextValue, false);
+      const next = String(nextValue);
+      if (!ids.includes(next) || next === current) return;
+      commit(next, false);
     },
     getValue() {
       return current;
@@ -236,4 +253,18 @@ export function mountBrushDial({ host, value, onChange }) {
       face.focus({ preventScroll: true });
     },
   };
+}
+
+export function mountBrushDial({ host, value, onChange }) {
+  return mountArcDial({
+    host,
+    items: BRUSH_TYPES.map((name) => ({
+      id: name,
+      label: name.toLowerCase(),
+      icon: ICONS[name],
+    })),
+    value,
+    ariaLabel: "brush",
+    onChange,
+  });
 }
