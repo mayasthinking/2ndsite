@@ -1,7 +1,8 @@
+import { loadPins, savePin, removePin } from "./composition-library.js";
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial } from "./brush-dial.js?v=29";
+import { mountBrushDial } from "./brush-dial.js?v=30";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -39,6 +40,17 @@ const stored = JSON.parse(localStorage.getItem("wash.settings") || "{}");
 if (stored.provider) providerEl.value = stored.provider;
 if (stored.apiKey) apiKeyEl.value = stored.apiKey;
 
+let pinned = [];
+// Lucide pin, ISC license: https://lucide.dev/license
+const PIN_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>`;
+const libraryEl = document.createElement("section");
+libraryEl.className = "composition-library";
+libraryEl.setAttribute("aria-label", "saved compositions");
+wallEl.append(libraryEl);
+const libraryStatus = document.createElement("p");
+libraryStatus.className = "library-status";
+libraryStatus.setAttribute("role", "status");
+document.body.append(libraryStatus);
 let samples = [];
 let paintings = [];
 let selectedId = null;
@@ -941,9 +953,9 @@ function mountSheetEditor(sheet, item) {
     const width = Math.round(
       Math.max(phone ? 196 : 180, Math.min(painting.width * (phone ? 0.72 : 0.62), painting.width - (phone ? 28 : 48), phone ? 260 : 228))
     );
-    const height = phone ? 56 : staged ? 56 : 52;
+    const height = 92;
     const fit = (height * height + (width / 2) ** 2) / (2 * height);
-    const radius = Math.round(Math.max(width * 1.08, fit * 1.85));
+    const radius = Math.round(width * 0.68);
     const iconR = Math.round(radius - 22);
     const hashR = Math.max(iconR + 12, radius - 4);
     const bar = staged ? 48 : 8;
@@ -1244,6 +1256,8 @@ function mountSubjectDrag(sheet, item) {
   });
 
   async function startPick(event) {
+    if (event.target.closest("button, input, select")) return;
+    if (!sheet.classList.contains("is-expanded")) return;
     if (carrying) return;
     if (event.button != null && event.button !== 0) return;
     if (event.target.closest(".expand, .pick, .sheet-close, .sheet-edit, .veil")) return;
@@ -1322,7 +1336,7 @@ function mountSubjectDrag(sheet, item) {
 }
 
 function readEffects() {
-  const next = { color: parseColor(pigmentColorEl?.value) || effects.color || DEFAULT_COLOR };
+  const next = { ...sheetEffects(cards.get(selectedId)), color: parseColor(pigmentColorEl?.value) || effects.color || DEFAULT_COLOR };
   const typeEl = document.querySelector("#brushType");
   if (typeEl) next.brushType = typeEl.value;
   const ranges = [
@@ -1545,6 +1559,7 @@ function mountEffects() {
   mountBrushPanel();
   mountPlacementPanel();
   EFFECT_GROUPS.forEach((group, index) => {
+    if (group.id === "affect") return;
     const details = document.createElement("details");
     details.open = index < 1;
     const summary = document.createElement("summary");
@@ -1652,6 +1667,9 @@ function applyPaintedData(rec, dataUrl, density = 1) {
   rec.sheet.classList.remove("is-adjusting");
   rec.sheet.querySelector(".veil")?.remove();
   rec.sheet.querySelector(".save")?.removeAttribute("disabled");
+  rec.sheet.querySelector(".pin-variation")?.removeAttribute("disabled");
+  rec.sheet.querySelector(".copy-variation")?.removeAttribute("disabled");
+  if (pinned.some(pin => pin.id === rec.item.id)) void persistPin(rec);
 }
 
 function queuePhotoPreview(id) {
@@ -1783,13 +1801,35 @@ function openSheetStage(id) {
   rec.sheet.querySelector(".sheet-edit")?._onStage?.();
   sheetStageEl.hidden = false;
   document.body.classList.add("is-sheet-open");
+  const tools = document.createElement("aside");
+  tools.className = "canvas-customize";
+  tools.setAttribute("aria-label", "customize composition");
+  const heading = document.createElement("h2");
+  heading.textContent = "customize";
+  tools.append(heading);
+  stagedSheet.kitHome = paintKit.parentElement;
+  stagedSheet.kitNext = paintKit.nextSibling;
+  stagedSheet.kitOpen = paintKit.open;
+  tools.append(paintKit);
+  sheetStageEl.append(tools);
+  paintKit.open = true;
+  openPaintSections();
+  sheetStageEl.setAttribute("role", "dialog");
+  sheetStageEl.setAttribute("aria-modal", "true");
+  sheetStageEl.setAttribute("aria-label", "composition canvas");
+  document.querySelector(".studio").inert = true;
+  rec.sheet.focus({ preventScroll: true });
   requestHighRes(id);
 }
 
 function closeSheetStage() {
   if (!stagedSheet) return;
   closePopovers();
-  const { sheet, home, next } = stagedSheet;
+  const { sheet, home, next, kitHome, kitNext, kitOpen } = stagedSheet;
+  if (kitHome) kitHome.insertBefore(paintKit, kitNext?.parentElement === kitHome ? kitNext : null);
+  paintKit.open = kitOpen;
+  sheetStageEl.querySelector(".canvas-customize")?.remove();
+  document.querySelector(".studio").inert = false;
   sheet.querySelector(".sheet-edit")?._offStage?.();
   sheet.classList.remove("is-expanded");
   if (home) {
@@ -1799,6 +1839,8 @@ function closeSheetStage() {
   stagedSheet = null;
   sheetStageEl.hidden = true;
   document.body.classList.remove("is-sheet-open");
+  const libraryCard = [...libraryEl.querySelectorAll(".pinned-card")].find(card => card.dataset.id === sheet.dataset.id);
+  (libraryCard?.querySelector(".pinned-composition") || sheet).focus({ preventScroll: true });
 }
 
 function clearWall() {
@@ -1812,7 +1854,7 @@ function clearWall() {
   paintingNow = false;
   waitingId = null;
   cards.clear();
-  wallEl.innerHTML = "";
+  wallEl.replaceChildren(libraryEl);
 }
 
 function renderGrid(items) {
@@ -1835,6 +1877,7 @@ function renderGrid(items) {
     item.effects = clampEffects(item.effects || readEffects());
     sheet.innerHTML = `
       <div class="frame">
+        <button class="pin-variation" type="button" aria-label="pin composition" title="pin composition" disabled>${PIN_ICON}</button>
         <div class="frame-tools">
           <button type="button" class="expand" data-id="${item.id}" aria-label="expand" title="expand">
             <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -1844,17 +1887,13 @@ function renderGrid(items) {
               <path d="M3 13l4.8-4.8" fill="none" stroke="currentColor" stroke-width="1.5" />
             </svg>
           </button>
-          <button type="button" class="sheet-close" aria-label="close" title="close">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M2.5 2.5l11 11" fill="none" stroke="currentColor" stroke-width="1.5" />
-              <path d="M13.5 2.5 2.5 13.5" fill="none" stroke="currentColor" stroke-width="1.5" />
-            </svg>
-          </button>
+
         </div>
         <div class="veil">pigment settling…</div>
       </div>
       <div class="caption">
-        <span class="caption-name">variation ${index + 1}</span>
+        <input class="caption-name" aria-label="variation name" maxlength="80" placeholder="name this variation" />
+        <button class="copy-variation" type="button" disabled>new variation</button>
         <div class="sheet-edit is-row" role="toolbar" aria-label="edit wash">
           <button type="button" class="sheet-edit-grip" aria-label="move editor" title="drag to the side"></button>
           <button type="button" class="sheet-edit-color" title="color" aria-label="color" aria-haspopup="listbox" aria-expanded="false">
@@ -1886,32 +1925,47 @@ function renderGrid(items) {
       </div>
     `;
     sheet.addEventListener("click", (event) => {
-      if (event.target.closest(".save, .expand, .pick, .sheet-close, .sheet-edit")) return;
-      selectPainting(item.id);
+      if (event.target.closest("button, input, .sheet-edit")) return;
+      openSheetStage(item.id);
     });
     sheet.addEventListener("keydown", (event) => {
-      if (event.target.closest(".save, .expand, .pick, .sheet-close, .sheet-edit")) return;
+      if (event.target.closest("button, input, .sheet-edit")) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        selectPainting(item.id);
+        openSheetStage(item.id);
       }
     });
     sheet.querySelector(".expand").addEventListener("click", (event) => {
       event.stopPropagation();
       openSheetStage(item.id);
     });
-    sheet.querySelector(".sheet-close").addEventListener("click", (event) => {
-      event.stopPropagation();
-      closeSheetStage();
-    });
+
     sheet.querySelector(".save").addEventListener("click", (event) => {
       event.stopPropagation();
       downloadPainting(item.id);
+    });
+    item.name ||= `variation ${index + 1}`;
+    const nameInput = sheet.querySelector(".caption-name");
+    bindNameEditor(nameInput, item, async () => {
+      if (pinned.some(pin => pin.id === item.id)) await persistPin(cards.get(item.id));
+    });
+    sheet.querySelector(".pin-variation").addEventListener("click", () => togglePin(cards.get(item.id)));
+    sheet.querySelector(".copy-variation").addEventListener("click", () => {
+      const copy = structuredClone(item);
+      copy.id = crypto.randomUUID();
+      copy.name = `${item.name} — variation`;
+      renderGrid([...cards.values()].map(rec => rec.item).concat(copy));
+      openSheetStage(copy.id);
     });
     grid.append(sheet);
     cards.set(item.id, { item, sheet, dataUrl: null });
     mountSheetEditor(sheet, item);
     mountSubjectDrag(sheet, item);
+    syncPinButton(cards.get(item.id));
+    if (item.dataUrl) {
+      applyPaintedData(cards.get(item.id), item.dataUrl);
+      return;
+    }
 
     if (item.error || (!item.code && !item.photo)) {
       const veil = sheet.querySelector(".veil");
@@ -2471,7 +2525,7 @@ function mountMenuScrollEase() {
 }
 
 sheetStageEl?.addEventListener("click", (event) => {
-  if (event.target === sheetStageEl) closeSheetStage();
+  // The surrounding paper is part of the canvas.
 });
 
 {
@@ -2503,3 +2557,140 @@ sizeScene();
 mountDeskScroll();
 mountMenuScrollEase();
 mountDeskResize();
+
+function syncPinButton(rec) {
+  if (!rec) return;
+  const button = rec.sheet.querySelector(".pin-variation");
+  const isPinned = pinned.some(pin => pin.id === rec.item.id);
+  button.innerHTML = PIN_ICON;
+  button.setAttribute("aria-label", isPinned ? "unpin composition" : "pin composition");
+  button.title = isPinned ? "unpin composition" : "pin composition";
+  rec.sheet.classList.toggle("is-library-pinned", isPinned);
+  button.setAttribute("aria-pressed", String(isPinned));
+}
+
+async function persistPin(rec) {
+  if (!rec?.dataUrl) return;
+  const pin = structuredClone({ ...rec.item, dataUrl: rec.dataUrl });
+  try {
+    await savePin(pin);
+    const index = pinned.findIndex(item => item.id === pin.id);
+    if (index < 0) pinned.unshift(pin); else pinned[index] = pin;
+    syncPinButton(rec);
+    renderLibrary();
+    libraryStatus.textContent = "";
+  } catch {
+    libraryStatus.textContent = "couldn’t save this composition. Device storage may be full or unavailable.";
+  }
+}
+
+async function togglePin(rec) {
+  if (!rec?.dataUrl) return;
+  if (!pinned.some(pin => pin.id === rec.item.id)) {
+    await persistPin(rec);
+    if (!stagedSheet) {
+      const card = [...libraryEl.querySelectorAll(".pinned-card")].find(card => card.dataset.id === rec.item.id);
+      card?.querySelector(".pin-variation")?.focus({ preventScroll: true });
+      card?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    }
+    return;
+  }
+  try {
+    await removePin(rec.item.id);
+    pinned = pinned.filter(pin => pin.id !== rec.item.id);
+    syncPinButton(rec);
+    renderLibrary();
+    libraryStatus.textContent = "";
+    if (!stagedSheet) rec.sheet.querySelector(".pin-variation").focus({ preventScroll: true });
+  } catch { libraryStatus.textContent = "couldn’t unpin. Please try again."; }
+}
+
+function renderLibrary() {
+  libraryEl.replaceChildren();
+  libraryEl.hidden = pinned.length === 0;
+  for (const rec of cards.values()) syncPinButton(rec);
+  const grid = document.createElement("div");
+  grid.className = "pinned-grid";
+  for (const pin of pinned) {
+    const card = document.createElement("div");
+    card.className = "pinned-card";
+    card.dataset.id = pin.id;
+    const button = document.createElement("button");
+    button.className = "pinned-composition";
+    const img = document.createElement("img");
+    img.src = pin.dataUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    const name = document.createElement("input");
+    name.className = "caption-name";
+    name.setAttribute("aria-label", "variation name");
+    button.setAttribute("aria-label", `open ${pin.name || "untitled composition"}`);
+    bindNameEditor(name, pin, async () => {
+      await savePin(pin);
+      const rec = cards.get(pin.id);
+      if (rec) {
+        rec.item.name = pin.name;
+        rec.sheet.querySelector(".caption-name").value = pin.name;
+      }
+      button.setAttribute("aria-label", `open ${pin.name}`);
+    });
+    button.append(img);
+    button.addEventListener("click", () => {
+      if (!cards.has(pin.id)) renderGrid([...cards.values()].map(rec => rec.item).concat(structuredClone(pin)));
+      openSheetStage(pin.id);
+    });
+    const unpin = document.createElement("button");
+    unpin.type = "button";
+    unpin.className = "pin-variation";
+    unpin.innerHTML = PIN_ICON;
+    unpin.setAttribute("aria-label", "unpin composition");
+    unpin.title = "unpin composition";
+    unpin.setAttribute("aria-pressed", "true");
+    unpin.addEventListener("click", () => {
+      if (!cards.has(pin.id)) renderGrid([...cards.values()].map(rec => rec.item).concat(structuredClone(pin)));
+      void togglePin(cards.get(pin.id));
+    });
+    card.append(button, name, unpin);
+    grid.append(card);
+  }
+  libraryEl.append(grid);
+}
+renderLibrary();
+loadPins().then(items => { pinned = items; renderLibrary(); }).catch(() => {
+  libraryStatus.textContent = "Your saved library couldn’t be opened. Please allow device storage and reload.";
+});
+
+sheetStageEl.addEventListener("keydown", event => {
+  if (event.key !== "Tab") return;
+  const focusable = [...sheetStageEl.querySelectorAll('button, input, select, summary, [tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length);
+  const first = focusable[0], last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+});
+
+function bindNameEditor(input, item, save) {
+  input.value = item.name || "untitled composition";
+  input.maxLength = 80;
+  input.title = "click to rename";
+  input.setAttribute("enterkeyhint", "done");
+  let original = input.value;
+  input.addEventListener("focus", () => { original = input.value; input.select(); });
+  input.addEventListener("click", event => event.stopPropagation());
+  input.addEventListener("keydown", event => {
+    event.stopPropagation();
+    if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+    if (event.key === "Escape") { event.preventDefault(); input.value = original; input.blur(); }
+  });
+  input.addEventListener("blur", async () => {
+    if (input.value === original) return;
+    const previous = item.name;
+    item.name = input.value.trim() || original;
+    input.value = item.name;
+    try { await save(); }
+    catch {
+      item.name = previous;
+      input.value = previous || original;
+      libraryStatus.textContent = "couldn’t save the name. Please try again.";
+    }
+  });
+}

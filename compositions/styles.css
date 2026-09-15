@@ -4257,3 +4257,134 @@ body.is-sheet-open {
     font-weight: 500;
   }
 }
+
+/* Library and full-page composition workspace. */
+.library-status { position: fixed; bottom: 6px; left: 20px; z-index: 70; font-size: 12px; color: var(--muted); pointer-events: none; }
+.library-status:empty { display: none; }
+.composition-library { margin-bottom: 32px; }
+.pinned-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 22px; }
+.pinned-composition { padding: 0; border: 0; background: none; color: var(--ink); text-align: left; font: inherit; cursor: pointer; }
+.pinned-composition img { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; background: var(--paper-2); }
+.pinned-composition span { display: block; padding: 10px 0; overflow-wrap: anywhere; }
+.caption .caption-name { font: inherit; color: var(--ink); border: 0; border-bottom: 1px solid transparent; background: transparent; min-width: 60px; width: 120px; padding: 8px 0; text-overflow: ellipsis; }
+.caption .caption-name:hover, .caption .caption-name:focus { border-bottom-color: var(--line); }
+.copy-variation { border: 1px solid var(--line); border-radius: 20px; background: var(--paper); color: var(--hover); padding: 8px 12px; min-height: 40px; font: inherit; font-size: 12px; cursor: pointer; }
+.pin-variation:disabled, .copy-variation:disabled { opacity: .4; cursor: default; }
+.caption { flex-wrap: wrap; gap: 8px; }
+.sheet-stage { grid-template-columns: minmax(0,1fr) 300px; place-items: stretch; }
+.sheet-stage .sheet { width: 100%; height: 100dvh; min-width: 0; max-width: none; display: block; }
+.sheet-stage .sheet .frame { width: 100%; height: 100%; aspect-ratio: auto; border: 0; border-radius: 0; outline: 0; box-shadow: none; background: var(--paper); }
+.sheet-stage .sheet .frame img:not(.wash-lift) { width: 100%; height: 100%; object-fit: contain; border-radius: 0; }
+.sheet-stage .caption { top: max(12px,env(safe-area-inset-top)); bottom: auto; right: 52px; left: 20px; justify-content: flex-start; }
+.sheet-stage .caption > * { pointer-events: auto; }
+.sheet-stage .caption .sheet-edit { position: fixed; top: auto; bottom: 24px; left: calc((100vw - 300px) / 2); right: auto; transform: translateX(-50%); background: var(--paper); border-radius: 30px; padding: 10px 18px; }
+.sheet-stage .caption .caption-name { width: min(220px,25vw); background: var(--paper); }
+.sheet-stage .frame-tools { top: max(12px,env(safe-area-inset-top)); right: 12px; }
+.sheet-stage .sheet-close { width: 40px; height: 40px; background: var(--paper); border-radius: 50%; }
+.canvas-customize { padding: 24px 20px; overflow-y: auto; height: 100dvh; background: var(--paper-2); }
+.canvas-customize h2 { font: 18px var(--serif); margin: 0 0 24px; }
+.canvas-customize .paint-kit { display: block !important; max-height: none !important; height: auto !important; overflow: visible !important; }
+.canvas-customize .paint-kit-body { display: block; }
+.canvas-customize .paint-kit-summary, .canvas-customize .keys { display: none; }
+.brush-arc-hash[hidden] { display: none; }
+.brush-arc-tick::after { width: 44px; height: 44px; }
+@media (max-width: 720px) {
+  .wall { display: block; overflow-y: auto; max-height: none; padding: 12px; }
+  .wall .grid { height: auto; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: auto; gap: 20px 12px; }
+  .wall .sheet:not(.active), .wall .sheet.active { display: block; height: auto; }
+  .wall .sheet .frame, .wall .sheet.active .frame { height: auto; aspect-ratio: 1; border-radius: 0; }
+  .wall .variation-pager { display: none !important; }
+  .wall .sheet-edit { display: none; }
+  .wall .caption-name { width: 100%; }
+  .wall .copy-variation { display: none; }
+  .pinned-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 12px; }
+  .sheet-stage { grid-template-columns: 1fr; grid-template-rows: minmax(0,1fr) minmax(180px,32dvh); padding: 0; }
+  .sheet-stage .sheet { height: 100%; min-height: 0; }
+  .sheet-stage .sheet .frame { height: 100%; }
+  .sheet-stage .caption { top: max(8px,env(safe-area-inset-top)); left: 12px; right: 52px; bottom: auto; gap: 4px; }
+  .sheet-stage .caption .caption-name { width: 100%; padding: 4px; }
+  .sheet-stage .caption .sheet-edit { position: absolute; top: auto; bottom: auto; left: 0; right: auto; transform: none; margin-top: 10px; display: none; }
+  .canvas-customize { height: 100%; padding: 14px 20px max(20px,env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; }
+  .canvas-customize h2 { margin-bottom: 12px; }
+  .canvas-customize .paint-kit { margin: 0; }
+  .canvas-customize .pane { display: block; }
+  .library-status { left: 12px; bottom: 0; max-width: calc(100vw - 24px); background: var(--paper); }
+}
+.sheet .caption { display: flex; align-items: center; }
+.sheet-stage .sheet .frame { background: #f3eee4; }
+.sheet-stage .pin-variation, .sheet-stage .copy-variation { flex: 0 0 auto; }
+@media (max-width: 720px) {
+  .wall .sheet .frame { touch-action: pan-y; }
+  .wall .caption .caption-name { flex-basis: 100%; }
+  .sheet-stage .caption .caption-name { flex-basis: 100%; }
+}
+/* Give each brush a real touch target and keep labels upright. */
+.brush-arc-tick { width: 44px; height: 44px; transform-origin: 0 0; transform: rotate(var(--ang)) translateY(calc(-1 * var(--icon-r))) rotate(calc(-1 * var(--ang))) translateX(-50%); }
+.brush-arc-tick::after { inset: 0; transform: none; }
+.brush-arc-spoke { top: 0; left: 0; width: 44px; transform: none; }
+
+/* Quiet image-level pins; saved images appear only in the upper collection. */
+.composition-library[hidden] { display: none; }
+.wall .sheet.is-library-pinned { display: none !important; }
+.pinned-card { position: relative; min-width: 0; }
+.pinned-composition { width: 100%; }
+.pin-variation { position: absolute; z-index: 5; top: 6px; left: 6px; display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px; padding: 13px; border: 0; border-radius: 0; box-shadow: none; appearance: none; background: transparent; color: var(--muted); }
+.pin-variation svg { display: block; width: 13px; height: 13px; opacity: .42; transition: opacity 160ms ease; }
+.pin-variation[aria-pressed="true"] { color: var(--hover); background: transparent; }
+.pin-variation[aria-pressed="true"] svg { fill: color-mix(in srgb, var(--hover) 12%, transparent); }
+.pin-variation:hover, .pin-variation:focus-visible { color: var(--hover); background: transparent; }
+.pin-variation:focus-visible { outline: 1px solid var(--hover); outline-offset: -4px; }
+.sheet-stage .pin-variation { top: max(10px,env(safe-area-inset-top)); left: auto; right: 56px; }
+.sheet-stage .caption { right: 106px; }
+
+.pin-variation[aria-pressed="true"] svg { opacity: .62; }
+.pin-variation:hover svg, .pin-variation:focus-visible svg { opacity: .9; }
+@media (prefers-reduced-motion: reduce) { .pin-variation svg { transition: none; } }
+
+/* Match the image actions and lift their marks without shrinking hit targets. */
+.frame .expand { color: var(--muted); }
+.frame .expand svg, .pin-variation svg { width: 13px; height: 13px; opacity: .42; transform: translateY(-4px); transition: opacity 160ms ease; }
+.frame .expand svg { stroke-width: 1; }
+.frame .expand svg path { stroke-width: inherit; }
+.frame .expand:hover svg, .frame .expand:focus-visible svg, .pin-variation:hover svg, .pin-variation:focus-visible svg { opacity: .9; }
+.pin-variation[aria-pressed="true"] svg { opacity: .62; }
+@media (prefers-reduced-motion: reduce) { .frame .expand svg, .pin-variation svg { transition: none; } }
+
+.pinned-card > .caption-name { display: block; width: 100%; min-width: 0; padding: 10px 0; border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--ink); font: inherit; text-overflow: ellipsis; }
+.caption-name { cursor: text; }
+.caption .caption-name:focus, .pinned-card > .caption-name:focus { outline: none; border-bottom: 1px solid color-mix(in srgb, var(--hover) 40%, transparent); }
+.pinned-card > .caption-name:hover { border-bottom-color: var(--line); }
+
+@media (max-width: 720px) {
+  .sheet-stage .caption .sheet-edit {
+    display: flex;
+    position: fixed;
+    left: 50%;
+    bottom: calc(max(180px, 32dvh) + 12px);
+    top: auto;
+    right: auto;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 8px 14px;
+    width: auto;
+    background: var(--paper);
+    border-radius: 30px;
+  }
+}
+
+/* Keep naming and variation creation out of the full canvas header. */
+.sheet-stage .caption > .caption-name,
+.sheet-stage .caption > .copy-variation { display: none; }
+
+/* Canvas actions: pin at left, download beside close at right. */
+.sheet-stage .pin-variation { left: 12px; right: auto; }
+.sheet-stage .caption { top: max(10px, env(safe-area-inset-top)); left: 12px; right: 56px; justify-content: flex-end; }
+.sheet-stage .caption-meta { margin-left: auto; }
+.sheet-stage .caption .save { width: 44px; height: 44px; display: grid; place-items: center; }
+
+.sheet-stage .caption { right: 12px; }
+
+/* Tuck the pin mark into the image corner while keeping its touch target. */
+.pin-variation { top: 0; left: 0; }
+.pin-variation svg { transform: translate(-5px, -7px); }
+.sheet-stage .pin-variation { top: env(safe-area-inset-top, 0px); left: env(safe-area-inset-left, 0px); right: auto; }

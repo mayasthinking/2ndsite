@@ -1,8 +1,9 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
-const STEP = 360 / BRUSH_TYPES.length;
-const DEG_PER_PX = 0.72;
-const VISIBLE = 34;
+const STEP = 18;
+const CYCLE = STEP * BRUSH_TYPES.length;
+const DEG_PER_PX = 0.28;
+const VISIBLE = 42;
 
 const ICONS = {
   HB: "icon-brush-hb",
@@ -43,14 +44,14 @@ export function brushFromTurn(turn, types = BRUSH_TYPES) {
 }
 
 function norm360(deg) {
-  let a = deg % 360;
-  if (a < 0) a += 360;
+  let a = deg % CYCLE;
+  if (a < 0) a += CYCLE;
   return a;
 }
 
 function fromApex(deg) {
   const a = norm360(deg);
-  return Math.min(a, 360 - a);
+  return Math.min(a, CYCLE - a);
 }
 
 export function mountBrushDial({ host, value, onChange }) {
@@ -76,10 +77,11 @@ export function mountBrushDial({ host, value, onChange }) {
   const hashes = document.createElement("div");
   hashes.className = "brush-arc-hashes";
   hashes.setAttribute("aria-hidden", "true");
-  for (let deg = 0; deg < 360; deg += 2) {
+  // Every fifth mark is a brush stop; minor marks only indicate motion.
+  for (let index = 0; index < BRUSH_TYPES.length * 5; index++) {
     const hash = document.createElement("span");
-    hash.className = `brush-arc-hash${deg % 10 === 0 ? " is-major" : ""}`;
-    hash.style.setProperty("--ang", `${deg}deg`);
+    hash.className = `brush-arc-hash${index % 5 === 0 ? " is-major" : ""}`;
+    hash.dataset.angle = String(index * STEP / 5);
     hashes.append(hash);
   }
 
@@ -131,12 +133,16 @@ export function mountBrushDial({ host, value, onChange }) {
     turn = nextTurn;
     const name = brushFromTurn(turn);
     const index = brushIndex(name);
-    hashes.style.setProperty("--turn", `${turn}deg`);
+    for (const hash of hashes.children) {
+      const angle = ((Number(hash.dataset.angle) + turn + CYCLE / 2) % CYCLE + CYCLE) % CYCLE - CYCLE / 2;
+      hash.style.setProperty("--ang", `${angle}deg`);
+      hash.hidden = Math.abs(angle) > VISIBLE;
+    }
     face.setAttribute("aria-valuenow", String(index));
     face.setAttribute("aria-valuetext", name.toLowerCase());
     for (const tick of track.querySelectorAll(".brush-arc-tick")) {
       const on = tick.dataset.brush === name;
-      const ang = Number(tick.dataset.index) * STEP + turn;
+      const ang = ((Number(tick.dataset.index) * STEP + turn + CYCLE / 2) % CYCLE + CYCLE) % CYCLE - CYCLE / 2;
       const away = fromApex(ang);
       tick.classList.toggle("is-active", on);
       tick.classList.toggle("is-far", away > VISIBLE);
@@ -162,11 +168,14 @@ export function mountBrushDial({ host, value, onChange }) {
   let dragStartX = 0;
   let dragStartTurn = 0;
   let dragStartAngle = 0;
+  let pressedBrush = null;
 
   face.addEventListener("pointerdown", (event) => {
     if (event.button != null && event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
+    pressedBrush = event.target.closest(".brush-arc-tick")?.dataset.brush;
+    face.focus({ preventScroll: true });
     dragging = true;
     dragged = false;
     dragStartX = event.clientX;
@@ -195,8 +204,8 @@ export function mountBrushDial({ host, value, onChange }) {
     face.classList.remove("is-dragging");
     if (!dragged) {
       const tick = event.target instanceof Element ? event.target.closest(".brush-arc-tick") : null;
-      if (tick?.dataset.brush) {
-        commit(tick.dataset.brush, true);
+      if (pressedBrush || tick?.dataset.brush) {
+        commit(pressedBrush || tick.dataset.brush, true);
         return;
       }
     }
