@@ -2116,7 +2116,14 @@ select.choice-native {
 }
 
 .brush-arc-ring {
-  display: none;
+  height: var(--radius);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.42), rgba(248, 245, 238, 0.24));
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  backdrop-filter: blur(16px) saturate(1.15);
 }
 
 .brush-arc-hashes {
@@ -2137,14 +2144,14 @@ select.choice-native {
   height: 7px;
   margin-left: -0.5px;
   border-radius: 1px;
-  background: color-mix(in srgb, var(--ink) 40%, transparent);
+  background: color-mix(in srgb, var(--hover) 40%, transparent);
   transform-origin: 50% 0;
   transform: rotate(calc(var(--turn) + var(--ang))) translateY(calc(-1 * var(--hash-r)));
 }
 
 .brush-arc-hash.is-major {
   height: 11px;
-  background: color-mix(in srgb, var(--ink) 62%, transparent);
+  background: color-mix(in srgb, var(--hover) 62%, transparent);
 }
 
 .brush-arc-face:focus-visible {
@@ -4376,15 +4383,133 @@ body.is-sheet-open {
 .sheet-stage .caption > .caption-name,
 .sheet-stage .caption > .copy-variation { display: none; }
 
-/* Canvas actions: pin at left, download beside close at right. */
-.sheet-stage .pin-variation { left: 12px; right: auto; }
-.sheet-stage .caption { top: max(10px, env(safe-area-inset-top)); left: 12px; right: 56px; justify-content: flex-end; }
-.sheet-stage .caption-meta { margin-left: auto; }
-.sheet-stage .caption .save { width: 44px; height: 44px; display: grid; place-items: center; }
-
-.sheet-stage .caption { right: 12px; }
-
-/* Tuck the pin mark into the image corner while keeping its touch target. */
+/* Image pins retain their compact corner placement outside fullscreen. */
 .pin-variation { top: 0; left: 0; }
 .pin-variation svg { transform: translate(-5px, -7px); }
-.sheet-stage .pin-variation { top: env(safe-area-inset-top, 0px); left: env(safe-area-inset-left, 0px); right: auto; }
+
+/* Fullscreen corner actions share one alignment and sizing system. */
+.sheet-stage {
+  --canvas-action-top: env(safe-area-inset-top, 0px);
+  --canvas-action-left: env(safe-area-inset-left, 0px);
+  --canvas-action-right: env(safe-area-inset-right, 0px);
+  --canvas-action-size: 44px;
+  --canvas-action-icon: 13px;
+}
+.sheet-stage .pin-variation {
+  top: var(--canvas-action-top);
+  left: var(--canvas-action-left);
+  right: auto;
+}
+.sheet-stage .caption {
+  top: var(--canvas-action-top);
+  left: var(--canvas-action-left);
+  right: var(--canvas-action-right);
+  bottom: auto;
+  padding: 0;
+  justify-content: flex-end;
+}
+.sheet-stage .caption-meta { margin-left: auto; }
+.sheet-stage .pin-variation,
+.sheet-stage .caption .save {
+  width: var(--canvas-action-size);
+  height: var(--canvas-action-size);
+  min-height: var(--canvas-action-size);
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.sheet-stage .pin-variation svg,
+.sheet-stage .caption .save svg {
+  width: var(--canvas-action-icon);
+  height: var(--canvas-action-icon);
+  transform: none;
+  opacity: .42;
+  transition: opacity 160ms ease;
+}
+.sheet-stage .pin-variation[aria-pressed="true"] svg { opacity: .62; }
+.sheet-stage .pin-variation:hover svg,
+.sheet-stage .pin-variation:focus-visible svg,
+.sheet-stage .caption .save:hover svg,
+.sheet-stage .caption .save:focus-visible svg { opacity: .9; }
+
+/* Stable brush geometry keeps the dial flowing through each selection. */
+.brush-arc-tick, .brush-arc-label { transition: color 160ms ease; }
+.brush-arc-tick .brush-arc-mark, .brush-arc-tick.is-active .brush-arc-mark { width: 16px; height: 16px; }
+.brush-arc-tick .brush-arc-label, .brush-arc-tick.is-active .brush-arc-label { font-size: 11px; }
+@media (prefers-reduced-motion: reduce) { .brush-arc-tick, .brush-arc-label { transition: none; } }
+
+/* Give the desktop canvas dial and its toolbar a shared, roomier footprint. */
+@media (min-width: 721px) {
+  .sheet-stage .caption .sheet-edit {
+    width: min(360px, calc(100vw - 348px));
+    max-width: none;
+    gap: 18px;
+    padding: 12px 20px;
+  }
+  .sheet-stage .caption .sheet-edit-sat { flex: 1; min-width: 0; }
+  .sheet-stage .caption .sheet-edit-sat-rail {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+/* Mobile settings unfold from the canvas toolbar; desktop retains its sidebar. */
+.canvas-settings-toggle, .canvas-settings-close { display: none; }
+@media (max-width: 720px) {
+  .sheet-stage { grid-template-rows: minmax(0, 1fr); }
+  .sheet-stage .sheet { height: 100%; }
+  .sheet-stage .caption .sheet-edit {
+    bottom: max(16px, env(safe-area-inset-bottom));
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  .sheet-stage .canvas-customize {
+    display: none;
+    position: fixed;
+    z-index: 10;
+    left: 50%;
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 68px);
+    transform: translateX(-50%);
+    width: min(340px, calc(100vw - 24px));
+    height: auto;
+    max-height: min(440px, calc(100dvh - 120px));
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 28px rgba(36,33,31,.08);
+    overscroll-behavior: contain;
+  }
+  .sheet-stage.is-settings-open .canvas-customize { display: block; }
+  .canvas-settings-toggle, .canvas-settings-close {
+    display: grid; place-items: center;
+    width: 44px; height: 44px; flex: 0 0 44px;
+    padding: 11px; border: 0; border-radius: 50%;
+    background: transparent; color: var(--ink);
+  }
+  .canvas-settings-toggle svg, .canvas-settings-close svg { width: 22px; height: 22px; }
+  .canvas-settings-toggle[aria-expanded=true] { background: var(--fill); }
+  .canvas-settings-close { position: absolute; top: 8px; right: 8px; }
+  .canvas-customize h2 { padding-right: 36px; }
+  .canvas-customize .slide input[type=range] { min-height: 44px; }
+}
+
+/* Keep toolbar glyphs consistent across canvas and responsive layouts. */
+.sheet-edit { --editor-icon-size: 16px; }
+.sheet-edit .sheet-edit-brush-face,
+.sheet-edit .sheet-edit-brush-face .lucide-icon,
+.sheet-edit .canvas-settings-toggle svg {
+  width: var(--editor-icon-size);
+  height: var(--editor-icon-size);
+  flex-shrink: 0;
+}
+.sheet-edit .canvas-settings-toggle svg {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

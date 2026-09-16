@@ -2,7 +2,7 @@ import { loadPins, savePin, removePin } from "./composition-library.js";
 import { EFFECT_GROUPS, BRUSH_TYPES, BRUSH_SLIDERS, PLACEMENT_SLIDERS, DEFAULT_COLOR, clampEffects } from "./effect-model.js?v=15";
 import { parseColor, oklchToHex } from "./color.js";
 import { mountColorSquare } from "./color-dial.js?v=14";
-import { mountBrushDial } from "./brush-dial.js?v=30";
+import { mountBrushDial } from "./brush-dial.js?v=35";
 import { imageWork } from "./image-work.js?v=4";
 import { splitSubjectFromImageData } from "./photo-wash-plan.js?v=4";
 const sceneEl = document.querySelector("#scene");
@@ -338,14 +338,21 @@ function holdPopovers(ms = 400) {
   popoverHold = Date.now() + ms;
 }
 
+function closeCanvasSettings() {
+  sheetStageEl.classList.remove("is-settings-open");
+  sheetStageEl.querySelector(".canvas-settings-toggle")?.setAttribute("aria-expanded", "false");
+}
+
 function closePopovers() {
   if (Date.now() < popoverHold) return;
   closeChoiceMenus();
   closeSheetColorMenus();
   closeBrushDials();
+  closeCanvasSettings();
 }
 
 document.addEventListener("pointerdown", (event) => {
+  if (event.target.closest(".canvas-customize, .canvas-settings-toggle")) return;
   if (event.target.closest(".choice") || event.target.closest(".choice-menu")) return;
   if (event.target.closest(".sheet-edit-color") || event.target.closest(".sheet-color-menu")) return;
   if (event.target.closest(".sheet-edit-brush") || event.target.closest(".brush-dial-menu")) return;
@@ -354,7 +361,12 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape") return;
+  if (event.key !== "Escape" || event.defaultPrevented) return;
+  if (isPhone() && sheetStageEl.classList.contains("is-settings-open")) {
+    closeCanvasSettings();
+    sheetStageEl.querySelector(".canvas-settings-toggle")?.focus();
+    return;
+  }
   const popoverOpen = document.querySelector(".choice.is-open, .sheet-color-menu:not([hidden]), .brush-dial-menu:not([hidden])");
   if (popoverOpen) {
     closePopovers();
@@ -374,7 +386,7 @@ document.addEventListener(
   "scroll",
   (event) => {
     const target = event.target;
-    if (target instanceof Element && target.closest(".choice-menu, .sheet-color-menu, .brush-dial-menu, .sheet-edit")) return;
+    if (target instanceof Element && target.closest(".choice-menu, .sheet-color-menu, .brush-dial-menu, .sheet-edit, .canvas-customize")) return;
     closePopovers();
   },
   true
@@ -900,6 +912,7 @@ function mountSheetEditor(sheet, item) {
   };
 
   const openColorMenu = () => {
+    closeCanvasSettings();
     closeChoiceMenus();
     closeSheetColorMenus();
     closeBrushDials();
@@ -950,12 +963,12 @@ function mountSheetEditor(sheet, item) {
     const staged = sheet.classList.contains("is-expanded");
     brushMenu.classList.toggle("is-stage", staged);
     const phone = isPhone();
-    const width = Math.round(
-      Math.max(phone ? 196 : 180, Math.min(painting.width * (phone ? 0.72 : 0.62), painting.width - (phone ? 28 : 48), phone ? 260 : 228))
+    const width = Math.round(phone
+      ? Math.max(0, Math.min(painting.width * 0.94, painting.width - 20, 520))
+      : Math.max(0, Math.min(Math.max(360, painting.width * 0.64), painting.width - 32, 640))
     );
-    const height = 92;
-    const fit = (height * height + (width / 2) ** 2) / (2 * height);
-    const radius = Math.round(width * 0.68);
+    const height = Math.min(width / 2, phone ? 104 : 120, painting.height * 0.22);
+    const radius = width / 2;
     const iconR = Math.round(radius - 22);
     const hashR = Math.max(iconR + 12, radius - 4);
     const bar = staged ? 48 : 8;
@@ -968,10 +981,16 @@ function mountSheetEditor(sheet, item) {
     brushMenu.style.setProperty("--cy", `${radius}px`);
     if (brushMenu.parentElement !== frame) frame.append(brushMenu);
     brushMenu.style.left = `${Math.round((painting.width - width) / 2)}px`;
-    brushMenu.style.top = `${Math.round(painting.height - height - bar)}px`;
+    const toolbar = edit.getBoundingClientRect();
+    const top = staged
+      ? Math.max(8, toolbar.top - painting.top - height - 12)
+      : painting.height - height - bar;
+    brushMenu.style.top = `${Math.round(top)}px`;
+    edit._brushDial?.layout();
   };
 
   const openBrushDial = () => {
+    closeCanvasSettings();
     closeChoiceMenus();
     closeSheetColorMenus();
     closeBrushDials();
@@ -1807,6 +1826,31 @@ function openSheetStage(id) {
   const heading = document.createElement("h2");
   heading.textContent = "customize";
   tools.append(heading);
+  tools.id = "canvasSettings";
+  const dismiss = document.createElement("button");
+  dismiss.type = "button";
+  dismiss.className = "canvas-settings-close";
+  dismiss.setAttribute("aria-label", "close settings");
+  dismiss.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  const settingsButton = document.createElement("button");
+  settingsButton.type = "button";
+  settingsButton.className = "canvas-settings-toggle";
+  settingsButton.setAttribute("aria-label", "brush settings");
+  settingsButton.setAttribute("aria-controls", tools.id);
+  settingsButton.setAttribute("aria-expanded", "false");
+  settingsButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--paper)"/><circle cx="15" cy="17" r="3" fill="var(--paper)"/></svg>';
+  settingsButton.onclick = () => {
+    const opening = !sheetStageEl.classList.contains("is-settings-open");
+    closeChoiceMenus(); closeSheetColorMenus(); closeBrushDials(); closeCanvasSettings();
+    if (opening) {
+      sheetStageEl.classList.add("is-settings-open");
+      settingsButton.setAttribute("aria-expanded", "true");
+      dismiss.focus({ preventScroll: true });
+    }
+  };
+  dismiss.onclick = () => { closeCanvasSettings(); settingsButton.focus(); };
+  tools.append(dismiss);
+  rec.sheet.querySelector(".sheet-edit").append(settingsButton);
   stagedSheet.kitHome = paintKit.parentElement;
   stagedSheet.kitNext = paintKit.nextSibling;
   stagedSheet.kitOpen = paintKit.open;
@@ -1825,6 +1869,8 @@ function openSheetStage(id) {
 function closeSheetStage() {
   if (!stagedSheet) return;
   closePopovers();
+  closeCanvasSettings();
+  sheetStageEl.querySelector(".canvas-settings-toggle")?.remove();
   const { sheet, home, next, kitHome, kitNext, kitOpen } = stagedSheet;
   if (kitHome) kitHome.insertBefore(paintKit, kitNext?.parentElement === kitHome ? kitNext : null);
   paintKit.open = kitOpen;

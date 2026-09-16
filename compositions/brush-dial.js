@@ -1,9 +1,9 @@
 import { BRUSH_TYPES } from "./effect-model.js?v=15";
 
-const STEP = 18;
+const STEP = 32;
 const CYCLE = STEP * BRUSH_TYPES.length;
 const DEG_PER_PX = 0.28;
-const VISIBLE = 42;
+const VISIBLE = 60;
 
 const ICONS = {
   HB: "icon-brush-hb",
@@ -129,14 +129,20 @@ export function mountBrushDial({ host, value, onChange }) {
     };
   }
 
-  function applyTurn(nextTurn, emit) {
+  function applyTurn(nextTurn, emit, updateSelection = true) {
     turn = nextTurn;
     const name = brushFromTurn(turn);
     const index = brushIndex(name);
+    const radius = parseFloat(host.style.getPropertyValue("--radius")) || 140;
+    const iconRadius = parseFloat(host.style.getPropertyValue("--icon-r")) || 120;
+    const height = parseFloat(host.style.height) || 120;
+    // Fade labels before their full height reaches the compact panel's edge.
+    const visible = Math.min(VISIBLE, Math.acos(Math.max(-1, Math.min(1, (radius - height + 32) / iconRadius))) * 180 / Math.PI);
     for (const hash of hashes.children) {
       const angle = ((Number(hash.dataset.angle) + turn + CYCLE / 2) % CYCLE + CYCLE) % CYCLE - CYCLE / 2;
       hash.style.setProperty("--ang", `${angle}deg`);
       hash.hidden = Math.abs(angle) > VISIBLE;
+      hash.style.opacity = String(Math.max(0, Math.min(1, (VISIBLE - Math.abs(angle)) / 10)));
     }
     face.setAttribute("aria-valuenow", String(index));
     face.setAttribute("aria-valuetext", name.toLowerCase());
@@ -145,11 +151,13 @@ export function mountBrushDial({ host, value, onChange }) {
       const ang = ((Number(tick.dataset.index) * STEP + turn + CYCLE / 2) % CYCLE + CYCLE) % CYCLE - CYCLE / 2;
       const away = fromApex(ang);
       tick.classList.toggle("is-active", on);
-      tick.classList.toggle("is-far", away > VISIBLE);
+      tick.classList.toggle("is-far", away > visible);
       tick.setAttribute("aria-selected", on ? "true" : "false");
       tick.style.setProperty("--ang", `${ang}deg`);
       tick.style.setProperty("--from", String(away));
+      tick.style.opacity = String(Math.max(0, Math.min(1, (visible - away) / 8)));
     }
+    if (!updateSelection) return;
     if (emit && name !== current) {
       current = name;
       onChange?.(current);
@@ -158,9 +166,38 @@ export function mountBrushDial({ host, value, onChange }) {
     }
   }
 
-  function commit(name, emit) {
+  let animation = 0;
+  let wheelTimer = 0;
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  function stopMotion() {
+    cancelAnimationFrame(animation);
+    animation = 0;
+    clearTimeout(wheelTimer);
+  }
+
+  function commit(name, emit, animate = true) {
+    stopMotion();
     const next = BRUSH_TYPES.includes(name) ? name : "HB";
-    applyTurn(-brushIndex(next) * STEP, emit);
+    const base = -brushIndex(next) * STEP;
+    // Use the closest equivalent angle, including across the last/first brush.
+    const target = base + Math.round((turn - base) / CYCLE) * CYCLE;
+    const start = turn;
+    const changed = next !== current;
+    current = next;
+    if (!animate || reducedMotion.matches || Math.abs(target - start) < 0.01) {
+      applyTurn(target, false);
+    } else {
+      const started = performance.now();
+      const frame = now => {
+        if (!host.isConnected) { animation = 0; return; }
+        const progress = Math.min(1, (now - started) / 260);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        applyTurn(start + (target - start) * ease, false, false);
+        animation = progress < 1 ? requestAnimationFrame(frame) : 0;
+      };
+      animation = requestAnimationFrame(frame);
+    }
+    if (emit && changed) onChange?.(next);
   }
 
   let dragging = false;
@@ -174,6 +211,7 @@ export function mountBrushDial({ host, value, onChange }) {
     if (event.button != null && event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
+    stopMotion();
     pressedBrush = event.target.closest(".brush-arc-tick")?.dataset.brush;
     face.focus({ preventScroll: true });
     dragging = true;
@@ -194,9 +232,8 @@ export function mountBrushDial({ host, value, onChange }) {
     const dx = event.clientX - dragStartX;
     const dAngle = next.deg - dragStartAngle;
     if (Math.abs(dx) > 6 || Math.abs(dAngle) > 4) dragged = true;
-    const bySwipe = dx * DEG_PER_PX;
-    const byArc = Math.abs(dAngle) > Math.abs(bySwipe) ? dAngle : bySwipe;
-    applyTurn(dragStartTurn + byArc, true);
+    // One consistent mapping avoids jumps between swipe and arc sensitivities.
+    applyTurn(dragStartTurn + dx * DEG_PER_PX, true);
   });
   const endDrag = (event) => {
     if (!dragging) return;
@@ -231,9 +268,21 @@ export function mountBrushDial({ host, value, onChange }) {
     }
   });
 
-  commit(current, false);
+  face.addEventListener("wheel", event => {
+    if (event.ctrlKey || dragging) return;
+    event.preventDefault();
+    event.stopPropagation();
+    stopMotion();
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? face.clientWidth : 1;
+    applyTurn(turn - Math.max(-60, Math.min(60, delta * unit)) * 0.18, true);
+    wheelTimer = setTimeout(() => commit(brushFromTurn(turn), true), 140);
+  }, { passive: false });
+
+  commit(current, false, false);
 
   return {
+    layout() { applyTurn(turn, false, false); },
     setValue(nextValue) {
       if (!BRUSH_TYPES.includes(nextValue) || nextValue === current) return;
       commit(nextValue, false);
