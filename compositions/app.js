@@ -1687,7 +1687,6 @@ function applyPaintedData(rec, dataUrl, density = 1) {
   rec.sheet.querySelector(".veil")?.remove();
   rec.sheet.querySelector(".save")?.removeAttribute("disabled");
   rec.sheet.querySelector(".pin-variation")?.removeAttribute("disabled");
-  rec.sheet.querySelector(".copy-variation")?.removeAttribute("disabled");
   if (pinned.some(pin => pin.id === rec.item.id)) void persistPin(rec);
 }
 
@@ -1939,7 +1938,6 @@ function renderGrid(items) {
       </div>
       <div class="caption">
         <input class="caption-name" aria-label="variation name" maxlength="80" placeholder="name this variation" />
-        <button class="copy-variation" type="button" disabled>new variation</button>
         <div class="sheet-edit is-row" role="toolbar" aria-label="edit wash">
           <button type="button" class="sheet-edit-grip" aria-label="move editor" title="drag to the side"></button>
           <button type="button" class="sheet-edit-color" title="color" aria-label="color" aria-haspopup="listbox" aria-expanded="false">
@@ -1996,13 +1994,6 @@ function renderGrid(items) {
       if (pinned.some(pin => pin.id === item.id)) await persistPin(cards.get(item.id));
     });
     sheet.querySelector(".pin-variation").addEventListener("click", () => togglePin(cards.get(item.id)));
-    sheet.querySelector(".copy-variation").addEventListener("click", () => {
-      const copy = structuredClone(item);
-      copy.id = crypto.randomUUID();
-      copy.name = `${item.name} — variation`;
-      renderGrid([...cards.values()].map(rec => rec.item).concat(copy));
-      openSheetStage(copy.id);
-    });
     grid.append(sheet);
     cards.set(item.id, { item, sheet, dataUrl: null });
     mountSheetEditor(sheet, item);

@@ -4275,8 +4275,7 @@ body.is-sheet-open {
 .pinned-composition span { display: block; padding: 10px 0; overflow-wrap: anywhere; }
 .caption .caption-name { font: inherit; color: var(--ink); border: 0; border-bottom: 1px solid transparent; background: transparent; min-width: 60px; width: 120px; padding: 8px 0; text-overflow: ellipsis; }
 .caption .caption-name:hover, .caption .caption-name:focus { border-bottom-color: var(--line); }
-.copy-variation { border: 1px solid var(--line); border-radius: 20px; background: var(--paper); color: var(--hover); padding: 8px 12px; min-height: 40px; font: inherit; font-size: 12px; cursor: pointer; }
-.pin-variation:disabled, .copy-variation:disabled { opacity: .4; cursor: default; }
+.pin-variation:disabled { opacity: .4; cursor: default; }
 .caption { flex-wrap: wrap; gap: 8px; }
 .sheet-stage { grid-template-columns: minmax(0,1fr) 300px; place-items: stretch; }
 .sheet-stage .sheet { width: 100%; height: 100dvh; min-width: 0; max-width: none; display: block; }
@@ -4303,7 +4302,6 @@ body.is-sheet-open {
   .wall .variation-pager { display: none !important; }
   .wall .sheet-edit { display: none; }
   .wall .caption-name { width: 100%; }
-  .wall .copy-variation { display: none; }
   .pinned-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 12px; }
   .sheet-stage { grid-template-columns: 1fr; grid-template-rows: minmax(0,1fr) minmax(180px,32dvh); padding: 0; }
   .sheet-stage .sheet { height: 100%; min-height: 0; }
@@ -4319,7 +4317,7 @@ body.is-sheet-open {
 }
 .sheet .caption { display: flex; align-items: center; }
 .sheet-stage .sheet .frame { background: #f3eee4; }
-.sheet-stage .pin-variation, .sheet-stage .copy-variation { flex: 0 0 auto; }
+.sheet-stage .pin-variation { flex: 0 0 auto; }
 @media (max-width: 720px) {
   .wall .sheet .frame { touch-action: pan-y; }
   .wall .caption .caption-name { flex-basis: 100%; }
@@ -4379,9 +4377,8 @@ body.is-sheet-open {
   }
 }
 
-/* Keep naming and variation creation out of the full canvas header. */
-.sheet-stage .caption > .caption-name,
-.sheet-stage .caption > .copy-variation { display: none; }
+/* Keep the variation name out of the full canvas header. */
+.sheet-stage .caption > .caption-name { display: none; }
 
 /* Image pins retain their compact corner placement outside fullscreen. */
 .pin-variation { top: 0; left: 0; }
