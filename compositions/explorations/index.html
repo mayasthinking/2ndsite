@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#fffefa">
   <title>explorations · compositions</title>
   <meta name="description" content="Painted explorations from Compositions.">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <header class="site-head">
@@ -23,14 +23,8 @@
         <button type="button" data-limit="all" aria-pressed="false">all paintings</button>
       </div>
       <div class="model-filter"><span>by</span><div class="model-picker">
-        <select id="model" hidden aria-hidden="true" tabindex="-1">
-          <option value="pair">sol + astra</option>
-          <option value="Sol">sol</option>
-          <option value="Astra">astra</option>
-          <option value="all">all models</option>
-        </select>
-        <button id="model-trigger" class="model-trigger" type="button" aria-label="Model: sol + astra" aria-haspopup="listbox" aria-controls="model-menu" aria-expanded="false"><span id="model-current">sol + astra</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2 4 4 4 4-4"/></svg></button>
-        <div id="model-menu" class="model-menu" role="listbox" aria-label="Model" hidden></div>
+        <button id="model-trigger" class="model-trigger" type="button" aria-label="Models: sol and astra" aria-haspopup="true" aria-controls="model-menu" aria-expanded="false"><span id="model-current">sol + astra</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2 4 4 4 4-4"/></svg></button>
+        <div id="model-menu" class="model-menu" role="group" aria-label="Models" hidden><label class="model-option"><input type="checkbox" value="Sol" checked>sol</label><label class="model-option"><input type="checkbox" value="Astra" checked>astra</label><label class="model-option"><input type="checkbox" value="Terra">terra</label></div>
       </div></div>
       <span id="count" aria-live="polite"></span>
     </div>
@@ -41,6 +35,6 @@
     <img id="large" alt="">
     <div class="detail-copy"><span id="detail-model"></span><h2 id="detail-title"></h2></div>
   </dialog>
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>

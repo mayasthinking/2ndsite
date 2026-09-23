@@ -5,6 +5,7 @@ const grid = $('#grid');
 const dialog = $('#detail');
 let paintings = [];
 let limit = 10;
+const selectedModels = new Set(['Sol', 'Astra']);
 let replayDisposers = [];
 let activeReplay = null;
 
@@ -109,8 +110,7 @@ function show(painting) {
 function render() {
   for (const dispose of replayDisposers) dispose();
   replayDisposers = [];
-  const model = $('#model').value;
-  const filtered = paintings.filter(p => model === 'all' || (model === 'pair' ? ['Sol', 'Astra'].includes(p.family) : p.family === model));
+  const filtered = paintings.filter(p => selectedModels.has(p.family));
   const shown = limit === 10 ? filtered.slice(0, 10) : filtered;
   $('#count').textContent = `${shown.length} of ${filtered.length}`;
   grid.replaceChildren(...shown.map(p => {
@@ -139,7 +139,7 @@ function render() {
   if (!shown.length) {
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.textContent = 'No paintings match this model.';
+    empty.textContent = 'No paintings match these models.';
     grid.append(empty);
   }
 }
@@ -149,28 +149,13 @@ document.querySelectorAll('[data-limit]').forEach(button => button.addEventListe
   document.querySelectorAll('[data-limit]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
   render();
 }));
-const modelSelect = $('#model');
 const modelTrigger = $('#model-trigger');
 const modelMenu = $('#model-menu');
-for (const option of modelSelect.options) {
-  const item = document.createElement('button');
-  item.type = 'button';
-  item.className = 'model-option';
-  item.textContent = option.textContent;
-  item.dataset.model = option.value;
-  item.setAttribute('role', 'option');
-  item.addEventListener('click', () => {
-    modelSelect.value = option.value;
-    modelSelect.dispatchEvent(new Event('change'));
-    closeModelMenu(true);
-  });
-  modelMenu.append(item);
-}
+const modelChecks = [...modelMenu.querySelectorAll('input[type=checkbox]')];
 function syncModel() {
-  const label = modelSelect.selectedOptions[0].textContent;
+  const label = modelChecks.filter(input => input.checked).map(input => input.value.toLowerCase()).join(' + ') || 'no models';
   $('#model-current').textContent = label;
-  modelTrigger.setAttribute('aria-label', `Model: ${label}`);
-  for (const item of modelMenu.children) item.setAttribute('aria-selected', String(item.dataset.model === modelSelect.value));
+  modelTrigger.setAttribute('aria-label', `Models: ${label}`);
 }
 function closeModelMenu(focus = false) {
   modelMenu.hidden = true;
@@ -180,27 +165,28 @@ function closeModelMenu(focus = false) {
 function openModelMenu() {
   modelMenu.hidden = false;
   modelTrigger.setAttribute('aria-expanded', 'true');
-  modelMenu.querySelector('[aria-selected=true]')?.focus();
+  (modelChecks.find(input => input.checked) || modelChecks[0])?.focus();
 }
 modelTrigger.addEventListener('click', () => modelMenu.hidden ? openModelMenu() : closeModelMenu());
 modelTrigger.addEventListener('keydown', event => {
   if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); openModelMenu(); }
 });
 modelMenu.addEventListener('keydown', event => {
-  const items = [...modelMenu.children];
-  const current = items.indexOf(document.activeElement);
+  const current = modelChecks.indexOf(document.activeElement);
   let next;
-  if (event.key === 'ArrowDown') next = (current + 1) % items.length;
-  else if (event.key === 'ArrowUp') next = (current - 1 + items.length) % items.length;
+  if (event.key === 'ArrowDown') next = (current + 1) % modelChecks.length;
+  else if (event.key === 'ArrowUp') next = (current - 1 + modelChecks.length) % modelChecks.length;
   else if (event.key === 'Home') next = 0;
-  else if (event.key === 'End') next = items.length - 1;
+  else if (event.key === 'End') next = modelChecks.length - 1;
   else if (event.key === 'Escape') { event.preventDefault(); closeModelMenu(true); return; }
-  else if (event.key === ' ') { event.preventDefault(); document.activeElement.click(); return; }
-  if (next !== undefined) { event.preventDefault(); items[next].focus(); }
+  if (next !== undefined) { event.preventDefault(); modelChecks[next].focus(); }
 });
 document.addEventListener('click', event => { if (!event.target.closest('.model-picker')) closeModelMenu(); });
 document.addEventListener('focusin', event => { if (!event.target.closest('.model-picker')) closeModelMenu(); });
-modelSelect.addEventListener('change', () => { syncModel(); render(); });
+for (const input of modelChecks) input.addEventListener('change', () => {
+  input.checked ? selectedModels.add(input.value) : selectedModels.delete(input.value);
+  syncModel(); render();
+});
 syncModel();
 $('#close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
