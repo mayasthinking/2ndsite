@@ -468,7 +468,7 @@
         .photo-carousel-wrap {
             position: relative;
             --photo-grid-col-gap: 8px;
-            --photo-peek: 10px;
+            --photo-peek: min(72px, 10vw);
             --photo-reveal: 0px;
             transition: --photo-reveal var(--photo-reveal-duration) var(--photo-reveal-ease);
         }
@@ -1278,7 +1278,7 @@
 
             .photo-carousel-wrap {
                 --photo-grid-col-gap: 10px;
-                --photo-peek: 10px;
+                --photo-peek: 10vw;
             }
 
             .photo-carousel {
@@ -2283,7 +2283,7 @@
             }
         }
 
-        const PHOTO_PEEK_DELAY_MS = 2500;
+        const PHOTO_PEEK_DELAY_MS = 1200;
 
         function schedulePhotoPeek(carousel) {
             const wrap = carousel.closest('.photo-carousel-wrap');
@@ -2293,7 +2293,7 @@
 
             const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches
                 ? 0
-                : PHOTO_PEEK_DELAY_MS;
+                : Math.max(0, PHOTO_PEEK_DELAY_MS - performance.now());
 
             window.setTimeout(() => {
                 if (carousel.scrollLeft > 12) {
