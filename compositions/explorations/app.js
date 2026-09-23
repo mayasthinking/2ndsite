@@ -4,7 +4,6 @@ const $ = selector => document.querySelector(selector);
 const grid = $('#grid');
 const dialog = $('#detail');
 let paintings = [];
-let limit = 10;
 const selectedModels = new Set(['Sol', 'Astra']);
 let replayDisposers = [];
 let activeReplay = null;
@@ -111,8 +110,8 @@ function render() {
   for (const dispose of replayDisposers) dispose();
   replayDisposers = [];
   const filtered = paintings.filter(p => selectedModels.has(p.family));
-  const shown = limit === 10 ? filtered.slice(0, 10) : filtered;
-  $('#count').textContent = `${shown.length} of ${filtered.length}`;
+  const shown = filtered;
+  $('#count').textContent = `${shown.length} painting${shown.length === 1 ? '' : 's'}`;
   grid.replaceChildren(...shown.map(p => {
     const card = document.createElement('article');
     card.className = 'card';
@@ -144,11 +143,6 @@ function render() {
   }
 }
 
-document.querySelectorAll('[data-limit]').forEach(button => button.addEventListener('click', () => {
-  limit = button.dataset.limit === '10' ? 10 : 'all';
-  document.querySelectorAll('[data-limit]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-  render();
-}));
 const modelTrigger = $('#model-trigger');
 const modelMenu = $('#model-menu');
 const modelChecks = [...modelMenu.querySelectorAll('input[type=checkbox]')];
