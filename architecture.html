@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="How the files on mayabakir.com connect.">
+    <script src="paper-time.js?v=7"></script>
+    <title>how this is built</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <style>
+        :root {
+            color-scheme: light;
+            --paper: #faf9f6;
+            --ink: #24211f;
+            --hover: #8b2f32;
+            --line: rgba(139, 47, 50, 0.22);
+            --muted: rgba(36, 33, 31, 0.58);
+            --paper-highlight: white;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body { min-height: 100%; }
+
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Libre Baskerville", serif;
+            font-size: 15px;
+            line-height: 1.62;
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        main {
+            width: min(calc(100% - 40px), 1080px);
+            margin: 0 auto;
+            padding: 48px 0 80px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 1.65rem;
+            font-weight: 400;
+        }
+
+        .lead {
+            margin: 0 0 32px;
+            max-width: 38em;
+            color: var(--muted);
+        }
+
+        .phrase {
+            width: fit-content;
+            transition: color 180ms ease;
+        }
+
+        .phrase:hover,
+        .phrase:focus-visible {
+            color: var(--hover);
+        }
+
+        .atlas-wrap {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 28px;
+        }
+
+        @media (min-width: 960px) {
+            .atlas-wrap {
+                grid-template-columns: minmax(0, 1fr) minmax(250px, 30%);
+                align-items: start;
+            }
+        }
+
+        .host {
+            margin-bottom: 22px;
+        }
+
+        .forest {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 36px;
+        }
+
+        @media (min-width: 820px) {
+            .forest {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 48px;
+            }
+        }
+
+        .tree-label {
+            margin: 0 0 10px;
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        .tree,
+        .branch {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .branch {
+            margin-left: 11px;
+            padding-left: 16px;
+            border-left: 1px solid var(--line);
+        }
+
+        .twig {
+            position: relative;
+            margin: 10px 0 0;
+        }
+
+        .twig::before {
+            content: "";
+            position: absolute;
+            left: -16px;
+            top: 1.05rem;
+            width: 14px;
+            height: 1px;
+            background: var(--line);
+        }
+
+        .twig.is-on-path::before,
+        .twig.is-on-path > .via {
+            color: var(--hover);
+        }
+
+        .twig.is-on-path::before {
+            background: var(--hover);
+        }
+
+        .branch.is-on-path {
+            border-left-color: color-mix(in srgb, var(--hover) 55%, transparent);
+        }
+
+        .via {
+            display: block;
+            margin: 0 0 5px;
+            color: var(--muted);
+            font-size: 0.7rem;
+        }
+
+        .node {
+            appearance: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+            width: 100%;
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--paper) 88%, var(--paper-highlight));
+            color: var(--ink);
+            font: inherit;
+            text-align: left;
+            padding: 9px 12px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+        }
+
+        .node-name {
+            font-size: 0.9rem;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        .node-blurb {
+            color: var(--muted);
+            font-size: 0.74rem;
+            line-height: 1.4;
+        }
+
+        .node:hover,
+        .node:focus-visible {
+            color: var(--hover);
+            border-color: color-mix(in srgb, var(--hover) 42%, transparent);
+        }
+
+        .node:hover .node-blurb,
+        .node:focus-visible .node-blurb,
+        .node.is-open .node-blurb,
+        .node.is-related .node-blurb {
+            color: color-mix(in srgb, var(--hover) 72%, var(--muted));
+        }
+
+        .node.is-open,
+        .node.is-related {
+            color: var(--hover);
+            border-color: color-mix(in srgb, var(--hover) 55%, transparent);
+            background: color-mix(in srgb, var(--hover) 8%, var(--paper));
+        }
+
+        .dossier {
+            min-height: 12rem;
+            padding: 4px 2px 0;
+        }
+
+        .dossier[hidden] {
+            display: none;
+        }
+
+        .dossier-kicker {
+            margin: 0 0 6px;
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        .dossier h2 {
+            margin: 0 0 6px;
+            font-size: 1.05rem;
+            font-weight: 400;
+            word-break: break-word;
+        }
+
+        .dossier-blurb {
+            margin: 0 0 12px;
+            color: var(--muted);
+        }
+
+        .dossier p {
+            margin: 0 0 0.85em;
+        }
+
+        .connections {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .connections li { margin: 0.2em 0; }
+
+        .connections button {
+            appearance: none;
+            border: 0;
+            background: none;
+            padding: 0;
+            font: inherit;
+            color: inherit;
+            cursor: pointer;
+            transition: color 180ms ease;
+        }
+
+        .connections button:hover,
+        .connections button:focus-visible {
+            color: var(--hover);
+        }
+
+        .home {
+            display: inline-block;
+            margin-bottom: 28px;
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 720px) {
+            main { width: min(calc(100% - 28px), 720px); padding-top: 32px; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <a class="home phrase" href="index.html">filing cabinet</a>
+        <h1 class="phrase">how this is built</h1>
+        <p class="lead">two trees. each file sits under the thing that talks to it — no crossing lines. click a file.</p>
+
+        <div class="atlas-wrap">
+            <div id="atlas">
+                <div class="host" id="host"></div>
+                <div class="forest" id="forest"></div>
+            </div>
+            <aside class="dossier" id="dossier" hidden>
+                <p class="dossier-kicker">file</p>
+                <h2 id="dossierTitle"></h2>
+                <div id="dossierBody"></div>
+            </aside>
+        </div>
+    </main>
+    <script>
+        const files = {
+            vercel: {
+                title: "vercel.json",
+                path: "vercel.json",
+                blurb: "hosts the site and the paint api",
+                body: `<p>serves every page as a static file. extra rules: send <code>/compositions</code> to <code>/compositions/</code>, and give generate sixty seconds.</p>`
+            },
+            index: {
+                title: "index.html",
+                path: "index.html",
+                blurb: "homepage — photos, bookmarks, little map",
+                body: `<p>one html file. it fetches the json beside it, then builds the carousel, bookmark list, and small map. bookmarks and readings come in as two fetches; this page is what stitches them into one list. footer also links to the studio on the right.</p>`
+            },
+            compositions: {
+                title: "compositions/index.html",
+                path: "compositions/index.html",
+                blurb: "watercolor studio page",
+                body: `<p>the studio. loads <code>app.js</code> and <code>styles.css</code>, and embeds the renderer iframe.</p>`
+            },
+            "paper-time": {
+                title: "paper-time.js",
+                path: "paper-time.js",
+                blurb: "tints the paper with the time of day",
+                body: `<p>reads your clock and fades the background from morning cream to dusk brown. footsteps loads this too, so the map matches the homepage. try <code>?hour=18</code>.</p>`
+            },
+            snaps: {
+                title: "snaps.json",
+                path: "snaps.json",
+                blurb: "photo album list",
+                body: `<p>months and photo objects. the homepage fetches this and builds the carousel. footsteps reads it too, to pair pins with pictures.</p>`
+            },
+            photos: {
+                title: "photos/",
+                path: "photos/",
+                blurb: "the jpeg files",
+                body: `<p>the images listed in <code>snaps.json</code>. the carousel and lightbox load them from here.</p>`
+            },
+            bookmarks: {
+                title: "bookmarks.json",
+                path: "bookmarks.json",
+                blurb: "pinned safari links",
+                body: `<p>pinned links. the homepage fetches this on its own. it never reads <code>readings.json</code>.</p>`
+            },
+            readings: {
+                title: "readings.json",
+                path: "readings.json",
+                blurb: "notion reading log, in the repo",
+                body: `<p>the notion reading log, saved in the repo. the homepage fetches this on its own, then shows ten at a time after the pinned bookmarks.</p>`
+            },
+            places: {
+                title: "places.json",
+                path: "places.json",
+                blurb: "map pins",
+                body: `<p>names, lat/lon, photo links. the homepage draws the small svg. the full-page map is the next file down.</p>`
+            },
+            footsteps: {
+                title: "footsteps.html",
+                path: "footsteps.html",
+                blurb: "full-page map",
+                body: `<p>same <code>places.json</code> as the homepage, plus <code>snaps.json</code> and <code>paper-time.js</code> so the paper matches.</p>`
+            },
+            sketchbook: {
+                title: "sketchbook.html",
+                path: "sketchbook.html",
+                blurb: "notebook cover",
+                body: `<p>“enter here” opens the retro desktop. also links back to the cabinet.</p>`
+            },
+            desktop: {
+                title: "desktop.html",
+                path: "desktop.html",
+                blurb: "windows-98 desktop",
+                body: `<p>about, music, moodboard. opened from the sketchbook.</p>`
+            },
+            styles: {
+                title: "compositions/styles.css",
+                path: "compositions/styles.css",
+                blurb: "desk, wall, mobile sheet",
+                body: `<p>how the studio looks.</p>`
+            },
+            app: {
+                title: "compositions/app.js",
+                path: "compositions/app.js",
+                blurb: "prompt, chips, paint, upload",
+                body: `<p>the studio controller. everything under it is something this file calls.</p>`
+            },
+            renderer: {
+                title: "compositions/renderer.html",
+                path: "compositions/renderer.html",
+                blurb: "hidden page that draws paintings",
+                body: `<p>iframe. compiles <code>paint()</code>, draws with p5.brush, posts a png back to <code>app.js</code>.</p>`
+            },
+            "image-worker": {
+                title: "compositions/image-worker.js",
+                path: "compositions/image-worker.js",
+                blurb: "turns a photo into wash marks",
+                body: `<p>used when you upload a photo instead of typing a scene.</p>`
+            },
+            generate: {
+                title: "api/generate.mjs",
+                path: "api/generate.mjs",
+                blurb: "paint button’s server endpoint",
+                body: `<p><code>POST /api/generate</code>. hands the scene to <code>generate.js</code>.</p>`
+            },
+            samples: {
+                title: "api/samples.mjs",
+                path: "api/samples.mjs",
+                blurb: "preset chips list",
+                body: `<p><code>GET /api/samples</code>. reads the chip names from <code>templates.js</code>.</p>`
+            },
+            "lib-generate": {
+                title: "lib/compositions/generate.js",
+                path: "lib/compositions/generate.js",
+                blurb: "asks a model, or uses a preset",
+                body: `<p>chip tap → stored <code>paint()</code> from templates. typed scene → grok / anthropic / openai, then a safety check.</p>`
+            },
+            prompt: {
+                title: "lib/compositions/prompt.js",
+                path: "lib/compositions/prompt.js",
+                blurb: "instructions for the model",
+                body: `<p>the system prompt and the allowed brush names.</p>`
+            },
+            templates: {
+                title: "lib/compositions/templates.js",
+                path: "lib/compositions/templates.js",
+                blurb: "saved paint() scenes",
+                body: `<p>the code behind the chips. generate uses it for presets; samples uses it for the chip list.</p>`
+            }
+        };
+
+        const forest = [
+            {
+                label: "filing cabinet",
+                id: "index",
+                children: [
+                    { via: "loads", id: "paper-time" },
+                    { via: "fetches", id: "snaps", children: [
+                        { via: "lists", id: "photos" }
+                    ] },
+                    { via: "fetches", id: "bookmarks" },
+                    { via: "fetches", id: "readings" },
+                    { via: "fetches", id: "places", children: [
+                        { via: "also opens", id: "footsteps" }
+                    ] },
+                    { via: "links to", id: "sketchbook", children: [
+                        { via: "opens", id: "desktop" }
+                    ] }
+                ]
+            },
+            {
+                label: "compositions/",
+                id: "compositions",
+                children: [
+                    { via: "loads", id: "styles" },
+                    { via: "loads", id: "app", children: [
+                        { via: "embeds", id: "renderer" },
+                        { via: "jobs", id: "image-worker" },
+                        { via: "posts", id: "generate", children: [
+                            { via: "calls", id: "lib-generate", children: [
+                                { via: "uses", id: "prompt" },
+                                { via: "uses", id: "templates" }
+                            ] }
+                        ] },
+                        { via: "gets", id: "samples" }
+                    ] }
+                ]
+            }
+        ];
+
+        const extras = {
+            vercel: [
+                { via: "serves", id: "index" },
+                { via: "serves", id: "compositions" },
+                { via: "hosts", id: "generate" }
+            ],
+            index: [
+                { via: "also links to", id: "compositions" }
+            ],
+            footsteps: [
+                { via: "also loads", id: "paper-time" },
+                { via: "also fetches", id: "snaps" }
+            ],
+            samples: [
+                { via: "reads", id: "templates" }
+            ]
+        };
+
+        const aliases = {
+            you: "index",
+            cabinet: "index",
+            rooms: "sketchbook",
+            tokens: "paper-time",
+            shortcuts: "index",
+            worker: "image-worker",
+            health: "generate"
+        };
+
+        const host = document.getElementById("host");
+        const forestEl = document.getElementById("forest");
+        const dossier = document.getElementById("dossier");
+        const dossierTitle = document.getElementById("dossierTitle");
+        const dossierBody = document.getElementById("dossierBody");
+        const buttons = {};
+        const parentOf = { index: "vercel", compositions: "vercel" };
+        const childrenOf = { vercel: ["index", "compositions"] };
+
+        function walk(node, parentId) {
+            if (parentId) parentOf[node.id] = parentId;
+            childrenOf[node.id] = (node.children || []).map((child) => child.id);
+            (node.children || []).forEach((child) => walk(child, node.id));
+        }
+        forest.forEach((tree) => walk(tree, "vercel"));
+
+        function makeNode(id) {
+            const entry = files[id];
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "node";
+            button.dataset.id = id;
+            const name = document.createElement("span");
+            name.className = "node-name";
+            name.textContent = entry.title;
+            const blurb = document.createElement("span");
+            blurb.className = "node-blurb";
+            blurb.textContent = entry.blurb;
+            button.append(name, blurb);
+            button.addEventListener("click", () => openNode(id));
+            (buttons[id] ||= []).push(button);
+            return button;
+        }
+
+        function renderKids(kids) {
+            if (!kids?.length) return null;
+            const list = document.createElement("ul");
+            list.className = "branch";
+            kids.forEach((kid) => {
+                const item = document.createElement("li");
+                item.className = "twig";
+                item.dataset.id = kid.id;
+                const via = document.createElement("span");
+                via.className = "via";
+                via.textContent = kid.via;
+                item.append(via, makeNode(kid.id));
+                const nested = renderKids(kid.children);
+                if (nested) item.append(nested);
+                list.append(item);
+            });
+            return list;
+        }
+
+        host.append(makeNode("vercel"));
+
+        forest.forEach((tree) => {
+            const column = document.createElement("div");
+            const label = document.createElement("p");
+            label.className = "tree-label";
+            label.textContent = tree.label;
+            const root = document.createElement("div");
+            root.className = "tree";
+            root.append(makeNode(tree.id));
+            const kids = renderKids(tree.children);
+            if (kids) root.append(kids);
+            column.append(label, root);
+            forestEl.append(column);
+        });
+
+        function lineage(id) {
+            const up = new Set([id]);
+            let current = parentOf[id];
+            while (current) {
+                up.add(current);
+                current = parentOf[current];
+            }
+            const down = [id];
+            while (down.length) {
+                const next = childrenOf[down.pop()] || [];
+                next.forEach((child) => {
+                    up.add(child);
+                    down.push(child);
+                });
+            }
+            return up;
+        }
+
+        function relations(id) {
+            const items = [];
+            const parent = parentOf[id];
+            if (parent) {
+                const via = findVia(parent, id) || "from";
+                items.push({ via: `${via} ←`, id: parent });
+            }
+            (childrenOf[id] || []).forEach((child) => {
+                items.push({ via: findVia(id, child), id: child });
+            });
+            (extras[id] || []).forEach((extra) => items.push(extra));
+            return items;
+        }
+
+        function findVia(parentId, childId) {
+            const search = (nodes) => {
+                for (const node of nodes || []) {
+                    if (node.id === parentId) {
+                        return (node.children || []).find((child) => child.id === childId)?.via;
+                    }
+                    const nested = search(node.children);
+                    if (nested) return nested;
+                }
+                return null;
+            };
+            if (parentId === "vercel") {
+                return childId === "generate" ? "hosts" : "serves";
+            }
+            return search(forest);
+        }
+
+        function openNode(id) {
+            const entry = files[id];
+            if (!entry) return;
+
+            const already = buttons[id]?.some((button) => button.classList.contains("is-open"));
+            document.querySelectorAll(".node").forEach((button) => button.classList.remove("is-open", "is-related"));
+            document.querySelectorAll(".twig, .branch").forEach((el) => el.classList.remove("is-on-path"));
+
+            if (already) {
+                dossier.hidden = true;
+                history.replaceState(null, "", "architecture.html");
+                return;
+            }
+
+            const path = lineage(id);
+            document.querySelectorAll(".node").forEach((button) => {
+                if (button.dataset.id === id) button.classList.add("is-open");
+                else if (path.has(button.dataset.id)) button.classList.add("is-related");
+            });
+            document.querySelectorAll(".twig").forEach((twig) => {
+                if (path.has(twig.dataset.id)) {
+                    twig.classList.add("is-on-path");
+                    twig.closest(".branch")?.classList.add("is-on-path");
+                }
+            });
+
+            const links = relations(id).map((item) =>
+                `<li>${item.via} <button type="button" data-jump="${item.id}">${files[item.id].path}</button></li>`
+            ).join("");
+
+            dossierTitle.textContent = entry.path;
+            dossierBody.innerHTML = `
+                <p class="dossier-blurb">${entry.blurb}</p>
+                ${entry.body}
+                <ul class="connections">${links}</ul>
+            `;
+            dossierBody.querySelectorAll("[data-jump]").forEach((button) => {
+                button.addEventListener("click", () => openNode(button.dataset.jump));
+            });
+            dossier.hidden = false;
+            history.replaceState(null, "", `#${id}`);
+        }
+
+        const start = aliases[location.hash.slice(1)] || location.hash.slice(1);
+        if (files[start] && location.hash) openNode(start);
+    </script>
+</body>
+</html>
