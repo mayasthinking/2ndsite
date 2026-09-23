@@ -4510,3 +4510,6 @@ body.is-sheet-open {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+.explorations-link { margin-top: -5px; color: var(--muted); font-size: 12px; text-decoration: none; }
+.explorations-link:hover, .explorations-link:focus-visible { color: var(--hover); text-decoration: underline; }
