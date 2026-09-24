@@ -1,5 +1,37 @@
 [
   {
+    "title": "sailboat on soft ocean waves a red and orange flag at it",
+    "model": "sol",
+    "family": "Sol",
+    "date": "2026-09-24T00:25:06+00:00",
+    "image": "images/2026-09-24T00-25-06-sailboat-on-soft-ocean-waves-a-red-and-orange-flag-at-it-sol.webp",
+    "replay": "replay/2026-09-24T00-25-06-sailboat-on-soft-ocean-waves-a-red-and-orange-flag-at-it-sol.json.gz"
+  },
+  {
+    "title": "lily pond",
+    "model": "sol",
+    "family": "Sol",
+    "date": "2026-09-24T00:18:05+00:00",
+    "image": "images/2026-09-24T00-18-05-lily-pond-sol.webp",
+    "replay": "replay/2026-09-24T00-18-05-lily-pond-sol.json.gz"
+  },
+  {
+    "title": "bowl with an apple a pear and grapes on a table in a c z",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-24T00:14:58+00:00",
+    "image": "images/2026-09-24T00-14-58-bowl-with-an-apple-a-pear-and-grapes-on-a-table-in-a-c-z-astra.webp",
+    "replay": "replay/2026-09-24T00-14-58-bowl-with-an-apple-a-pear-and-grapes-on-a-table-in-a-c-z-astra.json.gz"
+  },
+  {
+    "title": "bowl with an apple a pear and grapes on a table in a c z",
+    "model": "sol",
+    "family": "Sol",
+    "date": "2026-09-24T00:07:55+00:00",
+    "image": "images/2026-09-24T00-07-55-bowl-with-an-apple-a-pear-and-grapes-on-a-table-in-a-c-z-sol.webp",
+    "replay": "replay/2026-09-24T00-07-55-bowl-with-an-apple-a-pear-and-grapes-on-a-table-in-a-c-z-sol.json.gz"
+  },
+  {
     "title": "telescope in an empty field pointed at a night sky fille",
     "model": "sol",
     "family": "Sol",
