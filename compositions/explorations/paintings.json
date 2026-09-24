@@ -1,6 +1,14 @@
 [
   {
     "title": "sailboat on soft ocean waves a red and orange flag at it",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-24T00:29:47+00:00",
+    "image": "images/2026-09-24T00-29-47-sailboat-on-soft-ocean-waves-a-red-and-orange-flag-at-it-astra.webp",
+    "replay": "replay/2026-09-24T00-29-47-sailboat-on-soft-ocean-waves-a-red-and-orange-flag-at-it-astra.json.gz"
+  },
+  {
+    "title": "sailboat on soft ocean waves a red and orange flag at it",
     "model": "sol",
     "family": "Sol",
     "date": "2026-09-24T00:25:06+00:00",
@@ -30,6 +38,14 @@
     "date": "2026-09-24T00:07:55+00:00",
     "image": "images/2026-09-24T00-07-55-bowl-with-an-apple-a-pear-and-grapes-on-a-table-in-a-c-z-sol.webp",
     "replay": "replay/2026-09-24T00-07-55-bowl-with-an-apple-a-pear-and-grapes-on-a-table-in-a-c-z-sol.json.gz"
+  },
+  {
+    "title": "grocery store on a busy city street at dusk pedestrians",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-23T20:41:06+00:00",
+    "image": "images/2026-09-23T20-41-06-grocery-store-on-a-busy-city-street-at-dusk-pedestrians-astra.webp",
+    "replay": "replay/2026-09-23T20-41-06-grocery-store-on-a-busy-city-street-at-dusk-pedestrians-astra.json.gz"
   },
   {
     "title": "telescope in an empty field pointed at a night sky fille",
