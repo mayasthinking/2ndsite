@@ -24,12 +24,28 @@
     "replay": "replay/2026-09-23T05-56-06-telescope-in-an-empty-field-at-night-pointed-at-a-sky-fi-sol.json.gz"
   },
   {
+    "title": "telescope on a grassy cliff overlooking the ocean at dus",
+    "model": "sol",
+    "family": "Sol",
+    "date": "2026-09-23T05:47:22+00:00",
+    "image": "images/2026-09-23T05-47-22-telescope-on-a-grassy-cliff-overlooking-the-ocean-at-dus-sol.webp",
+    "replay": "replay/2026-09-23T05-47-22-telescope-on-a-grassy-cliff-overlooking-the-ocean-at-dus-sol.json.gz"
+  },
+  {
     "title": "telescope on a cliff overlooking the ocean at sunrise it",
     "model": "astra",
     "family": "Astra",
     "date": "2026-09-23T05:42:55+00:00",
     "image": "images/2026-09-23T05-42-55-telescope-on-a-cliff-overlooking-the-ocean-at-sunrise-it-astra.webp",
     "replay": "replay/2026-09-23T05-42-55-telescope-on-a-cliff-overlooking-the-ocean-at-sunrise-it-astra.json.gz"
+  },
+  {
+    "title": "telescope on a cliff overlooking the ocean at sunrise it",
+    "model": "sol",
+    "family": "Sol",
+    "date": "2026-09-23T05:38:00+00:00",
+    "image": "images/2026-09-23T05-38-00-telescope-on-a-cliff-overlooking-the-ocean-at-sunrise-it-sol.webp",
+    "replay": "replay/2026-09-23T05-38-00-telescope-on-a-cliff-overlooking-the-ocean-at-sunrise-it-sol.json.gz"
   },
   {
     "title": "aged yellow pear in a shallow ceramic bowl hard noon sun",

@@ -185,11 +185,21 @@ syncModel();
 $('#close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 
-try {
-  const response = await fetch('paintings.json?v=2');
-  if (!response.ok) throw new Error('Paintings are unavailable.');
-  paintings = await response.json();
-  render();
-} catch (error) {
-  grid.textContent = error.message;
+let catalog = '';
+async function refreshPaintings() {
+  try {
+    const response = await fetch('paintings.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Paintings are unavailable.');
+    const next = await response.json();
+    const fingerprint = JSON.stringify(next);
+    if (fingerprint !== catalog) {
+      catalog = fingerprint;
+      paintings = next;
+      render();
+    }
+  } catch (error) {
+    if (!catalog) grid.textContent = error.message;
+  }
 }
+await refreshPaintings();
+setInterval(refreshPaintings, 60_000);
