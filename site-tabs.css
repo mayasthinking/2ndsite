@@ -1,0 +1,50 @@
+/* Shared top-of-site navigation (sketch / foto) */
+.site-tabs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: stretch;
+    min-height: 32px;
+    background: rgba(245, 240, 224, 0.97);
+    border-bottom: 1px solid #d9d2c0;
+    font-family: 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.site-tab {
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    font-size: 12px;
+    color: #333;
+    text-decoration: none;
+    border-right: 1px solid #d9d2c0;
+    letter-spacing: 0.02em;
+    background: transparent;
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+button.site-tab {
+    text-align: left;
+}
+
+.site-tab:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.site-tab.is-active {
+    background: rgba(249, 224, 76, 0.45);
+    font-weight: bold;
+    color: #222;
+}
+
+body.has-site-tabs {
+    padding-top: 32px;
+}
