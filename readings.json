@@ -14,5 +14,17 @@
     "url": "https://kevinkelly.substack.com/p/hill-making-vs-hill-climbing",
     "publication": "kevin kelly",
     "author": "substack"
+  },
+  {
+    "title": "a non-photorealistic lighting model for automatic technical illustration",
+    "url": "https://users.cs.northwestern.edu/~bgooch/PDFs/gooch98.pdf",
+    "publication": "SIGGRAPH 1998",
+    "author": "Amy Gooch, Bruce Gooch, Peter Shirley, Elaine Cohen"
+  },
+  {
+    "title": "painterly rendering with curved brush strokes of multiple sizes",
+    "url": "https://mrl.cs.nyu.edu/publications/painterly98/hertzmann-siggraph98.pdf",
+    "publication": "SIGGRAPH 1998",
+    "author": "Aaron Hertzmann"
   }
 ]
