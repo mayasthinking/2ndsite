@@ -1,5 +1,29 @@
 [
   {
+    "title": "slow 22 raincoat",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-25T19:01:35+00:00",
+    "image": "images/2026-09-25T19-01-35-slow-22-raincoat.webp",
+    "replay": "replay/2026-09-25T19-01-35-slow-22-raincoat.json.gz"
+  },
+  {
+    "title": "slow 18 blue suitcase",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-25T18:58:40+00:00",
+    "image": "images/2026-09-25T18-58-40-slow-18-blue-suitcase.webp",
+    "replay": "replay/2026-09-25T18-58-40-slow-18-blue-suitcase.json.gz"
+  },
+  {
+    "title": "slow 17 saucer",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-25T18:58:38+00:00",
+    "image": "images/2026-09-25T18-58-38-slow-17-saucer.webp",
+    "replay": "replay/2026-09-25T18-58-38-slow-17-saucer.json.gz"
+  },
+  {
     "title": "slow 02 alarm clock",
     "model": "astra",
     "family": "Astra",
