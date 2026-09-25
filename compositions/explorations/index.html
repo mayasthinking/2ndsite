@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#fffefa">
   <title>explorations · compositions</title>
   <meta name="description" content="Painted explorations from Compositions.">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <header class="site-head">
@@ -16,15 +16,6 @@
     </div>
   </header>
   <main>
-    <nav class="view-tabs" aria-label="Explorations views">
-      <a href="#paintings" id="paintings-tab">paintings</a>
-      <a href="#prompts" id="prompts-tab">prompts <span id="prompt-tab-count"></span></a>
-    </nav>
-    <section id="prompts-view" class="prompts-view" aria-label="Prompts to paint" hidden>
-      <div class="prompts-intro"><h2>prompts to paint</h2><p>Quiet scenes, each built around one clear object. These have not been generated or approved.</p></div>
-      <ol id="prompt-list" class="prompt-list"></ol>
-    </section>
-    <section id="paintings-view" aria-label="Approved paintings">
     <div class="controls">
       <div class="model-filter"><span>by</span><div class="model-picker">
         <button id="model-trigger" class="model-trigger" type="button" aria-label="Models: sol and astra" aria-haspopup="true" aria-controls="model-menu" aria-expanded="false"><span id="model-current">sol + astra</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2 4 4 4 4-4"/></svg></button>
@@ -33,13 +24,12 @@
       <span id="count" aria-live="polite"></span>
     </div>
     <section id="grid" class="grid" aria-label="Paintings"></section>
-    </section>
   </main>
   <dialog id="detail" aria-label="Painting">
     <button id="close" type="button" aria-label="Close painting">×</button>
     <img id="large" alt="">
     <div class="detail-copy"><span id="detail-model"></span><h2 id="detail-title"></h2></div>
   </dialog>
-  <script type="module" src="app.js?v=6"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>
