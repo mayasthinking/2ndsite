@@ -1,0 +1,84 @@
+{
+  "prompts": [
+    {
+      "id": "slow-01",
+      "prompt": "a worn gardening glove on a stone ledge after rain, dark soil caught in its seams"
+    },
+    {
+      "id": "slow-03",
+      "prompt": "a black chess knight tipped onto its side on a board beside an open window"
+    },
+    {
+      "id": "slow-04",
+      "prompt": "a chipped blue enamel plate drying in a kitchen rack, low afternoon sun along its rim"
+    },
+    {
+      "id": "slow-05",
+      "prompt": "a spool of red thread rolling from an open sewing basket into a patch of sunlight"
+    },
+    {
+      "id": "slow-06",
+      "prompt": "a ring of old keys on a hallway console, rain blurring the window behind it"
+    },
+    {
+      "id": "slow-07",
+      "prompt": "a cello resting against an armchair in an empty rehearsal room, warm light along its curved body"
+    },
+    {
+      "id": "slow-09",
+      "prompt": "a single candle burning on a mantel, melted wax pooling beside a cold fireplace"
+    },
+    {
+      "id": "slow-10",
+      "prompt": "an open umbrella propped in a tiled entryway, rainwater gathering beneath its curved handle"
+    },
+    {
+      "id": "slow-11",
+      "prompt": "a muddy boot drying beside a black iron stove, pale winter light at the doorway"
+    },
+    {
+      "id": "slow-12",
+      "prompt": "an old map spread across a table, its folded edges lifting in a breeze"
+    },
+    {
+      "id": "slow-13",
+      "prompt": "a hand mirror catching a thin beam of window light on a dresser"
+    },
+    {
+      "id": "slow-15",
+      "prompt": "a terracotta pot dripping onto a brick floor after watering in an empty greenhouse"
+    },
+    {
+      "id": "slow-16",
+      "prompt": "a moth resting on a windowpane at blue hour, the room's single lamp reflected beside it"
+    },
+    {
+      "id": "slow-17",
+      "prompt": "a lone saucer on an outdoor cafe table after a shower, wet pavement reflecting the sky"
+    },
+    {
+      "id": "slow-18",
+      "prompt": "a blue suitcase beside a bench on a quiet station platform at dawn, no train yet in sight"
+    },
+    {
+      "id": "slow-19",
+      "prompt": "a garden gate left ajar after rain, wet gravel and a path disappearing into trees"
+    },
+    {
+      "id": "slow-20",
+      "prompt": "a potted plant on a narrow stairwell landing, late sun falling across worn steps"
+    },
+    {
+      "id": "slow-21",
+      "prompt": "a wheelbarrow filled with freshly cut branches in a garden at first frost"
+    },
+    {
+      "id": "slow-22",
+      "prompt": "a raincoat hanging from a hook in a dim entryway, drops falling from its hem onto the floor"
+    },
+    {
+      "id": "slow-24",
+      "prompt": "a record turning on a phonograph in an empty room, shutter light moving across the floor"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ const $ = selector => document.querySelector(selector);
 const grid = $('#grid');
 const dialog = $('#detail');
 let paintings = [];
+let prompts = [];
 const selectedModels = new Set(['Sol', 'Astra']);
 let replayDisposers = [];
 let activeReplay = null;
@@ -143,6 +144,32 @@ function render() {
   }
 }
 
+function renderPrompts() {
+  $('#prompt-tab-count').textContent = prompts.length ? `(${prompts.length})` : '';
+  const list = $('#prompt-list');
+  list.replaceChildren(...prompts.map(item => {
+    const row = document.createElement('li');
+    row.textContent = item.prompt;
+    return row;
+  }));
+  if (!prompts.length) {
+    const row = document.createElement('li');
+    row.textContent = 'All prompts in this set have been generated.';
+    list.append(row);
+  }
+}
+
+function syncView() {
+  const showPrompts = location.hash === '#prompts';
+  $('#prompts-view').hidden = !showPrompts;
+  $('#paintings-view').hidden = showPrompts;
+  $('#prompts-tab').setAttribute('aria-current', showPrompts ? 'page' : 'false');
+  $('#paintings-tab').setAttribute('aria-current', showPrompts ? 'false' : 'page');
+}
+
+window.addEventListener('hashchange', syncView);
+syncView();
+
 const modelTrigger = $('#model-trigger');
 const modelMenu = $('#model-menu');
 const modelChecks = [...modelMenu.querySelectorAll('input[type=checkbox]')];
@@ -203,3 +230,11 @@ async function refreshPaintings() {
 }
 await refreshPaintings();
 setInterval(refreshPaintings, 60_000);
+try {
+  const response = await fetch('prompts.json', {cache: 'no-store'});
+  if (!response.ok) throw new Error('Prompts are unavailable.');
+  prompts = (await response.json()).prompts;
+  renderPrompts();
+} catch (error) {
+  $('#prompt-list').textContent = error.message;
+}
