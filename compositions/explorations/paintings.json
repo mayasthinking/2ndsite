@@ -1,5 +1,29 @@
 [
   {
+    "title": "slow 02 alarm clock",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-25T17:40:09+00:00",
+    "image": "images/2026-09-25T17-40-09-slow-02-alarm-clock.webp",
+    "replay": "replay/2026-09-25T17-40-09-slow-02-alarm-clock.json.gz"
+  },
+  {
+    "title": "moulin rouge rain",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-25T17:29:51+00:00",
+    "image": "images/2026-09-25T17-29-51-moulin-rouge-rain.webp",
+    "replay": "replay/2026-09-25T17-29-51-moulin-rouge-rain.json.gz"
+  },
+  {
+    "title": "nyc taxi rain night",
+    "model": "astra",
+    "family": "Astra",
+    "date": "2026-09-25T17:29:31+00:00",
+    "image": "images/2026-09-25T17-29-31-nyc-taxi-rain-night.webp",
+    "replay": "replay/2026-09-25T17-29-31-nyc-taxi-rain-night.json.gz"
+  },
+  {
     "title": "sailboat on soft ocean waves a red and orange flag at it",
     "model": "astra",
     "family": "Astra",
