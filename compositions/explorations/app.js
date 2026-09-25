@@ -1,5 +1,3 @@
-import { renderProgram } from './renderer.js';
-
 const $ = selector => document.querySelector(selector);
 const grid = $('#grid');
 const dialog = $('#detail');
@@ -74,6 +72,7 @@ function replayControl(painting, art) {
       code.hidden = false;
       canvas.hidden = false;
       note.textContent = 'replaying saved strokes';
+      const { renderProgram } = await import('./renderer.js');
       const finished = await renderProgram(program, canvas, {
         width: 400, height: 500,
         isCancelled: () => current !== version,
@@ -112,7 +111,7 @@ function render() {
   const filtered = paintings.filter(p => selectedModels.has(p.family));
   const shown = filtered;
   $('#count').textContent = `${shown.length} painting${shown.length === 1 ? '' : 's'}`;
-  grid.replaceChildren(...shown.map(p => {
+  grid.replaceChildren(...shown.map((p, index) => {
     const card = document.createElement('article');
     card.className = 'card';
     const button = document.createElement('button');
@@ -120,9 +119,17 @@ function render() {
     button.className = 'art';
     button.setAttribute('aria-label', `View ${p.title} by ${p.family}`);
     const image = document.createElement('img');
-    image.src = p.image;
+    const thumb = p.image.includes('images/') ? p.image.replace('images/', 'images/thumbs/') : p.image;
+    image.src = thumb;
     image.alt = p.title;
-    image.loading = 'lazy';
+    image.width = 704;
+    image.height = 880;
+    image.decoding = 'async';
+    // The first screen must not wait on lazy-load, which Safari often skips until scroll.
+    image.loading = index < 4 ? 'eager' : 'lazy';
+    image.addEventListener('error', () => {
+      if (!image.src.endsWith(p.image)) image.src = p.image;
+    }, { once: true });
     button.append(image);
     button.addEventListener('click', () => show(p));
     const title = document.createElement('h2');
