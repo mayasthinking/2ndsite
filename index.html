@@ -2301,7 +2301,6 @@
 
         function schedulePhotoPeek(carousel) {
             const wrap = carousel.closest('.photo-carousel-wrap');
-            const lastPage = carousel.querySelector('.photo-page:last-child');
             if (!wrap || carousel.querySelectorAll('.photo-page').length < 2) {
                 return;
             }
@@ -2325,6 +2324,7 @@
             }
 
             const wrap = carousel.closest('.photo-carousel-wrap');
+            const lastPage = carousel.querySelector('.photo-page:last-child');
             let settleTimer;
             let releaseTimer;
             let pinFrame;
