@@ -515,8 +515,15 @@
             scroll-snap-stop: always;
         }
 
-        .photo-page:last-child {
+        .photo-carousel-wrap.is-final-set .photo-page:last-child {
             flex-basis: 100%;
+            transition: flex-basis var(--photo-reveal-duration) var(--photo-reveal-ease);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .photo-carousel-wrap.is-final-set .photo-page:last-child {
+                transition: none;
+            }
         }
 
         .photo-page .photo-item:last-child:nth-child(odd):not(:only-child) {
@@ -2316,8 +2323,93 @@
                 return;
             }
 
-            const sync = () => syncPhotoCarousel(carousel);
+            const wrap = carousel.closest('.photo-carousel-wrap');
+            let settleTimer;
+            let releaseTimer;
+            let pinFrame;
+            let pinningFinal = false;
+            let pointerActive = false;
+
+            const stopPinning = (alignEnd = false) => {
+                if (!pinningFinal) {
+                    return;
+                }
+
+                pinningFinal = false;
+                cancelAnimationFrame(pinFrame);
+                clearTimeout(releaseTimer);
+                if (alignEnd) {
+                    carousel.scrollLeft = carousel.scrollWidth - carousel.clientWidth;
+                }
+                carousel.style.scrollBehavior = '';
+                carousel.style.scrollSnapType = '';
+            };
+
+            const pinToEnd = () => {
+                if (!pinningFinal) {
+                    return;
+                }
+
+                carousel.scrollLeft = carousel.scrollWidth - carousel.clientWidth;
+                pinFrame = requestAnimationFrame(pinToEnd);
+            };
+
+            const settleFinalPage = () => {
+                if (pointerActive || pinningFinal || !wrap?.classList.contains('is-peeking')
+                    || wrap.classList.contains('is-final-set') || !carouselAtEnd(carousel)) {
+                    return;
+                }
+
+                wrap.classList.add('is-final-set');
+                carousel.style.scrollBehavior = 'auto';
+                carousel.style.scrollSnapType = 'none';
+                pinningFinal = true;
+                pinToEnd();
+
+                const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                    ? 0
+                    : photoRevealDurationMs;
+                releaseTimer = window.setTimeout(() => {
+                    stopPinning(true);
+                    syncPhotoCarousel(carousel);
+                }, duration);
+            };
+
+            const scheduleSettle = () => {
+                clearTimeout(settleTimer);
+                if (!pointerActive && !pinningFinal) {
+                    settleTimer = window.setTimeout(settleFinalPage, 140);
+                }
+            };
+
+            const sync = () => {
+                if (pinningFinal) {
+                    return;
+                }
+
+                const distanceFromEnd = carousel.scrollWidth - carousel.clientWidth - carousel.scrollLeft;
+                if (wrap?.classList.contains('is-final-set') && distanceFromEnd > carousel.clientWidth / 3) {
+                    wrap.classList.remove('is-final-set');
+                }
+
+                syncPhotoCarousel(carousel);
+                scheduleSettle();
+            };
             carousel.addEventListener('scroll', sync, { passive: true });
+            carousel.addEventListener('pointerdown', () => {
+                pointerActive = true;
+                clearTimeout(settleTimer);
+                if (pinningFinal) {
+                    stopPinning();
+                    wrap?.classList.remove('is-final-set');
+                }
+            });
+            ['pointerup', 'pointercancel'].forEach((eventName) => {
+                window.addEventListener(eventName, () => {
+                    pointerActive = false;
+                    scheduleSettle();
+                });
+            });
             carousel.addEventListener('keydown', (event) => {
                 if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') {
                     return;
