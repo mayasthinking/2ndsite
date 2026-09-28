@@ -2301,6 +2301,7 @@
 
         function schedulePhotoPeek(carousel) {
             const wrap = carousel.closest('.photo-carousel-wrap');
+            const lastPage = carousel.querySelector('.photo-page:last-child');
             if (!wrap || carousel.querySelectorAll('.photo-page').length < 2) {
                 return;
             }
@@ -2339,7 +2340,7 @@
                 cancelAnimationFrame(pinFrame);
                 clearTimeout(releaseTimer);
                 if (alignEnd) {
-                    carousel.scrollLeft = carousel.scrollWidth - carousel.clientWidth;
+                    carousel.scrollLeft = lastPage?.offsetLeft ?? carousel.scrollWidth - carousel.clientWidth;
                 }
                 carousel.style.scrollBehavior = '';
                 carousel.style.scrollSnapType = '';
@@ -2350,7 +2351,7 @@
                     return;
                 }
 
-                carousel.scrollLeft = carousel.scrollWidth - carousel.clientWidth;
+                carousel.scrollLeft = lastPage?.offsetLeft ?? carousel.scrollWidth - carousel.clientWidth;
                 pinFrame = requestAnimationFrame(pinToEnd);
             };
 
