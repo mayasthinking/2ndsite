@@ -165,7 +165,7 @@
         "city": "untitled",
         "photos": [
           {
-            "src": "photos/courtyard-garden.jpeg",
+            "src": "photos/courtyard-garden.jpeg?v=upright",
             "alt": "Black and white courtyard garden with a person on a bench, ivy on a brick wall, and classical stone fragments",
             "caption": "courtyard garden",
             "ariaLabel": "Open courtyard garden photo"
@@ -177,7 +177,7 @@
             "ariaLabel": "Open coastal path photo"
           },
           {
-            "src": "photos/skyscrapers.jpeg",
+            "src": "photos/skyscrapers.jpeg?v=upright",
             "alt": "Low-angle view of modern skyscrapers against a blue sky",
             "caption": "skyscrapers",
             "ariaLabel": "Open skyscrapers photo"
