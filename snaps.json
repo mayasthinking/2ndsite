@@ -9,43 +9,43 @@
           {
             "src": "photos/red.jpeg",
             "alt": "Sunlit red archway opening onto an ivy-covered courtyard",
-            "caption": "red",
+            "caption": "copenhagen, denmark",
             "ariaLabel": "Open red photo"
-          },
-          {
-            "src": "photos/yellow.jpeg",
-            "alt": "Sunlight and shadows on a yellow facade and glass windows",
-            "caption": "yellow",
-            "ariaLabel": "Open yellow photo"
           },
           {
             "src": "photos/film-canal.jpeg",
             "alt": "Waterside houses and trees beneath a clear blue sky",
-            "caption": "film canal",
+            "caption": "copenhagen, denmark",
             "ariaLabel": "Open film canal photo"
+          },
+          {
+            "src": "photos/yellow.jpeg",
+            "alt": "Sunlight and shadows on a yellow facade and glass windows",
+            "caption": "copenhagen, denmark",
+            "ariaLabel": "Open yellow photo"
           },
           {
             "src": "photos/painting.jpeg",
             "alt": "House across the water framed by willow trees and reeds",
-            "caption": "painting",
+            "caption": "copenhagen, denmark",
             "ariaLabel": "Open painting photo"
           },
           {
             "src": "photos/chic.jpeg",
             "alt": "Street scene viewed through a cafe window",
-            "caption": "chic",
+            "caption": "copenhagen, denmark",
             "ariaLabel": "Open chic photo"
           },
           {
             "src": "photos/adventure.jpeg",
             "alt": "Person walking a bicycle along a sunny waterside path",
-            "caption": "adventure",
+            "caption": "copenhagen, denmark",
             "ariaLabel": "Open adventure photo"
           },
           {
             "src": "photos/girl-morning.jpeg",
             "alt": "Person seated beside bicycles in golden morning light",
-            "caption": "girl, morning",
+            "caption": "copenhagen, denmark",
             "ariaLabel": "Open girl, morning photo"
           }
         ]
