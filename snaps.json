@@ -25,10 +25,10 @@
             "ariaLabel": "Open film canal photo"
           },
           {
-            "src": "photos/adventure.jpeg",
-            "alt": "Person walking a bicycle along a sunny waterside path",
-            "caption": "adventure",
-            "ariaLabel": "Open adventure photo"
+            "src": "photos/red.jpeg",
+            "alt": "Sunlit red archway opening onto an ivy-covered courtyard",
+            "caption": "red",
+            "ariaLabel": "Open red photo"
           },
           {
             "src": "photos/chic.jpeg",
@@ -37,10 +37,10 @@
             "ariaLabel": "Open chic photo"
           },
           {
-            "src": "photos/red.jpeg",
-            "alt": "Sunlit red archway opening onto an ivy-covered courtyard",
-            "caption": "red",
-            "ariaLabel": "Open red photo"
+            "src": "photos/adventure.jpeg",
+            "alt": "Person walking a bicycle along a sunny waterside path",
+            "caption": "adventure",
+            "ariaLabel": "Open adventure photo"
           },
           {
             "src": "photos/girl-morning.jpeg",
