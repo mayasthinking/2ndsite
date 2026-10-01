@@ -1,5 +1,58 @@
 [
   {
+    "label": "october 2026",
+    "preview": 2,
+    "groups": [
+      {
+        "city": "copenhagen",
+        "photos": [
+          {
+            "src": "photos/painting.jpeg",
+            "alt": "House across the water framed by willow trees and reeds",
+            "caption": "painting",
+            "ariaLabel": "Open painting photo"
+          },
+          {
+            "src": "photos/yellow.jpeg",
+            "alt": "Sunlight and shadows on a yellow facade and glass windows",
+            "caption": "yellow",
+            "ariaLabel": "Open yellow photo"
+          },
+          {
+            "src": "photos/film-canal.jpeg",
+            "alt": "Waterside houses and trees beneath a clear blue sky",
+            "caption": "film canal",
+            "ariaLabel": "Open film canal photo"
+          },
+          {
+            "src": "photos/adventure.jpeg",
+            "alt": "Person walking a bicycle along a sunny waterside path",
+            "caption": "adventure",
+            "ariaLabel": "Open adventure photo"
+          },
+          {
+            "src": "photos/chic.jpeg",
+            "alt": "Street scene viewed through a cafe window",
+            "caption": "chic",
+            "ariaLabel": "Open chic photo"
+          },
+          {
+            "src": "photos/red.jpeg",
+            "alt": "Sunlit red archway opening onto an ivy-covered courtyard",
+            "caption": "red",
+            "ariaLabel": "Open red photo"
+          },
+          {
+            "src": "photos/girl-morning.jpeg",
+            "alt": "Person seated beside bicycles in golden morning light",
+            "caption": "girl, morning",
+            "ariaLabel": "Open girl, morning photo"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "label": "july 2026",
     "preview": 2,
     "groups": [
