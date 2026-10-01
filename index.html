@@ -1284,6 +1284,7 @@
             }
 
             .photo-grid {
+                grid-template-columns: minmax(0, 1fr);
                 --photo-grid-col-gap: 10px;
                 gap: 14px var(--photo-grid-col-gap);
                 padding: 0;
@@ -2723,7 +2724,14 @@
             });
         }
 
-        const PHOTO_PAGE_SIZE = 4;
+        const mobilePhotoGallery = window.matchMedia('(max-width: 600px)');
+        let PHOTO_PAGE_SIZE = mobilePhotoGallery.matches ? 1 : 4;
+        let latestPhotoAlbums = null;
+
+        mobilePhotoGallery.addEventListener('change', () => {
+            PHOTO_PAGE_SIZE = mobilePhotoGallery.matches ? 1 : 4;
+            if (latestPhotoAlbums) renderSnaps(latestPhotoAlbums);
+        });
 
         function flattenAlbumPhotos(albums) {
             const photos = [];
@@ -2805,6 +2813,7 @@
         }
 
         function renderSnaps(albums) {
+            latestPhotoAlbums = albums;
             const root = document.getElementById('snaps-albums');
             if (!root || !Array.isArray(albums)) {
                 return;
