@@ -7,10 +7,10 @@
         "city": "copenhagen",
         "photos": [
           {
-            "src": "photos/painting.jpeg",
-            "alt": "House across the water framed by willow trees and reeds",
-            "caption": "painting",
-            "ariaLabel": "Open painting photo"
+            "src": "photos/red.jpeg",
+            "alt": "Sunlit red archway opening onto an ivy-covered courtyard",
+            "caption": "red",
+            "ariaLabel": "Open red photo"
           },
           {
             "src": "photos/yellow.jpeg",
@@ -25,10 +25,10 @@
             "ariaLabel": "Open film canal photo"
           },
           {
-            "src": "photos/red.jpeg",
-            "alt": "Sunlit red archway opening onto an ivy-covered courtyard",
-            "caption": "red",
-            "ariaLabel": "Open red photo"
+            "src": "photos/painting.jpeg",
+            "alt": "House across the water framed by willow trees and reeds",
+            "caption": "painting",
+            "ariaLabel": "Open painting photo"
           },
           {
             "src": "photos/chic.jpeg",
