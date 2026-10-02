@@ -70,7 +70,8 @@
         .local-date,
         .bookmark-list,
         .bookmark-more-toggle,
-        .bookmark-blurb {
+        .bookmark-blurb,
+        .cabinet-note {
             -webkit-user-select: none;
             user-select: none;
         }
@@ -562,6 +563,13 @@
         .bookmark-blurb a:hover,
         .bookmark-blurb a:focus-visible {
             color: var(--hover);
+        }
+
+        .cabinet-note {
+            margin: 0;
+            color: var(--ink);
+            font-size: var(--list-size);
+            line-height: var(--list-line-height);
         }
 
         .bookmark-list {
@@ -1472,6 +1480,11 @@
                 <span class="bookmark-more-label">more</span>
                 <span class="bookmark-more-mark toggle-mark--tone-d" aria-hidden="true">+</span>
             </button>
+        </section>
+
+        <section id="a-note" aria-labelledby="a-note-heading">
+            <h4 id="a-note-heading" class="phrase">a note</h4>
+            <p class="cabinet-note">maya, you're cute.</p>
         </section>
 
         <footer class="cabinet-footer">
