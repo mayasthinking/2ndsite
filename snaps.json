@@ -7,6 +7,12 @@
         "city": "copenhagen",
         "photos": [
           {
+            "src": "photos/nyhavn.jpeg",
+            "alt": "Colorful Nyhavn waterfront buildings and boats reflected in the canal in golden light",
+            "caption": "copenhagen, denmark",
+            "ariaLabel": "Open Nyhavn photo"
+          },
+          {
             "src": "photos/red.jpeg",
             "alt": "Sunlit red archway opening onto an ivy-covered courtyard",
             "caption": "copenhagen, denmark",
