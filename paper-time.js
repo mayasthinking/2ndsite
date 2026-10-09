@@ -1,15 +1,5 @@
 (() => {
     const palettes = {
-        light: [
-            [0, "#eee9e1"],
-            [5, "#f3e9df"],
-            [8, "#f8f1e7"],
-            [12, "#faf9f6"],
-            [16, "#f8f2e7"],
-            [18.5, "#f3e4d2"],
-            [20.5, "#eee5df"],
-            [24, "#eee9e1"]
-        ],
         dark: [
             [0, "#514341"],
             [5, "#5c4a47"],
@@ -119,7 +109,7 @@
             return chosenScheme;
         }
 
-        return preferredScheme.matches ? "dark" : "light";
+        return "light";
     };
 
     const localHour = () => {
@@ -138,7 +128,11 @@
 
         root.dataset.scheme = scheme;
         root.style.colorScheme = scheme;
-        root.style.setProperty("--paper", colorAt(palettes[scheme], hour));
+        const normalizedHour = ((hour % 24) + 24) % 24;
+        const paper = scheme === "light"
+            ? (normalizedHour >= 7 && normalizedHour < 19 ? "#f8f1e7" : "#eee9e1")
+            : colorAt(palettes.dark, hour);
+        root.style.setProperty("--paper", paper);
         Object.entries(themes[scheme]).forEach(([name, value]) => {
             root.style.setProperty(name, value);
         });
