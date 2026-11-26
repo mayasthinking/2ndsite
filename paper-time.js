@@ -129,7 +129,7 @@
         root.dataset.scheme = scheme;
         root.style.colorScheme = scheme;
         const paper = scheme === "light"
-            ? "#f0f8ff"
+            ? "#f2f9fc"
             : colorAt(palettes.dark, hour);
         root.style.setProperty("--paper", paper);
         Object.entries(themes[scheme]).forEach(([name, value]) => {
