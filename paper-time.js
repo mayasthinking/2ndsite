@@ -128,8 +128,9 @@
 
         root.dataset.scheme = scheme;
         root.style.colorScheme = scheme;
+        const normalizedHour = ((hour % 24) + 24) % 24;
         const paper = scheme === "light"
-            ? "#e4edf2"
+            ? (normalizedHour >= 7 && normalizedHour < 19 ? "#f8f1e7" : "#eee9e1")
             : colorAt(palettes.dark, hour);
         root.style.setProperty("--paper", paper);
         Object.entries(themes[scheme]).forEach(([name, value]) => {
